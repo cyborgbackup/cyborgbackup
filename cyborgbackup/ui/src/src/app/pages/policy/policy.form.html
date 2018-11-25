@@ -1,0 +1,208 @@
+<div class="widgets">
+  <div class="row">
+    <div ba-panel ba-panel-class="with-scroll" ba-panel-title="Policy Information">
+        <form name="$ctrl.policyForm">
+            <div class="form-group">
+                <label for="name">Name </label>
+                <input name="name" id="name" ng-model="policy.name" type="text" class="form-control" placeholder="Name" required/>
+                <span ng-show="policyForm.name.$dirty && policyForm.hostnamename.$invalid" class="help-inline">Name Required</span>
+            </div>
+
+            <div class="form-group">
+                <label for="type">Type </label>
+                <ui-select ng-model="policy.policy_type"
+                           class="btn-group bootstrap-select form-control"
+                           ng-disabled="false"
+                           append-to-body="true"
+                           search-enabled="false"
+                           on-select="onSelectCallback($item, $model)">
+                  <ui-select-match placeholder="Policy Type">
+                    <span> {{$select.selected.label}}</span>
+                  </ui-select-match>
+                  <ui-select-choices repeat="itemType.value as itemType in policyType">
+                    <span ng-bind-html="itemType.label"></span>
+                  </ui-select-choices>
+                </ui-select>
+            </div>
+
+            <div class="form-group">
+                <label for="type">Schedule </label>
+                <ui-select ng-model="policy.schedule"
+                           class="btn-group bootstrap-select form-control"
+                           ng-disabled="false"
+                           append-to-body="true"
+                           search-enabled="false">
+                  <ui-select-match placeholder="Schedule List">
+                    <span> {{$select.selected.name}}</span>
+                  </ui-select-match>
+                  <ui-select-choices repeat="itemSchedule.id as itemSchedule in schedules | filter: $select.search">
+                    <span ng-bind-html="itemSchedule.name"></span>
+                  </ui-select-choices>
+                </ui-select>
+            </div>
+
+            <div class="form-group">
+                <label for="type">Repository </label>
+                <ui-select ng-model="policy.repository"
+                           class="btn-group bootstrap-select form-control"
+                           ng-disabled="false"
+                           append-to-body="true"
+                           search-enabled="true">
+                  <ui-select-match placeholder="Repository List">
+                    <span> {{$select.selected.name}}</span>
+                  </ui-select-match>
+                  <ui-select-choices repeat="itemRepository.id as itemRepository in repositories | filter: $select.search">
+                    <span ng-bind-html="itemRepository.name"></span>
+                  </ui-select-choices>
+                </ui-select>
+            </div>
+
+            <div class="form-group" ng-show="policy.policy_type == 'vm'">
+                <label for="vmprovider">Virtual Machine Module </label>
+                <ui-select ng-model="policy.vmprovider"
+                           class="btn-group bootstrap-select form-control"
+                           ng-disabled="false"
+                           append-to-body="true"
+                           search-enabled="false"
+                           on-select="checkModule($item, $model)">
+                  <ui-select-match placeholder="Virtual Machine Module">
+                    <span> {{$select.selected.name}}</span>
+                  </ui-select-match>
+                  <ui-select-choices repeat="itemType.module as itemType in vmtype">
+                    <span ng-bind-html="itemType.name"></span>
+                  </ui-select-choices>
+                </ui-select>
+            </div>
+
+            <div class="form-group">
+              <label for="clients">Clients </label>
+              <ui-select multiple ng-model="policy.clients"
+                         ng-disabled="false"
+                         search-enabled="true"
+                         append-to-body="true"
+                         class="form-control ">
+                <ui-select-match placeholder="Clients">
+                  {{$item.hostname}}
+                </ui-select-match>
+                <ui-select-choices repeat="itemClient.id as itemClient in clients | filter: $select.search">
+                  {{itemClient.hostname}}
+                </ui-select-choices>
+              </ui-select>
+            </div>
+
+            <div class="form-group" ng-show="policy.policy_type == 'mysql' || policy.policy_type == 'postgresql' || policy.policy_type == 'piped' || (policy.policy_type == 'vm' && moduleExtraVars)">
+              <label for="extra_vars">Extra-Vars</label>
+              <textarea name="extra_vars" id="extra_vars" ng-model="policy.extra_vars" class="form-control"></textarea>
+            </div>
+
+            <div
+              ba-panel
+              ba-panel-class="with-scroll horizontal-tabs tabs-panel small-panel">
+            <uib-tabset active="$tabSetStatus.activeTab">
+                <uib-tab heading="Keep Hourly">
+                  <div class="form-group">
+                    <div class="row">
+                      <div class="col-md-2 checkbox-keep">
+                        <label class="checkbox-inline custom-checkbox nowrap">
+                          <input type="checkbox" id="checkboxHourly" ng-model="boolean_keep_hourly" ng-change="keepChange('keep_hourly')">
+                          <span>Keep Hourly</span>
+                        </label>
+                      </div>
+                      <div class="col-md-4">
+                        <input name="hourly" id="hourly" ng-disabled="!boolean_keep_hourly" ng-model="policy.keep_hourly" type="number" class="form-control" placeholder="Hourly" />
+                        <span ng-show="boolean_keep_hourly && policyForm.hourly.$dirty && policyForm.hourly.$invalid" class="help-inline">Hourly Required</span>
+                      </div>
+                    </div>
+                  </div>
+                </uib-tab>
+                <uib-tab heading="Keep Daily">
+                  <div class="form-group">
+                    <div class="row">
+                      <div class="col-md-2 checkbox-keep">
+                        <label class="checkbox-inline custom-checkbox nowrap">
+                          <input type="checkbox" id="checkboxDaily" ng-model="boolean_keep_daily" ng-change="keepChange('keep_daily')">
+                          <span>Keep Daily</span>
+                        </label>
+                      </div>
+                      <div class="col-md-4">
+                        <input name="daily" id="daily" ng-disabled="!boolean_keep_daily" ng-model="policy.keep_daily" type="number" class="form-control" placeholder="Daily" />
+                        <span ng-show="boolean_keep_daily && policyForm.daily.$dirty && policyForm.daily.$invalid" class="help-inline">Daily Required</span>
+                      </div>
+                    </div>
+                  </div>
+                </uib-tab>
+                <uib-tab heading="Keep Weekly">
+                  <div class="form-group">
+                    <div class="row">
+                      <div class="col-md-2 checkbox-keep">
+                        <label class="checkbox-inline custom-checkbox nowrap">
+                          <input type="checkbox" id="checkboxWeekly" ng-model="boolean_keep_weekly" ng-change="keepChange('keep_weekly')">
+                          <span>Keep Weekly</span>
+                        </label>
+                      </div>
+                      <div class="col-md-4">
+                        <input name="weekly" id="weekly" ng-disabled="!boolean_keep_weekly" ng-model="policy.keep_weekly" type="number" class="form-control" placeholder="Weekly" />
+                        <span ng-show="boolean_keep_weekly && policyForm.weekly.$dirty && policyForm.weekly.$invalid" class="help-inline">Weekly Required</span>
+                      </div>
+                    </div>
+                  </div>
+                </uib-tab>
+                <uib-tab heading="Keep Monthly">
+                  <div class="form-group">
+                    <div class="row">
+                      <div class="col-md-2 checkbox-keep">
+                        <label class="checkbox-inline custom-checkbox nowrap">
+                          <input type="checkbox" id="checkboxMonthly" ng-model="boolean_keep_monthly" ng-change="keepChange('keep_monthly')">
+                          <span>Keep Monthly</span>
+                        </label>
+                      </div>
+                      <div class="col-md-4">
+                        <input name="monthly" id="monthly" ng-disabled="!boolean_keep_monthly" ng-model="policy.keep_monthly" type="number" class="form-control" placeholder="Monthly" />
+                        <span ng-show="boolean_keep_monthly && policyForm.monthly.$dirty && policyForm.monthly.$invalid" class="help-inline">Monthly Required</span>
+                      </div>
+                    </div>
+                  </div>
+                </uib-tab>
+                <uib-tab heading="Keep Yearly">
+                  <div class="form-group">
+                    <div class="row">
+                      <div class="col-md-2 checkbox-keep">
+                        <label class="checkbox-inline custom-checkbox nowrap">
+                          <input type="checkbox" id="checkboxYearly" ng-model="boolean_keep_yearly" ng-change="keepChange('keep_yearly')">
+                          <span>Keep Yearly</span>
+                        </label>
+                      </div>
+                      <div class="col-md-4">
+                        <input name="yearly" id="yearly" ng-disabled="!boolean_keep_yearly" ng-model="policy.keep_yearly" type="number" class="form-control" placeholder="Yearly" />
+                        <span ng-show="boolean_keep_yearly && policyForm.yearly.$dirty && policyForm.yearly.$invalid" class="help-inline">Yearly Required</span>
+                      </div>
+                    </div>
+                  </div>
+                </uib-tab>
+              </uib-tabset>
+            </div>
+
+            <div class="form-group">
+                <p>Enabled</p>
+                <ba-switcher switcher-style="primary" switcher-value="policy.enabled"></ba-switcher>
+            </div>
+            <div class="form-group">
+                <p>Mode Pull</p>
+                <ba-switcher switcher-style="primary" switcher-value="policy.mode_pull"></ba-switcher>
+            </div>
+            <div class="row">
+              <div class="col-sm-2">
+                <div class="button-wrapper">
+                  <button ng-click="formCancel()" class="btn btn-danger">Cancel</a>
+                </div>
+              </div>
+              <div class="col-sm-2">
+                <div class="button-wrapper">
+                  <button ng-click="formSave()" ng-disabled="policyForm.$invalid" class="btn btn-primary">Save</button>
+                </div>
+              </div>
+            </div>
+        </form>
+    </div>
+  </div>
+</div>

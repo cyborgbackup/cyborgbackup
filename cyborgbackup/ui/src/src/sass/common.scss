@@ -1,0 +1,237 @@
+@import 'theme/conf/mixins';
+@import 'theme/conf/colorScheme/mint';
+@import 'theme/conf/variables';
+
+.cron-gen-main {
+  margin-bottom: 10px;
+
+  .cron-gen-container {
+    border: 1px solid #cbcbcb;
+    border-bottom-left-radius: 5px;
+    border-bottom-right-radius: 5px;
+    background-color: #ffffff;
+    box-shadow: none;
+
+    .tab-content{
+      padding: 10px 25px 5px 25px;
+    }
+
+    .cron-gen-radio {
+      width: 20px;
+      display: inline-block;
+    }
+
+    .cron-gen-select, .cron-gen-input, .cron-gen-checkbox {
+      display: inline-block;
+    }
+
+    .well-time-wrapper {
+      padding-left: 20px;
+    }
+
+    .inline-block {
+      display: inline-block;
+    }
+
+    .minutes, .hours, .days, .seconds {
+      width: 70px;
+    }
+
+    .months {
+      width: 120px;
+    }
+
+    .month-days {
+      width: 130px;
+    }
+
+    .months-small {
+      width: 60px;
+    }
+
+    .day-order-in-month {
+      width: 95px;
+    }
+
+    .week-days {
+      width: 120px;
+    }
+
+    .advanced-cron-gen-input {
+      width: 200px;
+    }
+
+    .hour-types {
+      width: 70px;
+    }
+  }
+}
+
+@-webkit-keyframes pulsate {
+    0% { -moz-transform: scale(.3); opacity: .2; }
+    100% { -moz-transform: scale(1.1); opacity: 1; }
+}
+@-webkit-keyframes pulsate {
+    0% { -webkit-transform: scale(.3); opacity: .2; }
+    100% { -webkit-transform: scale(1.1); opacity: 1; }
+}
+@keyframes pulsate {
+    0% { -webkit-transform: scale(.3); transform:scale(.3); opacity: .2;}
+    100% { -webkit-transform: scale(1.1); transform:scale(1.1); opacity: 1;}
+}
+
+/* Status Icons */
+.icon-failures-true,
+.active-failures-true a,
+.active-failures-true a:active,
+.job-failed,
+.job-error {
+  color: #D9534F;
+}
+.icon-failures-true a:hover {
+  color: #D9534F;
+}
+.job-failures-true {
+  padding-top: 5px;
+  color: #D9534F;
+}
+.job-event-status,
+.license-status {
+  padding-top: 5px;
+}
+.job-new,
+.license-valid,
+.job-success,
+.job-successful {
+  color: #5CB85C;
+}
+.icon-host-all:before,
+.icon-host-failed:before,
+.icon-job-active:before,
+.icon-job-running:before,
+.icon-job-success:before,
+.icon-job-successful:before,
+.icon-job-changed:before,
+.icon-job-ok:before,
+.icon-job-OK:before,
+.icon-job-failed:before,
+.icon-job-skipped:before {
+  content: "\F111";
+}
+.icon-job-stopped:before,
+.icon-job-error:before,
+.icon-job-canceled:before,
+.icon-job-stdout-download-tooltip:before,
+.icon-job-unreachable:before,
+.icon-job-failed:before {
+  content: "\F06A";
+}
+.icon-job-pending:before,
+.icon-job-waiting:before,
+.icon-job-new:before,
+.icon-job-none:before,
+.icon-job-no-matching-hosts:before {
+  content: "\F10C";
+}
+.icon-job-active,
+.icon-job-running,
+.icon-job-success,
+.icon-job-successful,
+.icon-job-ok,
+.icon-job-OK {
+  color: #5CB85C;
+}
+.icon-job-skipped {
+  color: #2dbaba;
+}
+.icon-job-running {
+  -webkit-animation: pulsate 1.5s linear infinite alternate;
+  -moz-animation: pulsate 1.5s linear infinite alternate;
+  animation: pulsate 1.5s linear infinite alternate;
+}
+.icon-job-changed,
+.job-changed {
+  color: #FF9900;
+}
+.icon-host-failed,
+.icon-job-stopped,
+.icon-job-error,
+.icon-job-failed,
+.icon-job-stdout-download-tooltip,
+.icon-job-canceled {
+  color: #D9534F;
+}
+.icon-host-all {
+  color: #337ab7;
+}
+.icon-job-unreachable {
+  color: #FF0000;
+}
+.icon-job-none,
+.icon-job-pending,
+.icon-job-waiting,
+.icon-job-new,
+.icon-job-no-matching-hosts {
+  color: #A9A9A9;
+  opacity: 0.45;
+}
+.icon-schedule-enabled-true:before {
+  content: "\F04D";
+}
+.icon-schedule-enabled-false:before {
+  content: "\F04B";
+}
+.icon-socket-ok:before {
+  content: "\F111";
+  color: #5CB85C;
+}
+.icon-socket-error:before {
+  content: "\F111";
+  color: #D9534F;
+}
+.icon-socket-connecting:before {
+  content: "\F042";
+  color: #FF9900;
+}
+
+table.jobList thead th.smartColumn {
+  width: 25px;
+  padding-right: 0px!important;
+}
+
+.LoginModal-alert {
+  display: flex;
+  margin-bottom: 20px;
+  font-size: 16px;
+  font-weight: normal;
+  transition: opacity 0.2s;
+  color: #df0000;
+  margin-left: 25px;
+
+  .LoginModal-alerticon {
+    display: flex;
+    align-items: center;
+    line-height: 19px;
+  }
+}
+
+.JobResults-detailsPanel {
+  hr {
+    margin-top: 0px;
+  }
+}
+
+.textarea-privatekey {
+  .input-group-btn{
+    z-index: 3;
+    button {
+      height: 96px;
+    }
+  }
+}
+
+.checkbox-keep{
+  height: 34px;
+  padding-top: 6px;
+  padding-left: 40px;
+}

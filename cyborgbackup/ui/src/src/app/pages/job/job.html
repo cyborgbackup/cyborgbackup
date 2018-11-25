@@ -1,0 +1,43 @@
+<div class="widgets">
+  <div class="horizontal-scroll">
+    <div ba-panel>
+      <table class="table jobList" st-pipe="pipeCall" st-table="smartTableData">
+        <thead>
+          <tr>
+            <th class="smartColumn">&nbsp;</th>
+            <th class="table-id" st-sort="id" st-sort-default="true">ID</th>
+            <th>Name</th>
+            <th>Policy</th>
+            <th>Type</th>
+            <th>Finished</th>
+          </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat="item in jobs">
+          <td><i class="fa icon-job-{{ item.status }}">&nbsp;</i></td>
+          <td class="table-id">{{item.id}}</td>
+          <td>{{item.name}}</td>
+          <td>{{item.summary_fields.policy.name}}</td>
+          <td>{{item.summary_fields.policy.policy_type}}</td>
+          <td>{{item.finished | longDate }}</td>
+          <td>
+            <button type="button" ng-click="viewJobResults(item)" class="btn btn-sm btn-info">
+              <i class="glyphicon glyphicon-zoom-in"></i>
+            </button>
+              <button type="button" ng-disabled="(item.status === 'running'|| item.status === 'waiting' || item.status === 'pending')" ng-click="cancelItem(item)" class="btn btn-sm btn-danger">
+                <i class="glyphicon glyphicon-trash"></i>
+              </button>
+          </td>
+        </tr>
+        </tbody>
+        <tfoot>
+        <tr>
+          <td colspan="6" class="text-center">
+            <div st-pagination="" st-items-by-page="25" st-displayed-pages="5"></div>
+          </td>
+        </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,32 @@
+<div class="widgets">
+  <div class="row">
+    <div class="col-md-8">
+      <div ba-panel ba-panel-title="Catalog Archives" ba-panel-class="with-scroll tree-panel">
+        <div js-tree="basicConfig" ng-model="treeData" tree="basicTree" tree-events="activate_node:openode"></div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div ba-panel ba-panel-title="Backup Information">
+        <div ng-model="currentBackup">
+          <p>Client : {{currentBackup.summary_fields.client.hostname}}</p>
+          <p>Type : {{currentBackup.summary_fields.policy.policy_type}}</p>
+          <p>Original size : {{currentBackup.original_size | humanSize}}</p>
+          <p>Compressed size : {{currentBackup.compressed_size | humanSize}}</p>
+          <p>Deduplicated size: {{currentBackup.deduplicated_size | humanSize}}</p>
+          <p>Started : {{currentBackup.started | longDate}}</p>
+          <p>Duration : {{currentBackup.elapsed}}</p>
+        </div>
+      </div>
+      <div ba-panel ba-panel-title="Element Information">
+        <div ng-model="currentElement">
+          <p>Filename : {{currentElement.path}}</p>
+          <p>File mode : {{currentElement.mode}}</p>
+          <p>Healthy : {{currentElement.healthy}}</p>
+          <p>Owner : {{currentElement.owner}}</p>
+          <p>Group : {{currentElement.group}}</p>
+          <p>Size : {{currentElement.size}}</p>
+          <p>Mtime : {{currentElement.mtime | longDate}}</p>
+        </div>
+      </div>
+    </div>
+</div>

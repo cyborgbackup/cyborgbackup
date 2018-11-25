@@ -1,0 +1,246 @@
+body.modal-open {
+  margin-right: 0;
+}
+
+.modal-backdrop,
+.modal-backdrop.fade.in {
+  opacity: 0.6;
+  filter: alpha(opacity=60);
+}
+
+.modal-body .ui-accordion .ui-accordion-content {
+  padding: 10px;
+}
+
+/* overrides to TB modal */
+.modal-content {
+    padding: 20px;
+}
+
+.modal-header {
+    color: #707070;
+    white-space: nowrap;
+    width: 90%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+    border: none;
+    padding: 0;
+}
+
+.modal {
+  border: 1px solid #171717;
+}
+
+.modal .SmartSearch-bar {
+    width: 100%;
+}
+
+#alert-modal, #alert-modal2 {
+  z-index: 2100;
+}
+
+.close {
+  color: #A9A9A9;
+  opacity: .7;
+  filter: alpha(opacity=70);
+}
+
+.modal-header h3 {
+  margin: 0;
+  text-rendering: optimizeLegibility;
+  font-size: 15px;
+    color: #707070;
+    font-weight: bold;
+    line-height: normal;
+    font-family: 'Open Sans', helvetica;
+    text-transform: uppercase;
+}
+
+.modal-body {
+    min-height: 120px;
+    padding: 20px 0;
+
+    .alert {
+        padding: 10px;
+        margin: 0;
+        word-wrap: break-word;
+    }
+    .alert-danger {
+        background-color: #FFFFFF;
+        border: none;
+        color: #707070;
+      }
+}
+
+#prompt-modal .modal-body {
+  padding-bottom: 30px;
+}
+
+.skinny-modal .modal-body {
+  padding: 5px 10px 0 10px;
+}
+
+.modal-footer {
+    padding: 0;
+    border: none;
+    margin-top: 0;
+    display: flex;
+    justify-content: flex-end;
+
+    .btn.btn-primary {
+      text-transform: uppercase;
+      background-color: #5CB85C;
+      border-color:#5CB85C;
+      padding: 5px 15px;
+      cursor: pointer;
+
+      &:hover {
+        background-color: #449D44;
+        border-color: #449D44;
+      }
+
+      &:disabled {
+        background-color: #D7D7D7;
+        border-color: #D7D7D7;
+      }
+    }
+
+    .btn + .btn {
+        margin: 0;
+    }
+}
+
+.Modal-content {
+    display:flex;
+    flex-wrap:wrap;
+    flex-direction: row;
+    padding: 15px 20px;
+    -webkit-box-shadow: 5px 5px 5px 0px rgba(0,0,0,0.25);
+    -moz-box-shadow: 5px 5px 5px 0px rgba(0,0,0,0.25);
+    box-shadow: 5px 5px 5px 0px rgba(0,0,0,0.25);
+}
+
+.Modal-header {
+    display: flex;
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+.Modal-title {
+    flex: 1 0 auto;
+    text-transform: uppercase;
+    color: #707070;
+    font-size: 14px;
+    font-weight: bold;
+    width: calc(100%-18px);
+    word-break: break-word;
+}
+
+.Modal-exitHolder{
+    justify-content: flex-end;
+    display:flex;
+}
+
+.Modal-exit{
+    cursor:pointer;
+    padding:0px;
+    border: none;
+    height:20px;
+    font-size: 20px;
+    background-color:#FFFFFF;
+    color:#D7D7D7;
+    line-height:1;
+    opacity: 1;
+}
+
+.Modal-exit:hover{
+    color: #848992;
+    opacity: 1;
+}
+
+.Modal-body {
+    width: 100%;
+}
+
+.Modal-bodyQuery {
+    margin-bottom: 20px;
+    color: #707070;
+}
+
+.Modal-bodyTarget {
+    color: #161B1F;
+}
+
+.Modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 20px;
+    width: 100%;
+}
+
+.Modal-defaultButton {
+    background-color: #FFFFFF;
+    color: #707070;
+    text-transform: uppercase;
+    border-radius: 5px;
+    border: 1px solid #B7B7B7;
+    transition: background-color 0.2s;
+    padding-left:15px;
+    padding-right: 15px;
+}
+
+.Modal-defaultButton:hover {
+    background-color: #f2f2f2;
+    color: #707070;
+}
+
+.Modal-errorButton {
+    background-color: #D9534F;
+    color: #FFFFFF;
+    text-transform: uppercase;
+    border-radius: 5px;
+    transition: background-color 0.2s;
+    padding-left:15px;
+    padding-right: 15px;
+}
+
+.Modal-errorButton:hover {
+    background-color: #C9302C;
+    color: #FFFFFF;
+}
+
+.Modal-errorButton--sourcesDelete:hover{
+    cursor: not-allowed;
+}
+
+.Modal-primaryButton {
+    background-color: #337AB7;
+    color: #FFFFFF;
+    text-transform: uppercase;
+    border-radius: 5px;
+    transition: background-color 0.2s;
+    padding-left:15px;
+    padding-right: 15px;
+}
+
+.Modal-primaryButton:hover {
+    background-color: #286090;
+    color: #FFFFFF;
+}
+
+.Modal-errorButton:focus {
+    color: #FFFFFF;
+}
+
+.Modal-footerButton {
+    padding: 4px 8px;
+}
+
+.Modal-footerButton + .Modal-footerButton {
+    margin-left: 20px;
+}
+
+.Modal-titleResourceName {
+    color: #D9534F;
+}

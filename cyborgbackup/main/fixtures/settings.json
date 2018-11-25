@@ -1,0 +1,134 @@
+[
+  {
+    "model": "main.setting",
+    "pk": 1,
+    "fields": {
+      "created": "2018-11-17T00:00:00.000Z",
+      "modified": "2018-11-17T00:00:00.000Z",
+      "key": "cyborgbackup_mail_system",
+      "value": "True",
+      "setting_type": "boolean"
+    }
+  },
+  {
+    "model": "main.setting",
+    "pk": 2,
+    "fields": {
+      "created": "2018-11-17T00:00:00.000Z",
+      "modified": "2018-11-17T00:00:00.000Z",
+      "key": "cyborgbackup_web_enabled",
+      "value": "True",
+      "setting_type": "boolean"
+    }
+  },
+  {
+    "model": "main.setting",
+    "pk": 3,
+    "fields": {
+      "created": "2018-11-17T00:00:00.000Z",
+      "modified": "2018-11-17T00:00:00.000Z",
+      "key": "cyborgbackup_catalog_enabled",
+      "value": "True",
+      "setting_type": "boolean"
+    }
+  },
+  {
+    "model": "main.setting",
+    "pk": 4,
+    "fields": {
+      "created": "2018-11-17T00:00:00.000Z",
+      "modified": "2018-11-17T00:00:00.000Z",
+      "key": "cyborgbackup_auto_prune",
+      "value": "True",
+      "setting_type": "boolean"
+    }
+  },
+  {
+    "model": "main.setting",
+    "pk": 5,
+    "fields": {
+      "created": "2018-11-17T00:00:00.000Z",
+      "modified": "2018-11-17T00:00:00.000Z",
+      "key": "cyborgbackup_url",
+      "value": "http://127.0.0.1:8000",
+      "setting_type": "string"
+    }
+  },
+  {
+    "model": "main.setting",
+    "pk": 6,
+    "fields": {
+      "created": "2018-11-17T00:00:00.000Z",
+      "modified": "2018-11-17T00:00:00.000Z",
+      "key": "cyborgbackup_job_cleaning",
+      "value": "90",
+      "setting_type": "integer"
+    }
+  },
+  {
+    "model": "main.setting",
+    "pk": 7,
+    "fields": {
+      "created": "2018-11-17T00:00:00.000Z",
+      "modified": "2018-11-17T00:00:00.000Z",
+      "key": "cyborgbackup_ssh_password",
+      "value": "",
+      "setting_type": "password"
+    }
+  },
+  {
+    "model": "main.setting",
+    "pk": 8,
+    "fields": {
+      "created": "2018-11-17T00:00:00.000Z",
+      "modified": "2018-11-17T00:00:00.000Z",
+      "key": "cyborgbackup_mail_from",
+      "value": "cyborg@cyborg.local",
+      "setting_type": "string"
+    }
+  },
+  {
+    "model": "main.setting",
+    "pk": 9,
+    "fields": {
+      "created": "2018-11-17T00:00:00.000Z",
+      "modified": "2018-11-17T00:00:00.000Z",
+      "key": "cyborgbackup_backup_user",
+      "value": "root",
+      "setting_type": "string"
+    }
+  },
+  {
+    "model": "main.setting",
+    "pk": 10,
+    "fields": {
+      "created": "2018-11-17T00:00:00.000Z",
+      "modified": "2018-11-17T00:00:00.000Z",
+      "key": "cyborgbackup_ssh_key",
+      "value": "",
+      "setting_type": "privatekey"
+    }
+  },
+  {
+    "model": "main.setting",
+    "pk": 11,
+    "fields": {
+      "created": "2018-11-17T00:00:00.000Z",
+      "modified": "2018-11-17T00:00:00.000Z",
+      "key": "cyborgbackup_auto_restore_test",
+      "value": "",
+      "setting_type": "boolean"
+    }
+  },
+  {
+    "model": "main.setting",
+    "pk": 12,
+    "fields": {
+      "created": "2018-11-17T00:00:00.000Z",
+      "modified": "2018-11-17T00:00:00.000Z",
+      "key": "cyborgbackup_auto_prune",
+      "value": "",
+      "setting_type": "boolean"
+    }
+  }
+]

@@ -1,0 +1,65 @@
+#!/bin/bash
+
+###################################################
+##           CyBorgBackup Fill Catalog           ##
+##   Author : Gaëtan Ferez <gaetan@milkywan.fr>  ##
+##                 Version 0.1                   ##
+###################################################
+
+
+echo "Check Curl"
+curl -V 2>&1 1>/dev/null || (apt-get -q update && apt-get -q -y install curl)
+
+echo "Check Python3"
+curl -V 2>&1 1>/dev/null || (apt-get -q update && apt-get -q -y install python3 python3-json python3-requests)
+
+binary=$(curl -sL https://api.github.com/repos/borgbackup/borg/releases/latest | grep "browser_download_url" | grep 'borg-linux64"' | cut -d : -f 2,3 | tr -d \\\")
+echo "Check Borg"
+borg -V 2>&1 1>/dev/null || (echo "Borg not found. Install it" && curl -sL $binary -o /usr/local/bin/borg && chmod a+x /usr/local/bin/borg)
+
+temp_file=$(mktemp)
+cat > $temp_file <<EOF
+import os
+import sys
+import gzip
+import json
+import base64
+import requests
+
+token = os.environ.get('CYBORG_AGENT_TOKEN')
+job_id = os.environ.get('CYBORG_JOB_ID')
+url = os.environ.get('CYBORG_URL')
+archive_name = os.environ.get('CYBORG_JOB_ARCHIVE_NAME')
+
+list_entries=[]
+print("Get Entries from Borg")
+for line in sys.stdin:
+    json_entry = json.loads(line)
+    new_entry = {
+      'mode': json_entry['mode'],
+      'path': json_entry['path'],
+      'owner': json_entry['user'],
+      'group': json_entry['group'],
+      'type': json_entry['type'],
+      'size': json_entry['size'],
+      'healthy': json_entry['healthy'],
+      'mtime': json_entry['mtime']
+    }
+    list_entries.append(new_entry)
+
+if len(list_entries)>0:
+  print("Post {} Entries to CyBorgBackup".format(len(list_entries)))
+  gzipped_data = gzip.compress(bytes(json.dumps(list_entries), 'utf-8'))
+  post_data = {
+    'archive_name': archive_name,
+    'event': 'catalog',
+    'job': job_id,
+    'catalog': base64.b64encode(gzipped_data).decode('utf-8')
+  }
+  headers = {'Authorization': 'Token {}'.format(token)}
+  r = requests.post(url, headers=headers, json=post_data)
+sys.exit(0)
+EOF
+export BORG_PASSPHRASE=$CYBORG_BORG_PASSPHRASE
+export BORG_REPO=$CYBORG_BORG_REPOSITORY
+borg list --json-lines ::$CYBORG_JOB_ARCHIVE_NAME | python3 $temp_file && rm -f $temp_file

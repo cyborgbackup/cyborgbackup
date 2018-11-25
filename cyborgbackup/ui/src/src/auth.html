@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="CyBorgBackup.login">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CyBorgBackup Login</title>
+
+  <link href='https://fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,400italic,500,500italic,700,700italic,900italic,900&subset=latin,greek,greek-ext,vietnamese,cyrillic-ext,latin-ext,cyrillic' rel='stylesheet' type='text/css'>
+
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/img/favicon-16x16.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="96x96" href="assets/img/favicon-96x96.png">
+
+  <!-- build:css({.tmp/serve,src}) styles/vendor.css -->
+  <!-- bower:css -->
+  <!-- run `gulp inject` to automatically populate bower styles dependencies -->
+  <!-- endbower -->
+  <!-- endbuild -->
+
+  <!-- build:css({.tmp/serve,src}) styles/auth.css -->
+  <!-- inject:css -->
+  <!-- css files will be automatically insert here -->
+  <!-- endinject -->
+  <!-- endbuild -->
+</head>
+<body>
+<main class="auth-main">
+  <div class="auth-block" ng-controller="LoginPageCtrl as vm">
+    <h1>Welcome to CyBorgBackup! &nbsp;Please sign in.</h1>
+    <div class="LoginModal-alert LoginModal-alert--error" ng-show="sessionExpired">
+        <i class="LoginModal-alertIcon fa fa-exclamation-triangle"></i>
+        <div class="LoginModal-alertText" translate>
+            Your session timed out due to inactivity. Please sign in.
+        </div>
+    </div>
+    <div class="LoginModal-alert LoginModal-alert--error" ng-show="sessionLimitExpired">
+        <i class="LoginModal-alertIcon fa fa-exclamation-triangle"></i>
+        <div class="LoginModal-alertText" translate>
+            Maximum per-user sessions reached. Please sign in.
+        </div>
+    </div>
+    <div class="LoginModal-alert LoginModal-alert--error" ng-show="attemptFailed">
+        <i class="LoginModal-alertIcon fa fa-exclamation-triangle"></i>
+        <div class="LoginModal-alertText" translate>
+            Invalid username and/or password.  Please try again.
+        </div>
+    </div>
+
+    <form class="form-horizontal" id="login-form">
+      <div class="form-group">
+        <label for="inputEmail3" class="col-sm-2 control-label">Email</label>
+
+        <div class="col-sm-10">
+          <input type="email" class="form-control" ng-model="login_username" id="inputEmail3" placeholder="Email">
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="inputPassword3" class="col-sm-2 control-label">Password</label>
+
+        <div class="col-sm-10">
+          <input type="password" class="form-control" ng-model="login_password" id="inputPassword3" placeholder="Password">
+        </div>
+      </div>
+      <div class="form-group">
+        <div class="col-sm-offset-2 col-sm-10">
+          <button ng-click="systemLogin(login_username, login_password)" id="login-button" class="btn btn-default btn-auth">Sign in</button>
+          <a href class="forgot-pass">Forgot password?</a>
+        </div>
+      </div>
+    </form>
+  </div>
+</main>
+
+<!-- build:js(src) scripts/vendor.js -->
+<!-- bower:js -->
+<!-- run `gulp inject` to automatically populate bower script dependencies -->
+<!-- endbower -->
+<!-- endbuild -->
+
+<!-- build:js({.tmp/serve,.tmp/partials,src}) scripts/app.js -->
+<!-- inject:js -->
+<!-- js files will be automatically insert here -->
+<!-- endinject -->
+
+</body>
+</html>

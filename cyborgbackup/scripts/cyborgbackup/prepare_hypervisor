@@ -1,0 +1,40 @@
+#!/bin/bash
+
+###################################################
+##       CyBorgBackup Prepare Hypervisor         ##
+##   Author : Gaëtan Ferez <gaetan@milkywan.fr>  ##
+##                 Version 0.1                   ##
+###################################################
+
+echo "Check Curl"
+curl -V 2>&1 1>/dev/null || (echo "Curl not found. Install it." && sudo apt-get -q update && sudo apt-get -q -y install curl)
+binary=$(curl -sL https://api.github.com/repos/borgbackup/borg/releases/latest | grep "browser_download_url" | grep 'borg-linux64"' | cut -d : -f 2,3 | tr -d \\\")
+
+echo "Check Borg"
+borg -V 2>&1 1>/dev/null || (echo "Get latest Borg Version." && curl -sL $binary -o /tmp/borg && sudo mv /tmp/borg /usr/local/bin/borg && sudo chmod a+x /usr/local/bin/borg)
+if [ $? -eq 0 ]
+then
+    token=$CYBORG_AGENT_TOKEN
+    sudo mkdir -p /var/cache/cyborgbackup
+    if [ -f $CYBORGBACKUP_BACKUP_SCRIPT ]
+    then
+        sudo cp $CYBORGBACKUP_BACKUP_SCRIPT /var/cache/cyborgbackup/borg_backup_vm
+        sudo chmod a+x /var/cache/cyborgbackup/borg_backup_vm
+    fi
+    data="{\"hypervisor_ready\": true, \"hypervisor_name\": \"$(hostname)\"}"
+    echo "Push client status to CyBorgBackup"
+    cmd="curl -f -s -X PATCH -H 'Content-type: application/json' -H 'Authorization: Token $token' --data '$data' $CYBORG_URL"
+    eval $cmd
+    if [ $? -eq 0 ]
+    then
+        echo "Hypervisor Preparation OK"
+        exit 0
+    else
+        echo "Hypervisor Preparation Warning. Borg installed but unable to update client object on CyBorgBackup."
+        echo "Launch this query : $cmd"
+        exit 255
+    fi
+else
+    echo "Hypervisor Preparation Failed"
+    exit 255
+fi

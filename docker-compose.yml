@@ -1,0 +1,94 @@
+version: '3'
+
+services:
+  postgres:
+    image: postgres:latest
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - .env
+    ports:
+      - "5432:5432"
+  rabbitmq:
+    image: "rabbitmq:management"
+    env_file:
+      - .env
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+  callback_receiver:
+    image: cyborgbackup:latest
+    command: bash -c "python /cyborgbackup/manage.py run_callback_receiver -v 3"
+    volumes:
+      - .:/cyborgbackup
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+      - rabbitmq
+  channel_workers:
+    image: cyborgbackup:latest
+    command: bash -c 'python /cyborgbackup/manage.py runworker --only-channels websocket.*'
+    volumes:
+      - .:/cyborgbackup
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+      - rabbitmq
+  web:
+    image: cyborgbackup:latest
+    #command: bash -c "python /cyborgbackup/manage.py migrate --noinput && python /cyborgbackup/manage.py runserver 0.0.0.0:8000"
+    command: bash -c "python /cyborgbackup/manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - .:/cyborgbackup
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - rabbitmq
+  celery:
+    image: cyborgbackup:latest
+    command: celery -A cyborgbackup worker -l debug -E
+    volumes:
+      - .:/cyborgbackup
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+      - rabbitmq
+  celery_beat:
+    image: cyborgbackup:latest
+    command: celery -A cyborgbackup beat -l debug
+    volumes:
+      - .:/cyborgbackup
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+      - rabbitmq
+  flower:
+    image: cyborgbackup:latest
+    command: celery flower -A cyborgbackup --address=0.0.0.0 --port=8001
+    volumes:
+      - .:/cyborgbackup
+    env_file:
+      - .env
+    ports:
+      - "8001:8001"
+    depends_on:
+      - postgres
+      - rabbitmq
+      - celery
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
+    env_file:
+      - .env
+
+volumes:
+  postgres_data:

@@ -1,0 +1,17 @@
+<div class="page-top clearfix" scroll-position="scrolled" max-height="50" ng-class="{'scrolled': scrolled}">
+  <a href="#/dashboard" class="al-logo clearfix"><span>CyBorg</span>Backup</a>
+  <a href class="collapse-menu-link ion-navicon" ba-sidebar-toggle-menu></a>
+
+  <div class="user-profile clearfix">
+    <div class="al-user-profile" uib-dropdown>
+      <a uib-dropdown-toggle class="profile-toggle-link">
+        <img ng-src="{{ profilePicture }}">
+      </a>
+      <ul  class="top-dropdown-menu profile-dropdown" uib-dropdown-menu>
+        <li><i class="dropdown-arr"></i></li>
+        <li><a ui-sref="profile"><i class="fa fa-user"></i>Profile</a></li>
+        <li><a ng-click="logout" logout class="signout"><i class="fa fa-power-off"></i>Sign out</a></li>
+      </ul>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,139 @@
+<div ba-panel ba-panel-class="profile-page" ng-controller="ProfilePageCtrl as profile">
+  <div class="panel-content">
+
+    <h3 class="with-line">General Information</h3>
+
+    <div class="row">
+      <div class="col-md-6">
+        <div class="form-group row clearfix">
+          <label for="inputFirstName" class="col-sm-3 control-label">Picture</label>
+
+          <div class="col-sm-9">
+            <div class="userpic">
+              <div class="userpic-wrapper">
+                <img ng-src="{{ picture }}" ng-click="uploadPicture()">
+              </div>
+              <i class="ion-ios-close-outline" ng-click="removePicture()" ng-if="!noPicture"></i>
+              <a href class="change-userpic" ng-click="uploadPicture()">Change Profile Picture</a>
+              <input type="file" ng-show="false" id="uploadFile" ng-file-select="onFileSelect($files)">
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6"></div>
+    </div>
+
+    <div class="row">
+      <div class="col-md-6">
+        <div class="form-group row clearfix">
+          <label for="inputFirstName" class="col-sm-3 control-label">First Name</label>
+
+          <div class="col-sm-9">
+            <input type="text" class="form-control" id="inputFirstName" placeholder="" ng-model="user.first_name">
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="form-group row clearfix">
+          <label for="inputLastName" class="col-sm-3 control-label">Last Name</label>
+
+          <div class="col-sm-9">
+            <input type="text" class="form-control" id="inputLastName" placeholder="" ng-model="user.last_name">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h3 class="with-line">Change Password</h3>
+
+    <div class="row">
+      <div class="col-md-6">
+        <div class="form-group row clearfix">
+          <label for="inputPassword" class="col-sm-3 control-label">Password</label>
+
+          <div class="col-sm-9">
+            <input type="password" class="form-control" id="inputPassword" placeholder="" value="12345678">
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="form-group row clearfix">
+          <label for="inputConfirmPassword" class="col-sm-3 control-label">Confirm Password</label>
+
+          <div class="col-sm-9">
+            <input type="password" class="form-control" id="inputConfirmPassword" placeholder="">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h3 class="with-line">Contact Information</h3>
+
+    <div class="row">
+      <div class="col-md-6">
+        <div class="form-group row clearfix">
+          <label for="inputEmail3" class="col-sm-3 control-label">Email</label>
+
+          <div class="col-sm-9">
+            <input type="email" class="form-control" id="inputEmail3" placeholder="" ng-model="user.email">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h3 class="with-line">Send Email Notifications</h3>
+
+    <div class="notification row clearfix">
+      <div class="col-sm-6">
+        <div class="form-group row clearfix">
+          <label class="col-xs-8">When backup failed</label>
+
+          <div class="col-xs-4">
+            <ba-switcher switcher-style="primary" switcher-value="switches[0]"></ba-switcher>
+          </div>
+        </div>
+        <div class="form-group row clearfix">
+          <label class="col-xs-8">When backup success</label>
+
+          <div class="col-xs-4">
+            <ba-switcher switcher-style="primary" switcher-value="switches[1]"></ba-switcher>
+          </div>
+        </div>
+        <div class="form-group row clearfix">
+          <label class="col-xs-8">Backup job summary before start</label>
+
+          <div class="col-xs-4">
+            <ba-switcher switcher-style="primary" switcher-value="switches[2]"></ba-switcher>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6">
+        <div class="form-group row clearfix">
+          <label class="col-xs-8">Backup Daily reports</label>
+
+          <div class="col-xs-4">
+            <ba-switcher switcher-style="primary" switcher-value="switches[3]"></ba-switcher>
+          </div>
+        </div>
+        <div class="form-group row clearfix">
+          <label class="col-xs-8">Backup Weekly Reports</label>
+
+          <div class="col-xs-4">
+            <ba-switcher switcher-style="primary" switcher-value="switches[4]"></ba-switcher>
+          </div>
+        </div>
+
+        <div class="form-group row clearfix">
+          <label class="col-xs-8">Monthly Reports</label>
+
+          <div class="col-xs-4">
+            <ba-switcher switcher-style="primary" switcher-value="switches[5]"></ba-switcher>
+          </div>
+        </div>
+      </div>
+    </div>
+    <button type="button" class="btn btn-primary btn-with-icon save-profile">
+      <i class="ion-android-checkmark-circle"></i>Update Profile
+    </button>
+  </div>
+</div>

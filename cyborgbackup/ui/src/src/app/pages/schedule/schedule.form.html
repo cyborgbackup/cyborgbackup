@@ -1,0 +1,33 @@
+<div class="widgets">
+  <div class="row">
+    <div ba-panel ba-panel-class="with-scroll" ba-panel-title="Schedule Information">
+        <form name="$ctrl.scheduleForm">
+            <div class="form-group">
+                <label for="name">Name </label>
+                <input name="name" id="name" ng-model="schedule.name" type="text" class="form-control" placeholder="Name" required/>
+                <span ng-show="scheduleForm.name.$dirty && scheduleForm.name.$invalid" class="help-inline">Name Required</span>
+            </div>
+            <cron-gen ng-model="schedule.crontab"
+                      options="cronOptions"
+                      ng-disabled="isCronDisabled">
+            </cron-gen>
+            <div class="form-group">
+                <p>Enabled</p>
+                <ba-switcher switcher-style="primary" switcher-value="schedule.enabled"></ba-switcher>
+            </div>
+            <div class="row">
+              <div class="col-sm-2">
+                <div class="button-wrapper">
+                  <button ng-click="formCancel()" class="btn btn-danger">Cancel</a>
+                </div>
+              </div>
+              <div class="col-sm-2">
+                <div class="button-wrapper">
+                  <button ng-click="formSave()" ng-disabled="scheduleForm.$invalid" class="btn btn-primary">Save</button>
+                </div>
+              </div>
+            </div>
+        </form>
+    </div>
+  </div>
+</div>

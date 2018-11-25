@@ -1,0 +1,44 @@
+<div class="widgets">
+  <div ba-panel ba-panel-title="Settings">
+    <form name="$ctrl.settingForm">
+    <div ng-repeat="setting in settings">
+      <div class="form-group" ng-if="setting.setting_type == 'string'">
+          <label for="{{setting.key}}">{{setting.key | settingName}} </label>
+          <input name="{{setting.key}}" id="{{setting.key}}" ng-model="setting.value" type="text" class="form-control" placeholder="{{setting.key | settingName}}"/>
+          <span ng-show="settingForm.{{setting.key}}.$dirty && settingForm.{{setting.key}}.$invalid" class="help-inline">{{setting.key | settingName}} Required</span>
+      </div>
+      <div class="form-group" ng-if="setting.setting_type == 'integer'">
+          <label for="{{setting.key}}">{{setting.key | settingName}} </label>
+          <input name="{{setting.key}}" id="{{setting.key}}" ng-model="setting.value" type="text" class="form-control" placeholder="{{setting.key | settingName}}"/>
+          <span ng-show="settingForm.{{setting.key}}.$dirty && settingForm.{{setting.key}}.$invalid" class="help-inline">{{setting.key | settingName}} Required</span>
+      </div>
+      <div class="form-group" ng-if="setting.setting_type == 'boolean'">
+          <p>{{setting.key | settingName}} </p>
+          <ba-switcher switcher-style="primary" switcher-value="setting.value"></ba-switcher>
+      </div>
+      <div class="form-group" ng-if="setting.setting_type == 'password'">
+          <label for="{{setting.key}}">{{setting.key | settingName}} </label>
+          <div class="input-group">
+            <input name="{{setting.key}}" id="{{setting.key}}" type="password" ng-model="setting.value" class="form-control with-danger-addon" ng-disabled="setting.encrypted" placeholder="{{setting.encrypted && 'ENCRYPTED' || setting.value}}"/>
+            <span class="input-group-btn">
+                <button class="btn btn-danger" ng-click="replaceEncrypted($ctrl.settingForm, setting)" type="button">Replace</button>
+            </span>
+          </div>
+      </div>
+      <div class="form-group" ng-if="setting.setting_type == 'privatekey'">
+          <label for="{{setting.key}}">{{setting.key | settingName}} </label>
+          <div class="input-group textarea-privatekey">
+            <span class="input-group-btn">
+                <button class="btn btn-danger" ng-click="replaceEncrypted($ctrl.settingForm, setting)" type="button">Replace</button>
+            </span>
+            <textarea name="{{setting.key}}" id="{{setting.key}}" ng-model="setting.value" class="form-control" ng-disabled="setting.encrypted">{{setting.encrypted && 'ENCRYPTED' || setting.value}}</textarea>
+          </div>
+      </div>
+    </div>
+    <div class="button-wrapper">
+      <button ng-click="formSave()" ng-disabled="settingForm.$invalid" class="btn btn-primary">Save</button>
+    </div>
+    </form>
+
+  </div>
+</div>

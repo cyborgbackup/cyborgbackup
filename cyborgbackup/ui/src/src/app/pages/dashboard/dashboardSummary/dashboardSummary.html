@@ -1,0 +1,21 @@
+<div class="row pie-charts">
+  <div class="pie-chart-item-container" ng-repeat="chart in charts">
+    <div ba-panel>
+      <div class="pie-chart-item">
+        <div class="description">
+          <div>{{ ::chart.description }}</div>
+          <div class="description-stats">{{ ::chart.stats }}</div>
+        </div>
+        <i class="glyphicon glyphicon-{{ ::chart.icon }}" style='font-size: 4em;
+    position: absolute;
+    right: 0;
+    top: 15px;
+    z-index: -1;
+    display: inline-block;
+    vertical-align: middle;
+    width: 80px;
+    height: 80px;'></i>
+      </div>
+    </div>
+  </div>
+</div>
