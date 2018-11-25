@@ -1,0 +1,195 @@
+[
+  {
+    "model": "main.client",
+    "pk": 1,
+    "fields": {
+      "created": "2018-11-17T17:00:00.000Z",
+      "modified": "2018-11-17T17:00:00.000Z",
+      "created_by": null,
+      "modified_by": null,
+      "uuid": "22fbb99e-cf58-4cfd-96ed-ad4c2e14f68d",
+      "hostname": "locahost",
+      "enabled": true,
+      "ip": "127.0.0.1", 
+      "version": "1.1.7",
+      "ready": true,
+      "latest_prepare": null
+    }
+  },
+  {
+    "model": "main.repository",
+    "pk": 1,
+    "fields": {
+      "created": "2018-11-17T17:00:00.000Z",
+      "modified": "2018-11-17T17:00:00.000Z",
+      "created_by": null,
+      "modified_by": null,
+      "uuid": "8ca73a10-3b9d-4cf2-ba00-61edb1871ba1",
+      "name": "Repository 1",
+      "path": "/tmp/repository",
+      "enabled": true,
+      "repository_key": "0123456789abcdef",
+      "ready": true,
+      "original_size": 0,
+      "compressed_size": 0,
+      "deduplicated_size": 0,
+      "latest_prepare": null
+    }
+  },
+  {
+    "model": "main.schedule",
+    "pk": 1,
+    "fields": {
+      "created": "2018-11-17T17:00:00.000Z",
+      "modified": "2018-11-17T17:00:00.000Z",
+      "created_by": null,
+      "modified_by": null,
+      "uuid": "7a174a30-1efb-411d-aefd-7ee4b6a4fbb6",
+      "name": "Each Monday",
+      "crontab": "0 5 * * MON *",
+      "enabled": true
+    }
+  },
+  {
+    "model": "main.policy",
+    "pk": 1,
+    "fields": {
+      "created": "2018-11-17T17:00:00.000Z",
+      "modified": "2018-11-17T17:00:00.000Z",
+      "created_by": null,
+      "modified_by": null,
+      "uuid": "28ba4ae8-6231-45e9-bba8-443c3566e09e",
+      "name": "Policy 1",
+      "schedule": 1,
+      "repository": 1,
+      "policy_type": "rootfs",
+      "enabled": true,
+      "extra_vars": "",
+      "mode_pull": false,
+      "next_run": "2018-11-19T05:00:00Z"
+    }
+  },
+  {
+    "model": "main.job",
+    "pk": 1,
+    "fields": {
+      "created": "2018-11-17T17:00:00.000Z",
+      "modified": "2018-11-17T17:00:00.000Z",
+      "created_by": null,
+      "modified_by": null,
+      "uuid": "c4624223-46dc-40db-97ab-e7d23c99775e",
+      "name": "Job Policy 1",
+      "job_type": "job",
+      "policy": 1,
+      "client": null,
+      "repository": null,
+      "old_pk": null,
+      "verbosity": 0,
+      "extra_vars": "",
+      "timeout": 0,
+      "emitted_events": 0,
+      "launch_type": "manual",
+      "cancel_flag": true,
+      "status": "successful",
+      "failed": false,
+      "started": "2018-11-17T17:00:00.000Z",
+      "finished": "2018-11-17T17:00:03.000Z",
+      "elapsed": "3.000",
+      "job_args": "",
+      "job_cwd": "",
+      "job_env": {},
+      "job_explanation": "",
+      "start_args": "",
+      "result_traceback": "",
+      "celery_task_id": "",
+      "job_pool": 0,
+      "dependent_jobs": null,
+      "original_size": 0,
+      "compressed_size": 0,
+      "deduplicated_size": 0
+    }
+  },
+  {
+    "model": "main.jobevent",
+    "pk": 1,
+    "fields": {
+      "created": "2018-11-17T17:00:00.000Z",
+      "modified": "2018-11-17T17:00:00.000Z",
+      "uuid": "",
+      "parent_uuid": "",
+      "event": "verbose",
+      "event_data": {},
+      "failed": false,
+      "changed": false,
+      "task": "",
+      "counter": 1,
+      "stdout": "Hello World",
+      "verbosity": 0,
+      "start_line": 0,
+      "end_line": 1,
+      "job": 1
+    }
+  },
+  {
+    "model": "main.jobevent",
+    "pk": 2,
+    "fields": {
+      "created": "2018-11-17T17:00:01.000Z",
+      "modified": "2018-11-17T17:00:01.000Z",
+      "uuid": "",
+      "parent_uuid": "",
+      "event": "verbose",
+      "event_data": {},
+      "failed": false,
+      "changed": false,
+      "task": "",
+      "counter": 2,
+      "stdout": "Archive name: rootfs-TEST-2018-11-17_17-00",
+      "verbosity": 0,
+      "start_line": 1,
+      "end_line": 2,
+      "job": 1
+    }
+  },
+  {
+    "model": "main.jobevent",
+    "pk": 3,
+    "fields": {
+      "created": "2018-11-17T17:00:02.000Z",
+      "modified": "2018-11-17T17:00:02.000Z",
+      "uuid": "",
+      "parent_uuid": "",
+      "event": "verbose",
+      "event_data": {},
+      "failed": false,
+      "changed": false,
+      "task": "",
+      "counter": 3,
+      "stdout": "This archive:                10.1 MB              5.5 MB                1.1 kB",
+      "verbosity": 0,
+      "start_line": 2,
+      "end_line": 3,
+      "job": 1
+    }
+  },
+  {
+    "model": "main.jobevent",
+    "pk": 4,
+    "fields": {
+      "created": "2018-11-17T17:00:03.000Z",
+      "modified": "2018-11-17T17:00:03.000Z",
+      "uuid": "",
+      "parent_uuid": "",
+      "event": "verbose",
+      "event_data": {},
+      "failed": false,
+      "changed": false,
+      "task": "",
+      "counter": 4,
+      "stdout": "All archives:                20.2 MB              10.2 MB                2.2 kB",
+      "verbosity": 0,
+      "start_line": 3,
+      "end_line": 4,
+      "job": 1
+    }
+  }
