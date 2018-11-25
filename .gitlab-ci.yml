@@ -1,0 +1,6 @@
+ before_script:
+   - make cyborgbackup-ui
+
+ build_image:
+   script:
+     - make cyborgbackup-docker-build
