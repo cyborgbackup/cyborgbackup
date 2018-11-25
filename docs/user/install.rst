@@ -26,7 +26,7 @@ CyBorgBackup is developed on GitHub, where the code is
 
 You can either clone the public repository::
 
-    $ git clone https://://github.com/gaetanf/cyborgbackup.git
+    $ git clone https://github.com/gaetanf/cyborgbackup.git
 
 Or, download the `tarball <https://github.com/gaetanf/cyborgbackup/tarball/master>`_::
 
