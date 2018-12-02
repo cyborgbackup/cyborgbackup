@@ -61,7 +61,7 @@ DEFAULT_SUMMARY_FIELDS = ('id', 'name', 'created_by', 'modified_by')#, 'type')
 # the related object to include in the summary data (if the field is present on
 # the related object).
 SUMMARIZABLE_FK_FIELDS = {
-    'user': ('id', 'username', 'first_name', 'last_name'),
+    'user': ('id', 'email', 'first_name', 'last_name'),
     'application': ('id', 'name', 'client_id'),
     'job': DEFAULT_SUMMARY_FIELDS + ('status', 'failed', 'elapsed'),
     'policy': ('id', 'name', 'policy_type'),
