@@ -805,22 +805,19 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
         return (True, opts)
 
     def start_celery_task(self, opts, error_callback, success_callback, queue):
-        if self.job_type != 'workflow':
-            kwargs = {
-                'link_error': error_callback,
-                'link': success_callback,
-                'queue': None,
-                'task_id': None,
-            }
-            if not self.celery_task_id:
-                raise RuntimeError("Expected celery_task_id to be set on model.")
-            kwargs['task_id'] = self.celery_task_id
-            task_class = self._get_task_class()
-            args = [self.pk]
-            kwargs['queue'] = 'celery'
-            async_result = task_class().apply(args, opts, **kwargs)
-        else:
-            return None
+        kwargs = {
+            'link_error': error_callback,
+            'link': success_callback,
+            'queue': None,
+            'task_id': None,
+        }
+        if not self.celery_task_id:
+            raise RuntimeError("Expected celery_task_id to be set on model.")
+        kwargs['task_id'] = self.celery_task_id
+        task_class = self._get_task_class()
+        args = [self.pk]
+        kwargs['queue'] = 'celery'
+        async_result = task_class().apply(args, opts, **kwargs)
 
     def start(self, error_callback, success_callback, **kwargs):
         '''

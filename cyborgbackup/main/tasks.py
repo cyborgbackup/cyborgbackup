@@ -12,6 +12,7 @@ import stat
 import tempfile
 import time
 import traceback
+import datetime
 import six
 from six.moves import xrange
 from urllib.parse import urlparse
@@ -74,6 +75,181 @@ Try upgrading OpenSSH or providing your private key in an different format. \
 '''
 
 logger = logging.getLogger('cyborgbackup.main.tasks')
+
+def build_report(type):
+    since = 24*60*60
+    if type == 'daily':
+        since *= 1
+    elif type == 'weekly':
+        since *= 7
+    elif type == 'monthly':
+        since *= 31
+    started = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(seconds=since)
+    jobs = Job.objects.filter(started__gte=started,job_type='job')
+    totalTimes = 0
+    totalBackups = 0
+    totalSize = 0
+    totalDeduplicated = 0
+    lines = []
+    if jobs.exists():
+        for job in jobs:
+            numberOfFiles = Catalog.objects.filter(job=job.pk).__len__()
+            totalTimes += job.elapsed
+            totalBackups += 1
+            totalSize += job.original_size
+            totalDeduplicated += job.deduplicated_size
+            line = {
+                'client': job.client.hostname,
+                'type': job.policy.policy_type,
+                'status': job.status,
+                'duration': str(datetime.timedelta(seconds=job.elapsed)),
+                'numberFiles': str(numberOfFiles),
+                'original_size': str(0),
+                'deduplicated_size': str(0)
+            }
+            lines.append(line)
+    report = {
+        'times': totalTimes,
+        'backups': totalBackups,
+        'size': totalSize,
+        'deduplicated': totalDeduplicated,
+        'lines': lines
+    }
+    return report
+
+def generate_ascii_table(elements):
+    max_size_host = 10
+    max_size_number = 9
+    max_size_security = 10
+    for elt in elements:
+        if len(elt['hostname']) > max_size_host-2:
+            max_size_host = len(elt['hostname'])+2
+        if len(str(elt['updates'])) > max_size_number-2:
+            max_size_number = len(str(elt['updates']))+2
+        if len(str(elt['security'])) > max_size_security-2:
+            max_size_security = len(str(elt['security']))+2
+    line = '+'+'-'*max_size_host+'+'+'-'*max_size_number+'+'+'-'*max_size_security+'+'+'-'*17+'+'
+    header = line + '\n' + '| '+ 'Hostname'.ljust(max_size_host-1)
+    header += '|'+ 'Updates'.rjust(max_size_number-1)
+    header += ' |'+ 'Security'.rjust(max_size_security-1)
+    header += ' | Reboot Required |' + '\n' + line
+    table = header
+    for elt in elements:
+        table += '\n' + '| '+ elt['hostname'].ljust(max_size_host-1)
+        table += '|'+ str(elt['updates']).rjust(max_size_number-1)
+        if elt['security'] == 0:
+            elt['security'] = ' '
+        table += ' |'+ str(elt['security']).rjust(max_size_security-1)
+        table += ' |'
+        if elt['reboot_required']:
+            table += ' '*8 + 'Y' + ' '*8
+        else:
+            table += ' '*8 + 'N' + ' '*8
+        table += '|'
+    table += '\n'+line
+    return table
+
+def generate_html_table(elements):
+    table = '<table>\n<thead><tr><th>Hostname</th><th>Type</th><th>State</th><th>Duration</th></tr>\n'
+    tabke += '<th>Number of files</th><th>Original Size</th><th>Deduplicated Size</th></thead>\n<tbody>'
+    i = 0
+    for elt in elements:
+        table += '<tr><td>'+elt['client']+'</td><td>'+elt['type']+'</td><td>'+elt['status']+'</td>\n'
+        table += '<td>'+elt['duration']+'</td><td>'+elt['numberFiles']+'</td>\n'
+        table += '<td>'+elt['original_size']+'</td><td>'+elt['deduplicated_size']+'</td>'
+        table += '</tr>\n'
+        i+=1
+    table += '</tbody></table>\n'
+    return table
+
+def send_email(elements, type):
+    try:
+        setting = Setting.objects.get(key='cyborgbackup_mail_from')
+        mail_address = setting.value
+    except Exception as e:
+        mail_address = 'cyborgbackup@cyborgbackup.local'
+    try:
+        setting = Setting.objects.get(key='cyborgbackup_mail_server')
+        mail_server = setting.value
+    except Exception as e:
+        mail_server = 'localhost'
+    msg = EmailMessage()
+    msg['Subject'] = 'CyBorgBackup Report'
+    msg['From'] = Address("CyBorgBackup", mail_address.split('@')[0], mail_address.split('@')[1])
+    msg['To'] = mail_to
+    asciiTable = generate_ascii_table(elements['lines'])
+    htmlTable = generate_html_table(elements['lines'])
+    logo = os.path.join(settings.BASE_DIR, 'cyborgbackup', 'logo.txt')
+    with open(logo) as f:
+        logo_text = f.read()
+    msg.set_content("""\
+CyBorgBackup Report
+{} Report of {}
+
+Number of backups : {}
+Total backup time : {}
+Total backup size : {}
+Total deduplicated size : {}
+
+{}
+""".format(type.capitalize(), datetime.datetime.now().strftime("%d/%m/%Y"),
+        elements['backups'], elements['times'],
+        elements['size'], elements['deduplicated'], asciiTable))
+    html = """\
+<html>
+  <head>
+    <title>CyBorgBackup</title>
+    <style type="text/css">
+       body { margin: 0;background-color: #F0F3F4; }
+       table {
+         border-spacing: 0;border-collapse: collapse;width: 100%;max-width: 100%;
+         font: 14px/16px "Roboto", sans-serif;color: #666666;
+       }
+       th {
+         border-top: 0; text-align: center; border-bottom: none; vertical-align: bottom;
+         white-space: nowrap;line-height: 1.42;font-weight: 400;text-align: left;padding: 8px;
+       }
+       td { text-align: center; padding: 0 8px; line-height: 35px; border-top: 1px solid gainsboro; vertical-align: top; }
+       div.content { padding: 15px 32px 15px 40px;font: 14px/16px "Roboto", sans-serif; }
+       div.card { position: relative;padding: 0 15px;float: left;box-sizing: border-box; }
+       div.panel {
+         color: #666666;background-color: #ffffff;border: none;border-radius: 5px;position: relative;
+         margin-bottom: 24px;box-shadow: 0 5px 5px 0 rgba(0, 0, 0, 0.25);box-sizing: border-box;
+       }
+       .block-top .panel > .panel-body { height: 50px; }
+       .panel > .panel-body { padding: 15px 22px;box-sizing: border-box; }
+       div.top {
+         background-color: #1C2B36; box-shadow: 2px 0px 3px rgba(0, 0, 0, 0.5);
+         height: 100px;width: 100%; min-width: 320px; padding: 10px 32px 10px 40px;
+       }
+       div.top div {
+         font-size: 24px;font-family: "Roboto", sans-serif;color: white;
+       }
+       div.top div.img { float: left;width: 150px;height: 100px; }
+       div.top div.title { margin-top: 20px; }
+    </style>
+  </head>
+  <body>
+    <div class="top"><div class="img">
+<img src=""/>
+</div><div class="title"><span style="color: #209e91;">CyBorg</span>Backup</div><div>{} Report of {}</div>
+</div><div class="content">
+<div class="card block-top"><div class="panel"><div class="panel-body">Total Backups : {}</div></div></div>
+<div class="card block-top"><div class="panel"><div class="panel-body">Total Duration : {}</div></div></div>
+<div class="card block-top"><div class="panel"><div class="panel-body">Total Size : {}</div></div></div>
+<div class="card block-top"><div class="panel"><div class="panel-body">Total Deduplicated Size : {}</div></div></div>
+<div class="card" style="clear:both"><div class="panel"><div class="panel-body">
+      {}
+</div></div></div>
+</div>
+  </body>
+</html>
+""".format(type.capitalize(), datetime.datetime.now().strftime("%d/%m/%Y"),
+        elements['backups'], elements['times'],
+        elements['size'], elements['deduplicated'], htmlTable)
+    msg.add_alternative(html, subtype='html')
+    with smtplib.SMTP(mail_server) as s:
+        s.send_message(msg)
 
 @contextmanager
 def advisory_lock(*args, **kwargs):
@@ -186,6 +362,23 @@ def compute_borg_size(self):
                         repo.deduplicated_size = parseSize(m.group(3))
                         repo.save()
                         break
+
+@shared_task(bind=True, base=LogErrorsTask)
+def cyborgbackup_notifier(self, type, *kwargs):
+    logger.debug('CyBorgBackup Notifier')
+    users = None
+    logger.debug(kwargs)
+    if type in ('daily', 'weekly', 'monthly'):
+        if type == 'daily':
+            users = User.objects.filter(notify_backup_daily=True)
+        if type == 'weekly':
+            users = User.objects.filter(notify_backup_weekly=True)
+        if type == 'monthly':
+            users = User.objects.filter(notify_backup_monthly=True)
+        if users and users.exists():
+            report = build_report(type)
+            send_email(report, type)
+
 
 @shared_task(bind=True, base=LogErrorsTask)
 def prune_catalog(self):
@@ -666,6 +859,12 @@ class RunJob(BaseTask):
     model = Job
     event_model = JobEvent
     event_data_key = 'job_id'
+
+    def final_run_hook(self, instance, status, **kwargs):
+        '''
+        Hook for any steps to run after job/task is marked as complete.
+        '''
+        cyborgbackup_notifier.apply_async(args=('after', instance.pk))
 
     def build_passwords(self, job, **kwargs):
         '''

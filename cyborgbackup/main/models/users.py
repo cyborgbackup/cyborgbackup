@@ -18,6 +18,24 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_agent = models.BooleanField(
         default=False
     )
+    notify_backup_failed = models.BooleanField(
+        default=False
+    )
+    notify_backup_success = models.BooleanField(
+        default=False
+    )
+    notify_backup_summary = models.BooleanField(
+        default=False
+    )
+    notify_backup_daily = models.BooleanField(
+        default=False
+    )
+    notify_backup_weekly = models.BooleanField(
+        default=False
+    )
+    notify_backup_monthly = models.BooleanField(
+        default=False
+    )
     #avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
 
     objects = UserManager()

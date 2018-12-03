@@ -20,6 +20,8 @@ from cyborgbackup.main.models.base import CreatedModifiedModel, PrimordialModel
 from cyborgbackup.main.models.settings import Setting
 from cyborgbackup.main.consumers import emit_channel_notification
 
+from cyborgbackup.celery import app
+
 logger = logging.getLogger('cyborgbackup.models.policy')
 
 __all__ = ['Policy']
@@ -231,6 +233,8 @@ class Policy(PrimordialModel):
                 auto_prune_enabled=False
         except Exception as e:
             auto_prune_enabled=True
+
+        app.send_task('cyborgbackup_notifier', args=('summary',self.pk))
 
         jobs = []
         previous_job = None

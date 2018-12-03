@@ -37,7 +37,7 @@ angular.module('CyBorgBackup', [
 }])
 .filter('settingName', function(){
     return function(input){
-        names = input.replace('cyborgbackup_', '').split('_')
+        var names = input.replace('cyborgbackup_', '').split('_')
         for(var i=0; i<names.length; i++){ names[i] = names[i].replace(/^\w/, c => c.toUpperCase()); }
         return names.join(' ');
     };

@@ -313,6 +313,21 @@ CELERY_BEAT_SCHEDULE_FILENAME = os.path.join(
     'celerybeat-schedule')
 CELERY_BEAT_MAX_LOOP_INTERVAL = 60
 CELERY_BEAT_SCHEDULE = {
+    'cyborgbackup_notify_daily': {
+        'task': 'cyborgbackup.main.tasks.cyborgbackup_notifier',
+        'schedule': crontab(minute='*'),
+        'args': ('daily',)
+    },
+    'cyborgbackup_notify_weekly': {
+        'task': 'cyborgbackup.main.tasks.cyborgbackup_notifier',
+        'schedule': crontab(hour=0, minute=0, day_of_week=6),
+        'args': ('weekly',)
+    },
+    'cyborgbackup_notify_monthly': {
+        'task': 'cyborgbackup.main.tasks.cyborgbackup_notifier',
+        'schedule': crontab(hour=0, minute=0, day_of_month=1),
+        'args': ('monthly',)
+    },
     'cyborgbackup_scheduler': {
         'task': 'cyborgbackup.main.tasks.cyborgbackup_periodic_scheduler',
         'schedule': timedelta(seconds=30),

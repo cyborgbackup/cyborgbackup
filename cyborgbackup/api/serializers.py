@@ -553,9 +553,12 @@ class UserSerializer(BaseSerializer):
 
     class Meta:
         model = User
-        fields = ('*', '-name', '-description', '-modified',
-                  '-username', 'first_name', 'last_name',
-                  'email', 'is_superuser', 'password', '-created_by', '-modified_by')
+        fields = ('*', '-name', '-description', '-modified', '-username',
+                'first_name', 'last_name', 'email', 'is_superuser', 'password',
+                '-created_by', '-modified_by', 'notify_backup_daily',
+                'notify_backup_weekly', 'notify_backup_monthly',
+                'notify_backup_success', 'notify_backup_failed',
+                'notify_backup_summary')
 
     def to_representation(self, obj):
         ret = super(UserSerializer, self).to_representation(obj)
