@@ -234,7 +234,7 @@ class Policy(PrimordialModel):
         except Exception as e:
             auto_prune_enabled=True
 
-        app.send_task('cyborgbackup_notifier', args=('summary',self.pk))
+        app.send_task('cyborgbackup.main.tasks.cyborgbackup_notifier', args=('summary',self.pk))
 
         jobs = []
         previous_job = None

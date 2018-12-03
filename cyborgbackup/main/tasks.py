@@ -14,6 +14,10 @@ import time
 import traceback
 import datetime
 import six
+import smtplib
+from email.message import EmailMessage
+from email.headerregistry import Address
+from email.utils import make_msgid
 from six.moves import xrange
 from urllib.parse import urlparse
 from distutils.version import LooseVersion as Version
@@ -102,10 +106,10 @@ def build_report(type):
                 'client': job.client.hostname,
                 'type': job.policy.policy_type,
                 'status': job.status,
-                'duration': str(datetime.timedelta(seconds=job.elapsed)),
+                'duration': str(datetime.timedelta(seconds=float(job.elapsed))),
                 'numberFiles': str(numberOfFiles),
-                'original_size': str(0),
-                'deduplicated_size': str(0)
+                'original_size': str(job.original_size),
+                'deduplicated_size': str(job.deduplicated_size)
             }
             lines.append(line)
     report = {
@@ -119,39 +123,53 @@ def build_report(type):
 
 def generate_ascii_table(elements):
     max_size_host = 10
-    max_size_number = 9
-    max_size_security = 10
+    max_size_type = 6
+    max_size_status = 8
+    max_size_duration = 10
+    max_size_numberFiles = 17
+    max_size_size = 15
+    max_size_dedupSize = 19
     for elt in elements:
-        if len(elt['hostname']) > max_size_host-2:
-            max_size_host = len(elt['hostname'])+2
-        if len(str(elt['updates'])) > max_size_number-2:
-            max_size_number = len(str(elt['updates']))+2
-        if len(str(elt['security'])) > max_size_security-2:
-            max_size_security = len(str(elt['security']))+2
-    line = '+'+'-'*max_size_host+'+'+'-'*max_size_number+'+'+'-'*max_size_security+'+'+'-'*17+'+'
+        if len(elt['client']) > max_size_host-2:
+            max_size_host = len(elt['client'])+2
+        if len(elt['type']) > max_size_type-2:
+            max_size_type = len(elt['type'])+2
+        if len(str(elt['status'])) > max_size_status-2:
+            max_size_status = len(elt['status'])+2
+        if len(str(elt['duration'])) > max_size_duration-2:
+            max_size_duration = len(elt['duration'])+2
+        if len(str(elt['numberFiles'])) > max_size_numberFiles-2:
+            max_size_numberFiles = len(elt['numberFiles'])+2
+        if len(str(elt['original_size'])) > max_size_size-2:
+            max_size_size = len(elt['original_size'])+2
+        if len(str(elt['deduplicated_size'])) > max_size_dedupSize-2:
+            max_size_dedupSize = len(elt['deduplicated_size'])+2
+    line = '+'+'-'*max_size_host+'+'+'-'*max_size_type+'+'+'-'*max_size_status+'+'
+    line += '-'*max_size_duration+'+'+'-'*max_size_numberFiles+'+'+'-'*max_size_size+'+'
+    line += '-'*max_size_dedupSize+'+'
     header = line + '\n' + '| '+ 'Hostname'.ljust(max_size_host-1)
-    header += '|'+ 'Updates'.rjust(max_size_number-1)
-    header += ' |'+ 'Security'.rjust(max_size_security-1)
-    header += ' | Reboot Required |' + '\n' + line
+    header += '|'+ 'Type'.rjust(max_size_type-1)
+    header += ' |'+ 'Status'.rjust(max_size_status-1)
+    header += ' |'+ 'Duration'.rjust(max_size_duration-1)
+    header += ' |'+ 'Number of Files'.rjust(max_size_numberFiles-1)
+    header += ' |'+ 'Original Size'.rjust(max_size_size-1)
+    header += ' |'+ 'Deduplicated Size'.rjust(max_size_dedupSize-1) +' |' + '\n' + line
     table = header
     for elt in elements:
-        table += '\n' + '| '+ elt['hostname'].ljust(max_size_host-1)
-        table += '|'+ str(elt['updates']).rjust(max_size_number-1)
-        if elt['security'] == 0:
-            elt['security'] = ' '
-        table += ' |'+ str(elt['security']).rjust(max_size_security-1)
+        table += '\n' + '| '+ elt['client'].ljust(max_size_host-1)
+        table += '|'+ elt['type'].rjust(max_size_type-1)
+        table += ' |'+ elt['status'].rjust(max_size_status-1)
+        table += ' |'+ elt['duration'].rjust(max_size_duration-1)
+        table += ' |'+ elt['numberFiles'].rjust(max_size_numberFiles-1)
+        table += ' |'+ elt['original_size'].rjust(max_size_size-1)
+        table += ' |'+ elt['deduplicated_size'].rjust(max_size_dedupSize-1)
         table += ' |'
-        if elt['reboot_required']:
-            table += ' '*8 + 'Y' + ' '*8
-        else:
-            table += ' '*8 + 'N' + ' '*8
-        table += '|'
     table += '\n'+line
     return table
 
 def generate_html_table(elements):
-    table = '<table>\n<thead><tr><th>Hostname</th><th>Type</th><th>State</th><th>Duration</th></tr>\n'
-    tabke += '<th>Number of files</th><th>Original Size</th><th>Deduplicated Size</th></thead>\n<tbody>'
+    table = '<table>\n<thead><tr><th>Hostname</th><th>Type</th><th>State</th><th>Duration</th>\n'
+    table += '<th>Number of files</th><th>Original Size</th><th>Deduplicated Size</th></tr></thead>\n<tbody>'
     i = 0
     for elt in elements:
         table += '<tr><td>'+elt['client']+'</td><td>'+elt['type']+'</td><td>'+elt['status']+'</td>\n'
@@ -162,7 +180,7 @@ def generate_html_table(elements):
     table += '</tbody></table>\n'
     return table
 
-def send_email(elements, type):
+def send_email(elements, type, mail_to):
     try:
         setting = Setting.objects.get(key='cyborgbackup_mail_from')
         mail_address = setting.value
@@ -182,20 +200,21 @@ def send_email(elements, type):
     logo = os.path.join(settings.BASE_DIR, 'cyborgbackup', 'logo.txt')
     with open(logo) as f:
         logo_text = f.read()
-    msg.set_content("""\
-CyBorgBackup Report
-{} Report of {}
+    if type in ('daily', 'weekly', 'monthly'):
+        msg.set_content("""\
+    CyBorgBackup Report
+    {} Report of {}
 
-Number of backups : {}
-Total backup time : {}
-Total backup size : {}
-Total deduplicated size : {}
+    Number of backups : {}
+    Total backup time : {}
+    Total backup size : {}
+    Total deduplicated size : {}
 
-{}
-""".format(type.capitalize(), datetime.datetime.now().strftime("%d/%m/%Y"),
-        elements['backups'], elements['times'],
-        elements['size'], elements['deduplicated'], asciiTable))
-    html = """\
+    {}
+    """.format(type.capitalize(), datetime.datetime.now().strftime("%d/%m/%Y"),
+            elements['backups'], elements['times'],
+            elements['size'], elements['deduplicated'], asciiTable))
+    header = """\
 <html>
   <head>
     <title>CyBorgBackup</title>
@@ -207,7 +226,7 @@ Total deduplicated size : {}
        }
        th {
          border-top: 0; text-align: center; border-bottom: none; vertical-align: bottom;
-         white-space: nowrap;line-height: 1.42;font-weight: 400;text-align: left;padding: 8px;
+         white-space: nowrap;line-height: 1.42;font-weight: 400;padding: 8px;
        }
        td { text-align: center; padding: 0 8px; line-height: 35px; border-top: 1px solid gainsboro; vertical-align: top; }
        div.content { padding: 15px 32px 15px 40px;font: 14px/16px "Roboto", sans-serif; }
@@ -222,6 +241,13 @@ Total deduplicated size : {}
          background-color: #1C2B36; box-shadow: 2px 0px 3px rgba(0, 0, 0, 0.5);
          height: 100px;width: 100%; min-width: 320px; padding: 10px 32px 10px 40px;
        }
+      .alert-failed { color: #721c24;background-color: #f8d7da;border-color: #f5c6cb; }
+      .alert-success { color: #155724;background-color: #d4edda;border-color: #c3e6cb; }
+      .alert {
+        font-size: 15px;position: relative;padding: .75rem 1.25rem;
+        margin-bottom: 1rem;border: 1px solid transparent;border-radius: .25rem;
+      }
+      .alert img { width: 17px;vertical-align: middle;margin-right: 10px; }
        div.top div {
          font-size: 24px;font-family: "Roboto", sans-serif;color: white;
        }
@@ -230,24 +256,54 @@ Total deduplicated size : {}
     </style>
   </head>
   <body>
-    <div class="top"><div class="img">
-<img src=""/>
+    <div class="top"><div class="img">"""
+    header += '<img src="{}"/>'.format(logo_text)
+
+    if type in ('daily', 'weekly', 'monthly'):
+        header += """\
 </div><div class="title"><span style="color: #209e91;">CyBorg</span>Backup</div><div>{} Report of {}</div>
-</div><div class="content">
+</div>""".format(type.capitalize(), datetime.datetime.now().strftime("%d/%m/%Y"))
+    elif type == 'after':
+        header += """\
+</div><div class="title"><span style="color: #209e91;">CyBorg</span>Backup</div><div>Backup Job Report</div>
+</div>""".format(type.capitalize())
+    else:
+        header += """\
+</div><div class="title"><span style="color: #209e91;">CyBorg</span>Backup</div><div>{} Report</div>
+</div>""".format(type.capitalize())
+
+    header += '<div class="content">'
+
+    if type in ('daily', 'weekly', 'monthly'):
+        header += """\
 <div class="card block-top"><div class="panel"><div class="panel-body">Total Backups : {}</div></div></div>
 <div class="card block-top"><div class="panel"><div class="panel-body">Total Duration : {}</div></div></div>
 <div class="card block-top"><div class="panel"><div class="panel-body">Total Size : {}</div></div></div>
 <div class="card block-top"><div class="panel"><div class="panel-body">Total Deduplicated Size : {}</div></div></div>
+""".format(elements['backups'], elements['times'],
+        elements['size'], elements['deduplicated'])
+    elif type == 'after':
+        if elements['state'] == 'successful':
+            logo = os.path.join(settings.BASE_DIR, 'cyborgbackup', 'icon_success.txt')
+            with open(logo) as f:
+                state_icon = f.read()
+            css_class = "alert-success"
+        else:
+            logo = os.path.join(settings.BASE_DIR, 'cyborgbackup', 'icon_failed.txt')
+            with open(logo) as f:
+                state_icon = f.read()
+            css_class = "alert-failed"
+        header += '<div class="alert {}"><img src="{}" />{}</div>'.format(css_class, state_icon, elements['title'])
+
+    content = """\
 <div class="card" style="clear:both"><div class="panel"><div class="panel-body">
       {}
 </div></div></div>
-</div>
-  </body>
-</html>
-""".format(type.capitalize(), datetime.datetime.now().strftime("%d/%m/%Y"),
-        elements['backups'], elements['times'],
-        elements['size'], elements['deduplicated'], htmlTable)
+</div>""".format(htmlTable)
+
+    html = header + content + '</body></html>'
     msg.add_alternative(html, subtype='html')
+    logger.debug('Send Email')
     with smtplib.SMTP(mail_server) as s:
         s.send_message(msg)
 
@@ -367,7 +423,6 @@ def compute_borg_size(self):
 def cyborgbackup_notifier(self, type, *kwargs):
     logger.debug('CyBorgBackup Notifier')
     users = None
-    logger.debug(kwargs)
     if type in ('daily', 'weekly', 'monthly'):
         if type == 'daily':
             users = User.objects.filter(notify_backup_daily=True)
@@ -377,7 +432,26 @@ def cyborgbackup_notifier(self, type, *kwargs):
             users = User.objects.filter(notify_backup_monthly=True)
         if users and users.exists():
             report = build_report(type)
-            send_email(report, type)
+            for user in users:
+                send_email(report, type, user.email)
+    else:
+        if type == 'summary':
+            logger.debug('Summary')
+            policy_pk = kwargs[0]
+            policy = Policy.objects.get(pk=policy_pk)
+            users = User.objects.filter(notify_backup_summary=True)
+            report = {'lines':[]}
+        if type == 'after':
+            logger.debug('After Backup')
+            job_pk = kwargs[0]
+            job = Job.objects.get(pk=job_pk)
+            if job.status == 'successful':
+                users = User.objects.filter(notify_backup_summary=True)
+            if job.status == 'failed':
+                users = User.objects.filter(notify_backup_failed=True)
+            report = {'state': job.status, 'title':job.name, 'lines':[]}
+        for user in users:
+            send_email(report, type, user.email)
 
 
 @shared_task(bind=True, base=LogErrorsTask)
@@ -864,7 +938,8 @@ class RunJob(BaseTask):
         '''
         Hook for any steps to run after job/task is marked as complete.
         '''
-        cyborgbackup_notifier.apply_async(args=('after', instance.pk))
+        if instance.job_type == 'job':
+            cyborgbackup_notifier.apply_async(args=('after', instance.pk))
 
     def build_passwords(self, job, **kwargs):
         '''

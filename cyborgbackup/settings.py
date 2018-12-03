@@ -315,7 +315,7 @@ CELERY_BEAT_MAX_LOOP_INTERVAL = 60
 CELERY_BEAT_SCHEDULE = {
     'cyborgbackup_notify_daily': {
         'task': 'cyborgbackup.main.tasks.cyborgbackup_notifier',
-        'schedule': crontab(minute='*'),
+        'schedule': crontab(minute='0', hour='*'),
         'args': ('daily',)
     },
     'cyborgbackup_notify_weekly': {
