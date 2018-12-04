@@ -1,5 +1,6 @@
 <div ba-panel ba-panel-class="profile-page" ng-controller="ProfilePageCtrl as profile">
   <div class="panel-content">
+    <form name="$ctrl.profileForm">
 
     <h3 class="with-line">General Information</h3>
 
@@ -132,7 +133,7 @@
         </div>
       </div>
     </div>
-    <button type="button" class="btn btn-primary btn-with-icon save-profile">
+    <button ng-click="formSave()" type="button" class="btn btn-primary btn-with-icon save-profile">
       <i class="ion-android-checkmark-circle"></i>Update Profile
     </button>
   </div>

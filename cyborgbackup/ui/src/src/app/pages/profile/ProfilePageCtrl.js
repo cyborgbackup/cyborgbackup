@@ -5,7 +5,7 @@
     .controller('ProfilePageCtrl', ProfilePageCtrl);
 
   /** @ngInject */
-  function ProfilePageCtrl($scope, $rootScope, fileReader, $filter, $uibModal, baAuthentication) {
+  function ProfilePageCtrl($scope, $rootScope, $state, Rest, toastr, fileReader, $filter, $uibModal, baAuthentication) {
     $scope.picture = $filter('appImage')('theme/no-photo.png');
     $scope.user = $rootScope.current_user;
 
@@ -41,7 +41,22 @@
           });
     };
 
-    $scope.switches = [true, true, false, true, true, false];
+    $scope.formSave = function() {
+        $rootScope.flashMessage = null;
+        if (this.$ctrl.profileForm.$valid) {
+            console.log($rootScope.current_user);
+            Rest.setUrl($rootScope.current_user.url);
+            var data = $scope.user;
+            Rest.put(data).then(() => {
+                $rootScope.current_user = $scope.user;
+                toastr.success("Profile successfully updated !", "Update profile");
+                $state.go('user.list', null, { reload: true });
+            })
+            .catch(({data, status}) => {
+                toastr.error('Failed to update profile. GET status: ' + status, "Error!");
+            });
+        }
+    };
   }
 
 })();
