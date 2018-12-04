@@ -122,63 +122,43 @@ def build_report(type):
     return report
 
 def generate_ascii_table(elements):
-    max_size_host = 10
-    max_size_type = 6
-    max_size_status = 8
-    max_size_duration = 10
-    max_size_numberFiles = 17
-    max_size_size = 15
-    max_size_dedupSize = 19
-    for elt in elements:
-        if len(elt['client']) > max_size_host-2:
-            max_size_host = len(elt['client'])+2
-        if len(elt['type']) > max_size_type-2:
-            max_size_type = len(elt['type'])+2
-        if len(str(elt['status'])) > max_size_status-2:
-            max_size_status = len(elt['status'])+2
-        if len(str(elt['duration'])) > max_size_duration-2:
-            max_size_duration = len(elt['duration'])+2
-        if len(str(elt['numberFiles'])) > max_size_numberFiles-2:
-            max_size_numberFiles = len(elt['numberFiles'])+2
-        if len(str(elt['original_size'])) > max_size_size-2:
-            max_size_size = len(elt['original_size'])+2
-        if len(str(elt['deduplicated_size'])) > max_size_dedupSize-2:
-            max_size_dedupSize = len(elt['deduplicated_size'])+2
-    line = '+'+'-'*max_size_host+'+'+'-'*max_size_type+'+'+'-'*max_size_status+'+'
-    line += '-'*max_size_duration+'+'+'-'*max_size_numberFiles+'+'+'-'*max_size_size+'+'
-    line += '-'*max_size_dedupSize+'+'
-    header = line + '\n' + '| '+ 'Hostname'.ljust(max_size_host-1)
-    header += '|'+ 'Type'.rjust(max_size_type-1)
-    header += ' |'+ 'Status'.rjust(max_size_status-1)
-    header += ' |'+ 'Duration'.rjust(max_size_duration-1)
-    header += ' |'+ 'Number of Files'.rjust(max_size_numberFiles-1)
-    header += ' |'+ 'Original Size'.rjust(max_size_size-1)
-    header += ' |'+ 'Deduplicated Size'.rjust(max_size_dedupSize-1) +' |' + '\n' + line
+    for elt in elements['lines']:
+        for col in elements['columns']:
+            if len(elt[col['key']]) > col['minsize']-2:
+                col['minsize'] = len(elt[col['key']])+2
+    line = '+'
+    for col in elements['columns']:
+        line += '-'*col['minsize']+'+'
+    header = line + '\n'
+    for col in elements['columns']:
+        header += '| '+ col['title'].ljust(col['minsize']-1)
+    header += '|' + '\n' + line
     table = header
-    for elt in elements:
-        table += '\n' + '| '+ elt['client'].ljust(max_size_host-1)
-        table += '|'+ elt['type'].rjust(max_size_type-1)
-        table += ' |'+ elt['status'].rjust(max_size_status-1)
-        table += ' |'+ elt['duration'].rjust(max_size_duration-1)
-        table += ' |'+ elt['numberFiles'].rjust(max_size_numberFiles-1)
-        table += ' |'+ elt['original_size'].rjust(max_size_size-1)
-        table += ' |'+ elt['deduplicated_size'].rjust(max_size_dedupSize-1)
-        table += ' |'
+    for elt in elements['lines']:
+        table += '\n'
+        for col in elements['columns']:
+            table += '| '+ elt[col['key']].ljust(col['minsize']-1)
+        table += '|'
     table += '\n'+line
     return table
 
 def generate_html_table(elements):
-    table = '<table>\n<thead><tr><th>Hostname</th><th>Type</th><th>State</th><th>Duration</th>\n'
-    table += '<th>Number of files</th><th>Original Size</th><th>Deduplicated Size</th></tr></thead>\n<tbody>'
+    table = '<table>\n<thead><tr>'
+    for col in elements['columns']:
+        table += '<th>'+col['title']+'</th>\n'
+    table += '</tr></thead>\n<tbody>'
     i = 0
-    for elt in elements:
-        table += '<tr><td>'+elt['client']+'</td><td>'+elt['type']+'</td><td>'+elt['status']+'</td>\n'
-        table += '<td>'+elt['duration']+'</td><td>'+elt['numberFiles']+'</td>\n'
-        table += '<td>'+elt['original_size']+'</td><td>'+elt['deduplicated_size']+'</td>'
+    for elt in elements['lines']:
+        table += '<tr>'
+        for col in elements['columns']:
+            table += '<td>'+elt[col['key']]+'</td>\n'
         table += '</tr>\n'
         i+=1
     table += '</tbody></table>\n'
     return table
+
+def generate_html_joboutput(elements):
+    return ''
 
 def send_email(elements, type, mail_to):
     try:
@@ -195,14 +175,17 @@ def send_email(elements, type, mail_to):
     msg['Subject'] = 'CyBorgBackup Report'
     msg['From'] = Address("CyBorgBackup", mail_address.split('@')[0], mail_address.split('@')[1])
     msg['To'] = mail_to
-    asciiTable = generate_ascii_table(elements['lines'])
-    htmlTable = generate_html_table(elements['lines'])
+    if type != 'alert':
+        asciiTable = generate_ascii_table(elements)
+        htmlTable = generate_html_table(elements)
+    else:
+        htmlTable = generate_html_joboutput(elements)
     logo = os.path.join(settings.BASE_DIR, 'cyborgbackup', 'logo.txt')
     with open(logo) as f:
         logo_text = f.read()
     if type in ('daily', 'weekly', 'monthly'):
         msg.set_content("""\
-    CyBorgBackup Report
+CyBorgBackup Report
     {} Report of {}
 
     Number of backups : {}
@@ -210,10 +193,25 @@ def send_email(elements, type, mail_to):
     Total backup size : {}
     Total deduplicated size : {}
 
-    {}
-    """.format(type.capitalize(), datetime.datetime.now().strftime("%d/%m/%Y"),
+{}
+""".format(type.capitalize(), datetime.datetime.now().strftime("%d/%m/%Y"),
             elements['backups'], elements['times'],
             elements['size'], elements['deduplicated'], asciiTable))
+    if type in ('summary'):
+        msg.set_content("""\
+CyBorgBackup Summary Report
+
+{}
+""".format(asciiTable))
+    if type in ('after'):
+        msg.set_content("""\
+CyBorgBackup Backup Report
+
+{} : {}
+
+Job output :
+{}
+""".format(elements['title'], elements['state'], elements['lines']))
     header = """\
 <html>
   <head>
@@ -432,6 +430,15 @@ def cyborgbackup_notifier(self, type, *kwargs):
             users = User.objects.filter(notify_backup_monthly=True)
         if users and users.exists():
             report = build_report(type)
+            report['columns'] = [
+                {'title': 'Hostname', 'key': 'client', 'minsize': 10},
+                {'title': 'Type', 'key': 'type', 'minsize': 6},
+                {'title': 'Status', 'key': 'status', 'minsize': 8},
+                {'title': 'Duration', 'key': 'duration', 'minsize': 10},
+                {'title': 'Number of Files', 'key': 'numberFiles', 'minsize': 17},
+                {'title': 'Original Size', 'key': 'original_size', 'minsize': 15},
+                {'title': 'Deduplicated Size', 'key': 'deduplicated_size', 'minsize': 19}
+            ]
             for user in users:
                 send_email(report, type, user.email)
     else:
@@ -440,7 +447,70 @@ def cyborgbackup_notifier(self, type, *kwargs):
             policy_pk = kwargs[0]
             policy = Policy.objects.get(pk=policy_pk)
             users = User.objects.filter(notify_backup_summary=True)
+            try:
+                setting = Setting.objects.get(key='cyborgbackup_catalog_enabled')
+                if setting.value == 'True':
+                    catalog_enabled=True
+                else:
+                    catalog_enabled=False
+            except Exception as e:
+                catalog_enabled=True
+
+            try:
+                setting = Setting.objects.get(key='cyborgbackup_auto_prune')
+                if setting.value == 'True':
+                    auto_prune_enabled=True
+                else:
+                    auto_prune_enabled=False
+            except Exception as e:
+                auto_prune_enabled=True
             report = {'lines':[]}
+            order=1
+            report['lines'].append({
+                'order': str(order),
+                'title': 'Policy {}'.format(policy.name),
+                'type': 'policy'
+            })
+            order+=1
+            if not policy.repository.ready:
+                report['lines'].append({
+                    'order': str(order),
+                    'title': "Prepare Repository {}".format(policy.repository.name),
+                    'type': "repository"
+                })
+            for client in policy.clients.all():
+                if not client.ready:
+                    order+=1
+                    report['lines'].append({
+                        'order': str(order),
+                        'title': "Prepare Client {}".format(client.hostname),
+                        'type': "client"
+                    })
+                order+=1
+                report['lines'].append({
+                    'order': str(order),
+                    'title': "Backup Job {} {}".format(policy.name, client.hostname),
+                    'type': policy.policy_type
+                })
+                if catalog_enabled:
+                    order+=1
+                    report['lines'].append({
+                        'order': str(order),
+                        'title': "Catalog Job {} {}".format(policy.name, client.hostname),
+                        'type': "catalog"
+                    })
+                if auto_prune_enabled:
+                    order+=1
+                    report['lines'].append({
+                        'order': str(order),
+                        'title': "Prune Job {} {}".format(policy.name, client.hostname),
+                        'type': "prune"
+                    })
+            report['columns'] = [
+                {'title': 'Order', 'key': 'order', 'minsize': 7},
+                {'title': 'Title', 'key': 'title', 'minsize': 7},
+                {'title': 'Type', 'key': 'type', 'minsize': 6}
+            ]
         if type == 'after':
             logger.debug('After Backup')
             job_pk = kwargs[0]
@@ -449,7 +519,7 @@ def cyborgbackup_notifier(self, type, *kwargs):
                 users = User.objects.filter(notify_backup_summary=True)
             if job.status == 'failed':
                 users = User.objects.filter(notify_backup_failed=True)
-            report = {'state': job.status, 'title':job.name, 'lines':[]}
+            report = {'state': job.status, 'title':job.name, 'output': ''}
         for user in users:
             send_email(report, type, user.email)
 
