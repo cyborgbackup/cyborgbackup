@@ -65,22 +65,23 @@ def get_module_provider():
     importlib.invalidate_caches()
     provider_dir = settings.PROVIDER_DIR
     data = []
-    for p in os.listdir(provider_dir):
-        try:
-            if os.path.isfile(os.path.join(provider_dir, p, '__init__.py')):
-                spec = importlib.util.spec_from_file_location(p, os.path.join(provider_dir, p, '__init__.py'))
-                loadedmodule = importlib.util.module_from_spec(spec)
-                spec.loader.exec_module(loadedmodule)
-                if hasattr(loadedmodule, 'module_name') and hasattr(loadedmodule, 'module_type'):
-                    if loadedmodule.module_type() == 'vm':
-                        module_name = loadedmodule.module_name()
-                        extra_vars=''
-                        if hasattr(loadedmodule, 'module_extra_vars'):
-                            extra_vars = loadedmodule.module_extra_vars()
-                        data.append({'module': p, 'name': module_name, 'extra_vars': extra_vars})
-                del loadedmodule
-        except Exception as e:
-            pass
+    if os.path.isdir(provider_dir):
+        for p in os.listdir(provider_dir):
+            try:
+                if os.path.isfile(os.path.join(provider_dir, p, '__init__.py')):
+                    spec = importlib.util.spec_from_file_location(p, os.path.join(provider_dir, p, '__init__.py'))
+                    loadedmodule = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(loadedmodule)
+                    if hasattr(loadedmodule, 'module_name') and hasattr(loadedmodule, 'module_type'):
+                        if loadedmodule.module_type() == 'vm':
+                            module_name = loadedmodule.module_name()
+                            extra_vars=''
+                            if hasattr(loadedmodule, 'module_extra_vars'):
+                                extra_vars = loadedmodule.module_extra_vars()
+                            data.append({'module': p, 'name': module_name, 'extra_vars': extra_vars})
+                    del loadedmodule
+            except Exception as e:
+                pass
     del importlib
     del pkgutil
     return data
