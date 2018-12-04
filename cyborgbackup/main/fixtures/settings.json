@@ -130,5 +130,16 @@
       "value": "",
       "setting_type": "boolean"
     }
+  },
+  {
+    "model": "main.setting",
+    "pk": 13,
+    "fields": {
+      "created": "2018-11-17T00:00:00.000Z",
+      "modified": "2018-11-17T00:00:00.000Z",
+      "key": "cyborgbackup_mail_server",
+      "value": "",
+      "setting_type": "boolean"
+    }
   }
 ]
