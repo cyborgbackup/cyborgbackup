@@ -66,8 +66,8 @@ SUMMARIZABLE_FK_FIELDS = {
     'job': DEFAULT_SUMMARY_FIELDS + ('status', 'failed', 'elapsed'),
     'policy': ('id', 'name', 'policy_type'),
     'client': ('id', 'hostname'),
-    'repository': ('id', 'name', 'path'),
-    'schedule': ('id', 'name', 'crontab')
+    'repository': ('id', 'name', 'path', 'enabled'),
+    'schedule': ('id', 'name', 'crontab', 'enabled')
 }
 
 
