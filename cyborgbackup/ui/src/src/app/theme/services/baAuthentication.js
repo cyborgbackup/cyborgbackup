@@ -34,7 +34,7 @@
             url: '/api/login/'
         });
         return getCSRFToken.then(function(data) {
-            var csrfmiddlewaretoken = /name='csrfmiddlewaretoken' value='([0-9a-zA-Z]+)' \//.exec(data.data)[1];
+	    var csrfmiddlewaretoken = /name="csrfmiddlewaretoken" value="([0-9a-zA-Z]+)"/.exec(data.data)[1]
             return $http({
                 method: 'POST',
                 url: '/api/login/',
