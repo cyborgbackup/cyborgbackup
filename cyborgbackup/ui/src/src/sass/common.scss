@@ -235,3 +235,8 @@ table.jobList thead th.smartColumn {
   padding-top: 6px;
   padding-left: 40px;
 }
+
+.calendar-event-disable {
+  opacity: 0.5;
+  background-image: repeating-linear-gradient(-45deg, #40beb1, #40beb1 5px, #209e91 5px, #209e91 10px);
+}
