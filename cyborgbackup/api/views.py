@@ -643,7 +643,10 @@ class PolicyCalendar(ListAPIView):
         obj = self.get_object()
         now = datetime.datetime.now(pytz.utc)
         start_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        end_month = datetime.datetime(now.year, (start_month + dateutil.relativedelta.relativedelta(months=1)).month, 1) - datetime.timedelta(days=1)
+        year = now.year
+        if start_month.month == 12:
+            year +=1
+        end_month = datetime.datetime(year, (start_month + dateutil.relativedelta.relativedelta(months=1)).month, 1) - datetime.timedelta(days=1)
         end_month = end_month.replace(hour=23, minute=59, second=50, tzinfo=pytz.utc)
         schedule = tzcron.Schedule(obj.schedule.crontab, pytz.utc, start_month, end_month)
         return Response([s.isoformat() for s in schedule])
