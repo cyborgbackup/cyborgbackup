@@ -1,0 +1,8 @@
+#!/bin/bash
+
+if [ -f /var/lib/cyborgbackup/venv/bin/activate ]; then
+  . /var/lib/cyborgbackup/venv/bin/activate
+fi
+
+# Run the requested Python command, using the interpreter from the path
+exec python "$@"
