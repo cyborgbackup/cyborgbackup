@@ -1,4 +1,4 @@
-sudo: false
+sudo: true
 language: python
 services:
   - postgresql
@@ -12,9 +12,9 @@ install:
 before_script:
   - psql -c 'create database cyborgbackup;' -U postgres
   - psql -c "CREATE USER cyborgbackup WITH PASSWORD 'cyborgbackup';" -U postgres
-  - rabbitmqctl add_vhost 'cyborgbackup'
-  - rabbitmqctl add_user cyborgbackup cyborgbackup
-  - rabbitmqctl set_permissions -p cyborgbackup cyborgbackup ".*" ".*" ".*"
+  - sudo rabbitmqctl add_vhost cyborgbackup
+  - sudo rabbitmqctl add_user cyborgbackup cyborgbackup
+  - sudo rabbitmqctl set_permissions -p cyborgbackup cyborgbackup ".*" ".*" ".*"
   - make initenv
   - python manage.py migrate
   - python manage.py create_preload_data
