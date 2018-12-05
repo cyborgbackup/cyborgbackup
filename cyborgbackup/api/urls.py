@@ -70,6 +70,14 @@ policy_urls = [
 ]
 
 from cyborgbackup.api.views import (
+    Stats
+)
+
+stats_urls = [
+    url(r'^$', Stats.as_view(), name='stats'),
+]
+
+from cyborgbackup.api.views import (
     JobEventList,
     JobEventDetail,
 )
@@ -141,6 +149,7 @@ v1_urls = [
     url(r'^repositories/', include(repository_urls)),
     url(r'^policies/', include(policy_urls)),
     url(r'^catalogs/', include(catalog_urls)),
+    url(r'^stats/', include(stats_urls)),
 ]
 
 urlpatterns = [

@@ -1529,3 +1529,6 @@ class CatalogListSerializer(DynamicFieldsSerializerMixin, CatalogSerializer):
     class Meta:
         model = Catalog
         fields = ('id', 'url', 'archive_name', 'path', 'job', 'mode', 'mtime', 'owner', 'group', 'size', 'healthy')
+
+class StatsSerializer(EmptySerializer):
+    stats = serializers.ListField(serializers.SerializerMethodField())
