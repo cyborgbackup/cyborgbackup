@@ -1384,9 +1384,23 @@ class RunJob(BaseTask):
                 if not database_specify:
                     piped += " --all-databases"
             if policy_type == 'postgresql':
-                piped += 'pg_dumpall'
+                database_specify=False
+                if job.policy.extra_vars != '':
+                    pgsql_json = json.loads(job.policy.extra_vars)
+                    if 'database' in pgsql_json and pgsql_json['database']:
+                        database_specify=True
+                        piped += 'pg_dump {}'.format(pgsql_json['database'])
+                if not database_specify:
+                    piped += 'pg_dumpall'
             if policy_type == 'piped':
-                piped += 'dd if=/dev/sda'
+                command_specify=False
+                if job.policy.extra_vars != '':
+                    piped_json = json.loads(job.policy.extra_vars)
+                    if 'command' in piped_json and piped_json['command']:
+                        command_specify=True
+                        piped += piped_json['command']
+                if not command_specify:
+                    raise Exception('Command for piped backup not defined')
             if not job.policy.mode_pull:
                 args = [piped, '|']+args
         if policy_type == 'vm':
