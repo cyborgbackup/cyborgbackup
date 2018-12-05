@@ -1,5 +1,12 @@
 .DEFAULT_GOAL := ui-build
 
+node-build:
+	npm install
+	npm install --unsafe-perm -g glup
+	npm install -g bower
+	npm install -g gulp-cli
+	bower install --allow-root
+
 docker-build:
 	cd /src
 	npm install

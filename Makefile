@@ -216,6 +216,9 @@ initenv:
 	echo "RABBITMQ_DEFAULT_PASS=cyborgbackup" >> .env
 	echo "RABBITMQ_DEFAULT_VHOST=cyborgbackup" >> .env
 
+ui-build:
+	$(MAKE) -C $(UI_DIR) node-build
+
 cyborgbackup-ui:
 	$(MAKE) -C $(UI_DIR)
 
