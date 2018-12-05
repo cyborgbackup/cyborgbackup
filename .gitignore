@@ -1,8 +1,12 @@
 .env
+secret.txt
+./VERSION
+celerybeat.pid
+cyborgbackup/ui/static
+cyborgbackup/templates/ui
+cyborgbackup/ui/src/bower_components
+cyborgbackup/ui/src/.tmp
+cyborgbackup/ui/src/dev-release
+cyborgbackup/ui/src/release
 **/__pycache__
 **/_build
-cyborgbackup/templates/ui
-cyborgbackup/ui/static
-secret.txt
-VERSION
-celerybeat.pid
