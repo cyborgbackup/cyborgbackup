@@ -227,17 +227,6 @@ def sync_superuser_status_to_rbac(instance, **kwargs):
     #else:
     #    Role.singleton(ROLE_SINGLETON_SYSTEM_ADMINISTRATOR).members.remove(instance)
 
-@receiver(current_user_getter)
-def get_current_user_from_drf_request(sender, **kwargs):
-    '''
-    Provider a signal handler to return the current user from the current
-    request when using Django REST Framework. Requires that the APIView set
-    drf_request on the underlying Django Request object.
-    '''
-    request = get_current_request()
-    drf_request_user = getattr(request, 'drf_request_user', False)
-    return (drf_request_user, 0)
-
 def create_user_role(instance, **kwargs):
     if not kwargs.get('created', True):
         return
