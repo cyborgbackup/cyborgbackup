@@ -1,6 +1,23 @@
- before_script:
-   - make cyborgbackup-ui
+image: alpine
+services:
+    - postgres:9.4
+    - rabbitmq
 
- build_image:
-   script:
-     - make cyborgbackup-docker-build
+stages: # Ici on déclare toutes nos étapes
+  - build
+  - test
+  - deploy
+
+job:node: # Job utilisant l'image node
+  stage: build
+  image: node
+  script: make ui-build
+
+job:test:unit:
+  stage: test # On déclare que ce `job` fait partie de l'étape test
+  script: make test-unit
+  when: on_success
+
+job:deploy:
+  stage: deploy # On déclare que ce `job` fait partie de l'étape deploy
+  script: make cyborgbackup-docker-build
