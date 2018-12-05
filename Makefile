@@ -208,7 +208,7 @@ nginx:
 	nginx -g "daemon off;"
 
 initenv:
-	echo "POSTGRES_PASSWORD=cyborgbackup" > .env
+	echo "POSTGRES_HOST=postgres" > .env
 	echo "POSTGRES_PASSWORD=cyborgbackup" >> .env
 	echo "POSTGRES_USER=cyborgbackup" >> .env
 	echo "POSTGRES_NAME=cyborgbackup" >> .env
@@ -225,10 +225,7 @@ cyborgbackup-ui:
 cyborgbackup-docker-build:
 	docker build -t cyborgbackup:latest .
 
-cyborgbackup-docker-compose-up: initenv
+docker-compose-up: initenv
 	docker-compose up -d
-	sleep 5
-	docker-compose exec web python3 manage.py migrate
-	docker-compose exec web python3 manage.py create_preload_data
 
 docker: cyborgbackup-ui cyborgbackup-docker-build

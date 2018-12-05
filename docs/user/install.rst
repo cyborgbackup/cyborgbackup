@@ -7,13 +7,13 @@ This part of the documentation covers the installation of CyBorgBackup.
 The first step to using any software package is getting it properly installed.
 
 
-$ git clone && docker-compose up
+$ git clone && make docker-compose-up
 --------------------------------
 
 To install CyBorgBackup, simply run this simple command in your terminal of choice::
 
     $ git clone https://github.com/gaetanf/cyborgbackup
-    $ docker-compose up
+    $ make docker-compose-up
 
 
 If you don't have `docker-compose <https://docs.docker.com/compose/>`_ or `docker <https://www.docker.com/>`_ installed  head over to the website for installation instructions.
@@ -44,4 +44,4 @@ Depending of your system, CyBorgBackup need the following dependencies :
 To use CyBorgBackup container with Docker, launch the following command::
 
     $ make docker
-    $ make cyborgbackup-docker-compose-up
+    $ make docker-compose-up
