@@ -1,0 +1,28 @@
+sudo: false
+language: python
+services:
+  - postgresql
+  - rabbitmq
+python:
+  - "3.5"
+  - "3.6"
+install:
+  - pip install -r requirements.txt
+  - pip install .
+  - pip install -U tox codecov tox-travis
+before_script:
+  - psql -c 'create database cyborgbackup;' -U postgres
+  - psql -c "CREATE USER cyborgbackup WITH PASSWORD 'cyborgbackup';" -U postgres
+  - rabbitmqctl add_vhost cyborgbackup
+  - rabbitmqctl add_user cyborgbackup cyborgbackup
+  - rabbitmqctl set_permissions -p cyborgbackup cyborgbackup ".*" ".*" ".*"
+  - make initenv
+  - python manage.py migrate
+  - python manage.py create_preload_data
+test:
+  adapter: postgresql
+  database: cyborgbackup
+script:
+  - tox
+after_success:
+  - codecov
