@@ -158,7 +158,22 @@ def generate_html_table(elements):
     return table
 
 def generate_html_joboutput(elements):
-    return ''
+    output = """Job Output : <div class="job-results-standard-out">
+      <div class="JobResultsStdOut">
+        <div class="JobResultsStdOut-stdoutContainer">"""
+    lineNumber = 1
+    for line in elements['lines']:
+        output += """<div class="JobResultsStdOut-aLineOfStdOut">
+              <div class="JobResultsStdOut-lineNumberColumn">
+                <span class="JobResultsStdOut-lineExpander"></span>{}
+              </div>
+              <div class="JobResultsStdOut-stdoutColumn"><span>{}</span></div>
+          </div>""".format(lineNumber, line)
+        lineNumber += 1
+    output += """</div>
+      </div>
+    </div>"""
+    return output
 
 def send_email(elements, type, mail_to):
     try:
@@ -175,7 +190,7 @@ def send_email(elements, type, mail_to):
     msg['Subject'] = 'CyBorgBackup Report'
     msg['From'] = Address("CyBorgBackup", mail_address.split('@')[0], mail_address.split('@')[1])
     msg['To'] = mail_to
-    if type != 'alert':
+    if type != 'after':
         asciiTable = generate_ascii_table(elements)
         htmlTable = generate_html_table(elements)
     else:
@@ -204,14 +219,19 @@ CyBorgBackup Summary Report
 {}
 """.format(asciiTable))
     if type in ('after'):
+        header = ''
+        if elements['job'].job_explanation and elements['job'].job_explanation != '':
+            header += """Job Explanation : \n{}\n""".format(elements['job'].job_explanation)
+        if elements['job'].result_traceback and elements['job'].result_traceback != '':
+            header += """Result Traceback : \n{}\n""".format(elements['job'].result_traceback)
         msg.set_content("""\
 CyBorgBackup Backup Report
 
 {} : {}
-
+{}
 Job output :
 {}
-""".format(elements['title'], elements['state'], elements['lines']))
+""".format(elements['title'], elements['state'], header, elements['lines']))
     header = """\
 <html>
   <head>
@@ -227,7 +247,7 @@ Job output :
          white-space: nowrap;line-height: 1.42;font-weight: 400;padding: 8px;
        }
        td { text-align: center; padding: 0 8px; line-height: 35px; border-top: 1px solid gainsboro; vertical-align: top; }
-       div.content { padding: 15px 32px 15px 40px;font: 14px/16px "Roboto", sans-serif; }
+       div.content { width: 1000px;padding: 15px 32px 15px 40px;font: 14px/16px "Roboto", sans-serif; }
        div.card { position: relative;padding: 0 15px;float: left;box-sizing: border-box; }
        div.panel {
          color: #666666;background-color: #ffffff;border: none;border-radius: 5px;position: relative;
@@ -246,11 +266,42 @@ Job output :
         margin-bottom: 1rem;border: 1px solid transparent;border-radius: .25rem;
       }
       .alert img { width: 17px;vertical-align: middle;margin-right: 10px; }
-       div.top div {
-         font-size: 24px;font-family: "Roboto", sans-serif;color: white;
-       }
-       div.top div.img { float: left;width: 150px;height: 100px; }
-       div.top div.title { margin-top: 20px; }
+      div.top div {
+        font-size: 24px;font-family: "Roboto", sans-serif;color: white;
+      }
+      div.top div.img { float: left;width: 150px;height: 100px; }
+      div.top div.title { margin-top: 20px; }
+      .job-results-standard-out {
+        -ms-flex: 1;flex: 1;-ms-flex-preferred-size: auto;flex-basis: auto;
+        height: auto;display: -ms-flexbox;display: flex;border: 1px solid #D7D7D7;
+        border-radius: 5px;margin-top: 10px;
+      }
+      .JobResultsStdOut {
+        height: auto;width: 900px;-ms-flex-direction: column;flex-direction: column;
+        -ms-flex-align: stretch;align-items: stretch;
+      }
+      .JobResultsStdOut-stdoutContainer {
+        -ms-flex: 1;flex: 1;position: relative;background-color: #FCFCFC;
+        overflow-y: auto;overflow-x: hidden;
+      }
+      .JobResultsStdOut-aLineOfStdOut {
+         display: -ms-flexbox;display: flex;
+         font-family: Monaco, Menlo, Consolas, "Courier New", monospace;
+      }
+      .JobResultsStdOut-lineNumberColumn {
+         display: -ms-flexbox;display: flex;background-color: #EBEBEB;text-align: right;
+         padding-right: 10px;padding-top: 2px;padding-bottom: 2px;width: 75px;color: #848992;
+         -ms-flex: 1 0 70px;flex: 1 0 70px;user-select: none;-moz-user-select: none;
+         -webkit-user-select: none;-ms-user-select: none;z-index: 1;border-right: 1px solid #D7D7D7;
+      }
+      .JobResultsStdOut-stdoutColumn {
+         padding-left: 20px;padding-right: 20px;padding-top: 2px;padding-bottom: 2px;
+         color: #707070;display: inline-block;white-space: pre-wrap;word-break: break-all;
+         width: 100%;background-color: #FCFCFC;
+      }
+      .JobResultsStdOut-lineExpander {
+         text-align: left;padding-left: 11px;margin-right: auto;
+      }
     </style>
   </head>
   <body>
@@ -292,6 +343,12 @@ Job output :
                 state_icon = f.read()
             css_class = "alert-failed"
         header += '<div class="alert {}"><img src="{}" />{}</div>'.format(css_class, state_icon, elements['title'])
+        if elements['job'].job_explanation and elements['job'].job_explanation != '':
+            header += """<div class="card block-top" style="width:400px; height: auto;">
+            <div class="panel"><div class="panel-body">Job Explanation : <br><span>{}</span></div></div></div>""".format(elements['job'].job_explanation)
+        if elements['job'].result_traceback and elements['job'].result_traceback != '':
+            header += """<div class="card block-top" style="width:400px; height: auto;">
+            <div class="panel"><div class="panel-body">Resutl Traceback : <br><span>{}</span></div></div></div>""".format(elements['job'].result_traceback)
 
     content = """\
 <div class="card" style="clear:both"><div class="panel"><div class="panel-body">
@@ -519,7 +576,11 @@ def cyborgbackup_notifier(self, type, *kwargs):
                 users = User.objects.filter(notify_backup_summary=True)
             if job.status == 'failed':
                 users = User.objects.filter(notify_backup_failed=True)
-            report = {'state': job.status, 'title':job.name, 'output': ''}
+            jobevents = JobEvent.objects.filter(job_id=job_pk).order_by('counter')
+            lines = []
+            for event in jobevents:
+                lines.append(event.stdout)
+            report = {'state': job.status, 'title':job.name, 'lines': lines, 'job': job}
         for user in users:
             send_email(report, type, user.email)
 
