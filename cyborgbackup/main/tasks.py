@@ -1348,6 +1348,8 @@ class RunJob(BaseTask):
             client_user = setting_client_user.value
         except Exception as e:
             client_user = 'root'
+        if client_user != 'root':
+            args = ['sudo', '-E']+args
         args += ['borg']
         args += ['create']
         repositoryPath = ''
@@ -1366,6 +1368,21 @@ class RunJob(BaseTask):
             path = '-'
             if policy_type == 'mysql':
                 piped += 'mysqldump'
+                database_specify=False
+                if job.policy.extra_vars != '':
+                    mysql_json = json.loads(job.policy.extra_vars)
+                    if 'user' in mysql_json and mysql_json['user']:
+                        piped += " -u{}".format(mysql_json['user'])
+                    if 'password' in mysql_json and mysql_json['password']:
+                        piped += " -p{}".format(mysql_json['password'])
+                    if 'databases' in mysql_json and mysql_json['databases']:
+                        database_specify=True
+                        if isinstance(mysql_json['databases'], list):
+                            piped += " --databases {}".format(' '.join(mysql_json['databases']))
+                        else:
+                            piped += " {}".format(mysql_json['databases'])
+                if not database_specify:
+                    piped += " --all-databases"
             if policy_type == 'postgresql':
                 piped += 'pg_dumpall'
             if policy_type == 'piped':
@@ -1381,8 +1398,6 @@ class RunJob(BaseTask):
             piped = ' '.join(piped_list)
             if not job.policy.mode_pull:
                  args = [piped, '|']+args
-        if client_user != 'root':
-            args = ['sudo', '-E']+args
         args += ['{}::{}-{}-{}'.format(repositoryPath, policy_type, archive_client_name, jobDateString)]
         if job.policy.mode_pull and policy_type in ('rootfs', 'config', 'mail'):
             path = '.'+path
