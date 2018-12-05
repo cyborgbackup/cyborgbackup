@@ -204,7 +204,7 @@ angular.module('CyBorgBackup.RestServices', [])
                   response: function(config) {
                       if(config.headers('auth-token-timeout') !== null){
                           $rootScope.loginConfig.promise.then(function () {
-                              $MilkyProvisionConfig.session_timeout = Number(config.headers('auth-token-timeout'));
+                              $CyBorgBackupConfig.session_timeout = Number(config.headers('auth-token-timeout'));
                           });
                       }
                       return config;
