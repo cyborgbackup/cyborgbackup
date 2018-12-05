@@ -535,7 +535,7 @@ def cyborgbackup_notifier(self, type, *kwargs):
                     'title': "Prepare Repository {}".format(policy.repository.name),
                     'type': "repository"
                 })
-            have_prune_info = self.keep_hourly or self.keep_daily or self.keep_weekly or self.keep_monthly or self.keep_yearly
+            have_prune_info = policy.keep_hourly or policy.keep_daily or policy.keep_weekly or policy.keep_monthly or policy.keep_yearly
             for client in policy.clients.all():
                 if not client.ready:
                     order+=1
