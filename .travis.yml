@@ -18,6 +18,7 @@ before_script:
   - sudo rabbitmqctl add_user cyborgbackup cyborgbackup
   - sudo rabbitmqctl set_permissions -p cyborgbackup cyborgbackup ".*" ".*" ".*"
   - make initenv
+  - make DEVVERSION
   - python manage.py migrate
   - python manage.py create_preload_data
 test:

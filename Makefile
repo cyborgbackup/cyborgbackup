@@ -72,6 +72,9 @@ VERSION:
 	@echo $(VERSION_TARGET) > $@
 	@echo "cyborgbackup: $(VERSION_TARGET)"
 
+DEVVERSION:
+	@echo "0.2-dev" > VERSION
+
 clean-ui:
 	rm -rf cyborgbackup/ui/static
 	rm -rf cyborgbackup/ui/src/node_modules
