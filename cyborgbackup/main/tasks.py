@@ -535,6 +535,7 @@ def cyborgbackup_notifier(self, type, *kwargs):
                     'title': "Prepare Repository {}".format(policy.repository.name),
                     'type': "repository"
                 })
+            have_prune_info = self.keep_hourly or self.keep_daily or self.keep_weekly or self.keep_monthly or self.keep_yearly
             for client in policy.clients.all():
                 if not client.ready:
                     order+=1
@@ -556,7 +557,7 @@ def cyborgbackup_notifier(self, type, *kwargs):
                         'title': "Catalog Job {} {}".format(policy.name, client.hostname),
                         'type': "catalog"
                     })
-                if auto_prune_enabled:
+                if auto_prune_enabled and have_prune_info:
                     order+=1
                     report['lines'].append({
                         'order': str(order),
@@ -1381,7 +1382,7 @@ class RunJob(BaseTask):
             if not job.policy.mode_pull:
                  args = [piped, '|']+args
         if client_user != 'root':
-            args = ['sudo']+args
+            args = ['sudo', '-E']+args
         args += ['{}::{}-{}-{}'.format(repositoryPath, policy_type, archive_client_name, jobDateString)]
         if job.policy.mode_pull and policy_type in ('rootfs', 'config', 'mail'):
             path = '.'+path
@@ -1405,7 +1406,7 @@ class RunJob(BaseTask):
             if policy_type in ('mysql', 'postgresql', 'piped', 'vm'):
                 pullCmd = ['ssh', '{}@{}'.format(client_user, client_hostname)]
                 if client_user != 'root':
-                    piped = 'sudo '+piped
+                    piped = 'sudo -E '+piped
                 pullCmd += ["'"+piped+"'|"+' '.join(args)]
                 args = pullCmd
             if policy_type == 'vm':
@@ -1458,10 +1459,14 @@ class RunJob(BaseTask):
                         master_job.policy.policy_type
                     )
                 )
+                archive_name = None
                 if job_events.exists():
                     job_stdout = job_events.first().stdout
                     archive_name = job_stdout.split(':')[1].strip()
-                env['CYBORG_JOB_ARCHIVE_NAME'] = archive_name
+                if archive_name:
+                    env['CYBORG_JOB_ARCHIVE_NAME'] = archive_name
+                else:
+                    raise Exception('Unable to get archive from backup. Backup job may failed.')
                 env['CYBORG_JOB_ID'] = str(master_job.pk)
         else:
             env['BORG_PASSPHRASE'] = job.policy.repository.repository_key

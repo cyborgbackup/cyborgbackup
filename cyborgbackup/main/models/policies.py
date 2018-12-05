@@ -236,6 +236,8 @@ class Policy(PrimordialModel):
 
         app.send_task('cyborgbackup.main.tasks.cyborgbackup_notifier', args=('summary',self.pk))
 
+        have_prune_info = self.keep_hourly or self.keep_daily or self.keep_weekly or self.keep_monthly or self.keep_yearly
+
         jobs = []
         previous_job = None
         for client in self.clients.all():
@@ -258,26 +260,28 @@ class Policy(PrimordialModel):
                 job.dependent_jobs = catalog_job
                 job.save()
             if auto_prune_enabled:
-                prune_job = copy_model_by_class(self, job_class, fields, kwargs)
-                prune_job.policy_id = self.pk
-                prune_job.client_id = client.pk
-                prune_job.status = 'waiting'
-                prune_job.job_type = 'prune'
-                prune_job.name = "Prune Job {} {}".format(self.name, client.hostname)
-                prune_job.description = "Prune Job for Policy {} of client {}".format(self.name, client.hostname)
-                prune_job.save()
-                if catalog_enabled:
-                    catalog_job.dependent_jobs = prune_job
-                    catalog_job.save()
-                else:
-                    job.dependent_jobs = prune_job
-                    job.save()
+                if have_prune_info:
+                    prune_job = copy_model_by_class(self, job_class, fields, kwargs)
+                    prune_job.policy_id = self.pk
+                    prune_job.client_id = client.pk
+                    prune_job.status = 'waiting'
+                    prune_job.job_type = 'prune'
+                    prune_job.name = "Prune Job {} {}".format(self.name, client.hostname)
+                    prune_job.description = "Prune Job for Policy {} of client {}".format(self.name, client.hostname)
+                    prune_job.save()
+                    if catalog_enabled:
+                        catalog_job.dependent_jobs = prune_job
+                        catalog_job.save()
+                    else:
+                        job.dependent_jobs = prune_job
+                        job.save()
 
             if auto_prune_enabled:
-                if previous_job:
-                    previous_job.dependent_jobs = prune_job
-                    previous_job.save()
-                previous_job = prune_job
+                if have_prune_info:
+                    if previous_job:
+                        previous_job.dependent_jobs = prune_job
+                        previous_job.save()
+                    previous_job = prune_job
             elif catalog_enabled:
                 if previous_job:
                     previous_job.dependent_jobs = catalog_job
