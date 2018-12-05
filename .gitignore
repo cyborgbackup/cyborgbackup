@@ -1,0 +1,8 @@
+.env
+**/__pycache__
+**/_build
+cyborgbackup/templates/ui
+cyborgbackup/ui/static
+secret.txt
+VERSION
+celerybeat.pid
