@@ -66,6 +66,7 @@ The User Guide
    :maxdepth: 2
 
    user/install
+   user/screenshots
    user/quickstart
    user/provider
 
