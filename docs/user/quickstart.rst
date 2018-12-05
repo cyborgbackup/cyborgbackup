@@ -90,17 +90,48 @@ mysql
 
 The mysql policy type will create a mysql dump and backup them using Borg.
 
+You can to specify user,password and database/s in extra vars::
+
+    {"user":"backupuser","password":"backupass"}
+
+By default, mysql policy type will backup all databases.
+To specify a database, you need to add database entry in extra_vars::
+
+    {"databases":"mydb"}
+
+To specify multiple databases, you need to add databases list in extra_vars::
+
+    {"databases":["mydb1","mydb2"]}
+
+Command to create backup user on MySQL::
+
+    GRANT LOCK TABLES, SELECT ON *.* TO 'backupuser'@'%' identified by 'backuppass';
+    FLUSH PRIVILEGES
+
 postgresql
 ~~~~~~~~~~
 
 The postgresql policy type will create a postgresql dump and backup them
 using Borg.
 
+You can to specify database in extra vars::
+
+    {"database":"mydb"}
+
+Command to create backup user on PostgreSQL::
+
+    CREATE USER backupuser SUPERUSER password 'backuppass';
+    ALTER USER cyborgbackup set default_transaction_read_only = on;
+
 piped
 ~~~~~
 
 The piped policy type permit to launch a command on the client and backup the
 output of the command to Borg.
+
+You need to specify extra vars with piped command::
+
+    {"command":"mypipedcommand"}
 
 config
 ~~~~~~
@@ -110,4 +141,4 @@ The config policy type will backup only the /etc folder of the server.
 mail
 ~~~~
 
-The mail policy type will backup only the /var/mail folder of the server.
+The mail policy type will backup only the /var/mail or /var/lib/mail folder of the server.
