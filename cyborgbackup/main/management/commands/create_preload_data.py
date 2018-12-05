@@ -45,7 +45,7 @@ class Command(BaseCommand):
                         enabled=False,
                         repository=r,
                         schedule=s)
-            p.save(skip_update=True)
+            p.save()
             p.clients.add(c)
         print('Demo Client, Repository, Schedule and Policy added.')
         print('(changed: True)')
