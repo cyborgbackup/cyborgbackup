@@ -39,7 +39,12 @@
       _.forEach(results, function(value, key){
         QuerySet.search(value.related['calendar']).then(function(calendarData){
           _.forEach(calendarData.data, function(start){
-            $scope.element.fullCalendar('renderEvent', {title: value.name, start: start});
+            var enabledEvent = value.enabled && value.summary_fields.repository.enabled && value.summary_fields.schedule.enabled;
+            var className = ''
+            if(! enabledEvent){
+              className = 'calendar-event-disable';
+            }
+            $scope.element.fullCalendar('renderEvent', {title: value.name, start: start, className: className});
           });
         });
       });
