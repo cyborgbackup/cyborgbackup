@@ -143,6 +143,7 @@ setup(
         ("%s" % docdir,         ["docs/*",]),
         ("%s" % bindir, ["tools/scripts/cyborgbackup-service",
                          "tools/scripts/cyborgbackup-setup"]),
+    ]),
     cmdclass = {'sdist_isolated': sdist_isolated},
     options = {
         'aliases': {
