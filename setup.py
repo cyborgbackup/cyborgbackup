@@ -108,10 +108,10 @@ setup(
     author_email='gaetan.cyborgbackup@milkywan.fr',
     description='cyborgbackup: API, UI and Task Engine for Borg',
     long_description='CyBorgBackup provides a web-based user interface, REST API and '
-                     'task engine built on top of Borg',
+                     'task engine built on top of BorgBackup.',
     license='Apache License 2.0',
     keywords='borg',
-    url='http://github.com/GaetanF/cyborgbackup',
+    url='https://github.com/GaetanF/cyborgbackup',
     packages=['cyborgbackup'],
     include_package_data=True,
     zip_safe=False,
