@@ -15,13 +15,6 @@ sharedir = "/usr/share/cyborgbackup"
 docdir = "/usr/share/doc/cyborgbackup"
 
 
-def get_version():
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    version_file = os.path.join(current_dir, 'VERSION')
-    with open(version_file, 'r') as file:
-        return file.read().strip()
-
-
 if os.path.exists("/etc/debian_version"):
     sysinit = "/etc/init.d"
     webconfig  = "/etc/nginx"
@@ -38,7 +31,6 @@ else:
 
 class sdist_isolated(sdist):
     includes = [
-        'include VERSION',
         'include Makefile',
         'include cyborgbackup/__init__.py',
         'include cyborgbackup/main/expect/run.py',
@@ -103,33 +95,36 @@ def proc_data_files(data_files):
 
 setup(
     name=os.getenv('NAME', 'cyborgbackup'),
-    version=get_version(),
     author='Gaëtan Ferez',
     author_email='gaetan.cyborgbackup@milkywan.fr',
     description='cyborgbackup: API, UI and Task Engine for Borg',
     long_description='CyBorgBackup provides a web-based user interface, REST API and '
                      'task engine built on top of BorgBackup.',
-    license='Apache License 2.0',
+    license='BSD',
     keywords='borg',
     url='https://github.com/GaetanF/cyborgbackup',
-    packages=['cyborgbackup'],
+    packages=find_packages('src'),
+    package_dir={'': 'src'},
     include_package_data=True,
     zip_safe=False,
-    setup_requires=[],
+    use_scm_version=True,
+    setup_requires=['setuptools_scm'],
+    python_requires='>=3.5',
     classifiers=[
-        'Development Status :: 5 - Production/Stable',
+        'Development Status :: 2 - Pre-Alpha',
         'Environment :: Web Environment',
         'Framework :: Django',
         'Intended Audience :: Developers',
         'Intended Audience :: Information Technology',
         'Intended Audience :: System Administrators'
-        'License :: Apache License 2.0',
+        'License :: OSI Approved :: BSD License',
         'Natural Language :: English',
         'Operating System :: OS Independent',
         'Operating System :: POSIX',
         'Programming Language :: Python',
         'Topic :: System :: Installation/Setup',
         'Topic :: System :: Systems Administration',
+        'Topic :: System :: Archiving :: Backup',
     ],
     entry_points = {
         'console_scripts': [

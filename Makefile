@@ -19,7 +19,7 @@ RELEASE_VERSION=$(shell git describe --long --first-parent | sed 's@\([0-9.]\{1,
 COMPOSE_TAG ?= $(GIT_BRANCH)
 COMPOSE_HOST ?= $(shell hostname)
 
-UI_DIR = cyborgbackup/ui/src
+UI_DIR = src/cyborgbackup/ui/src
 
 VENV_BASE ?= ./venv
 SCL_PREFIX ?=
@@ -68,19 +68,12 @@ WHEEL_COMMAND ?= bdist_wheel
 SDIST_TAR_FILE ?= $(SDIST_TAR_NAME).tar.gz
 WHEEL_FILE ?= $(WHEEL_NAME)-py2-none-any.whl
 
-VERSION:
-	@echo $(VERSION_TARGET) > $@
-	@echo "cyborgbackup: $(VERSION_TARGET)"
-
-DEVVERSION:
-	@echo "0.2-dev" > VERSION
-
 clean-ui:
-	rm -rf cyborgbackup/ui/static
-	rm -rf cyborgbackup/ui/src/node_modules
-	rm -rf cyborgbackup/ui/src/bower_components
-	rm -rf cyborgbackup/ui/src/dev-release
-	rm -rf cyborgbackup/ui/src/release
+	rm -rf src/cyborgbackup/ui/static
+	rm -rf src/cyborgbackup/ui/src/node_modules
+	rm -rf src/cyborgbackup/ui/src/bower_components
+	rm -rf src/cyborgbackup/ui/src/dev-release
+	rm -rf src/cyborgbackup/ui/src/release
 
 clean-tmp:
 	rm -rf tmp/
@@ -93,13 +86,11 @@ clean-dist:
 
 # Remove temporary build files, compiled Python files.
 clean: clean-ui clean-dist
-	rm -rf cyborgbackup/job_output
-	rm -rf job_output
+	rm -rf src/cyborgbackup/job_output
+	rm -rf src/job_output
 	rm -rf requirements/vendor
 	rm -rf tmp
-	rm -f VERSION
 	mkdir tmp
-	rm -rf build $(NAME)-$(VERSION) *.egg-info
 	find . -type f -regex ".*\.py[co]$$" -delete
 	find . -type d -name "__pycache__" -delete
 
@@ -154,7 +145,7 @@ collectstatic:
 	@if [ "$(VENV_BASE)" ]; then \
 		. $(VENV_BASE)/cyborgbackup/bin/activate; \
 	fi; \
-	mkdir -p cyborgbackup/public/static && $(PYTHON) manage.py collectstatic --clear --noinput > /dev/null 2>&1
+	mkdir -p src/cyborgbackup/public/static && $(PYTHON) manage.py collectstatic --clear --noinput > /dev/null 2>&1
 
 uwsgi: collectstatic
 	@if [ "$(VENV_BASE)" ]; then \
