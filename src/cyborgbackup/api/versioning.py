@@ -23,6 +23,7 @@ def drf_reverse(viewname, args=None, kwargs=None, request=None, format=None, **e
 
     return url
 
+
 def get_request_version(request):
     """
     The API version of a request as an integer i.e., 1 or 2

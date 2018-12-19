@@ -1,67 +1,49 @@
 # Python
 import re
-import stat
-import os
 import cgi
 import dateutil
 import dateutil.relativedelta
 import datetime
-import time
-import socket
-import sys
 import logging
-import requests
 import tzcron
 import pytz
-import collections
-import json
 from base64 import b64encode
-from collections import OrderedDict, Iterable
-import six
+from collections import OrderedDict
 
 # Django
 from django.conf import settings as dsettings
-from django.core.exceptions import FieldError, ObjectDoesNotExist
-from django.db.models import Q, Count, F, Max
+from django.core.exceptions import FieldError
 from django.db import IntegrityError, transaction
-from django.shortcuts import get_object_or_404
-from django.utils.encoding import smart_text
 from django.utils.safestring import mark_safe
 from django.utils.timezone import now
 from django.views.decorators.csrf import csrf_exempt
 from django.template.loader import render_to_string
 from django.http import HttpResponse
-from django.contrib.contenttypes.models import ContentType
 from django.utils.translation import ugettext_lazy as _
 
 # Django REST Framework
 from rest_framework.exceptions import PermissionDenied, ParseError
-from rest_framework.parsers import FormParser
-from rest_framework.permissions import AllowAny, IsAuthenticated, SAFE_METHODS
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.settings import api_settings
 from rest_framework.views import exception_handler
 from rest_framework import status
 
 # CyBorgBackup
-from cyborgbackup.api.filters import V1CredentialFilterBackend
 from cyborgbackup.api.generics import *
 from cyborgbackup.main.models import *
 from cyborgbackup.main.utils.common import * # noqa
-from cyborgbackup.main.utils.encryption import decrypt_field, encrypt_value
-from cyborgbackup.main.utils.filters import SmartFilter
-from cyborgbackup.main.utils.common import filter_insights_api_response
 from cyborgbackup.main.utils.callbacks import CallbackQueueDispatcher
 from cyborgbackup.api.renderers import * # noqa
 from cyborgbackup.api.serializers import * # noqa
 from cyborgbackup.main.constants import ACTIVE_STATES
-#from cyborgbackup.api.exceptions import ActiveJobConflict
 from cyborgbackup.api.permissions import *
 
 import ansiconv
 from wsgiref.util import FileWrapper
 
 logger = logging.getLogger('cyborgbackup.api.views')
+
 
 def api_exception_handler(exc, context):
     '''
@@ -72,6 +54,7 @@ def api_exception_handler(exc, context):
     if isinstance(exc, FieldError):
         exc = ParseError(exc.args[0])
     return exception_handler(exc, context)
+
 
 class JobDeletionMixin(object):
     '''
@@ -100,6 +83,7 @@ class JobDeletionMixin(object):
         obj.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+
 class ApiRootView(APIView):
 
     permission_classes = (AllowAny,)
@@ -117,6 +101,7 @@ class ApiRootView(APIView):
             available_versions=dict(v1=v1),
         )
         return Response(data)
+
 
 class ApiVersionRootView(APIView):
 
@@ -141,8 +126,10 @@ class ApiVersionRootView(APIView):
         data['stats'] = reverse('api:stats', request=request)
         return Response(data)
 
+
 class ApiV1RootView(ApiVersionRootView):
     view_name = _('Version 1')
+
 
 class ApiV1PingView(APIView):
     """A simple view that reports very basic information about this
@@ -165,6 +152,7 @@ class ApiV1PingView(APIView):
 
         response['ping'] = "pong"
         return Response(response)
+
 
 class ApiV1ConfigView(APIView):
 
@@ -190,6 +178,7 @@ class ApiV1ConfigView(APIView):
         )
 
         return Response(data)
+
 
 class AuthView(APIView):
     ''' List enabled single-sign-on endpoints '''
@@ -222,6 +211,7 @@ class AuthView(APIView):
             data[name] = backend_data
         return Response(data)
 
+
 class UserList(ListCreateAPIView):
 
     model = User
@@ -241,6 +231,7 @@ class UserMeList(ListAPIView):
 
     def get_queryset(self):
         return self.model.objects.filter(pk=self.request.user.pk)
+
 
 class UserDetail(RetrieveUpdateDestroyAPIView):
 
@@ -271,6 +262,7 @@ class UserDetail(RetrieveUpdateDestroyAPIView):
         obj = self.get_object()
         return super(UserDetail, self).destroy(request, *args, **kwargs)
 
+
 class StdoutANSIFilter(object):
 
     def __init__(self, fileobj):
@@ -297,10 +289,10 @@ class StdoutANSIFilter(object):
             self.extra_data = ''
         return data
 
+
 class JobList(ListCreateAPIView):
 
     model = Job
-    #metadata_class = JobTypeMetadata
     serializer_class = JobListSerializer
 
     @property
@@ -312,10 +304,10 @@ class JobList(ListCreateAPIView):
     def post(self, request, *args, **kwargs):
         return super(JobList, self).post(request, *args, **kwargs)
 
+
 class JobDetail(JobDeletionMixin, RetrieveUpdateDestroyAPIView):
 
     model = Job
-    #metadata_class = JobTypeMetadata
     serializer_class = JobSerializer
 
     def update(self, request, *args, **kwargs):
@@ -331,6 +323,7 @@ class StdoutMaxBytesExceeded(Exception):
     def __init__(self, total, supported):
         self.total = total
         self.supported = supported
+
 
 class JobStdout(RetrieveAPIView):
 
@@ -407,6 +400,7 @@ class JobStdout(RetrieveAPIView):
             else:
                 return Response(response_message)
 
+
 class JobStart(GenericAPIView):
 
     model = Job
@@ -419,8 +413,6 @@ class JobStart(GenericAPIView):
         data = dict(
             can_start=obj.can_start,
         )
-        #if obj.can_start:
-        #    data['ask_variables_on_launch'] = obj.ask_variables_on_launch
         return Response(data)
 
     def post(self, request, *args, **kwargs):
@@ -433,6 +425,7 @@ class JobStart(GenericAPIView):
                 return Response(status=status.HTTP_202_ACCEPTED)
         else:
             return self.http_method_not_allowed(request, *args, **kwargs)
+
 
 class JobCancel(RetrieveAPIView):
 
@@ -447,6 +440,7 @@ class JobCancel(RetrieveAPIView):
             return Response(status=status.HTTP_202_ACCEPTED)
         else:
             return self.http_method_not_allowed(request, *args, **kwargs)
+
 
 class JobRelaunch(RetrieveAPIView):
 
@@ -475,13 +469,6 @@ class JobRelaunch(RetrieveAPIView):
         context = self.get_serializer_context()
 
         modified_data = request.data.copy()
-        #modified_data.setdefault('credential_passwords', {})
-        #for password in obj.passwords_needed_to_start:
-        #    if password in modified_data:
-        #        modified_data['credential_passwords'][password] = modified_data[password]
-
-        # Note: is_valid() may modify request.data
-        # It will remove any key/value pair who's key is not in the 'passwords_needed_to_start' list
         serializer = self.serializer_class(data=modified_data, context=context, instance=obj)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -507,21 +494,24 @@ class JobRelaunch(RetrieveAPIView):
             headers = {'Location': new_job.get_absolute_url(request=request)}
             return Response(data, status=status.HTTP_201_CREATED, headers=headers)
 
+
 class JobEventList(ListAPIView):
 
     model = JobEvent
     serializer_class = JobEventSerializer
+
 
 class JobEventDetail(RetrieveAPIView):
 
     model = JobEvent
     serializer_class = JobEventSerializer
 
+
 class BaseJobEventsList(SubListAPIView):
 
     model = JobEvent
     serializer_class = JobEventSerializer
-    parent_model = None # Subclasses must define this attribute.
+    parent_model = None  # Subclasses must define this attribute.
     relationship = 'job_events'
     view_name = _('Job Events List')
     search_fields = ('stdout',)
@@ -529,6 +519,7 @@ class BaseJobEventsList(SubListAPIView):
     def finalize_response(self, request, response, *args, **kwargs):
         response['X-UI-Max-Events'] = 4000
         return super(BaseJobEventsList, self).finalize_response(request, response, *args, **kwargs)
+
 
 class JobJobEventsList(BaseJobEventsList):
 
@@ -538,8 +529,8 @@ class JobJobEventsList(BaseJobEventsList):
         job = self.get_parent_object()
         self.check_parent_access(job)
         qs = job.job_events
-        #qs = qs.select_related('host')
         return qs.all()
+
 
 class SettingList(ListAPIView):
 
@@ -646,7 +637,7 @@ class PolicyCalendar(ListAPIView):
         start_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         year = now.year
         if start_month.month == 12:
-            year +=1
+            year += 1
         end_month = datetime.datetime(year, (start_month + dateutil.relativedelta.relativedelta(months=1)).month, 1) - datetime.timedelta(days=1)
         end_month = end_month.replace(hour=23, minute=59, second=50, tzinfo=pytz.utc)
         schedule = tzcron.Schedule(obj.schedule.crontab, pytz.utc, start_month, end_month)
@@ -715,6 +706,7 @@ class PolicyLaunch(RetrieveAPIView):
 
         return sanitized_data
 
+
 class CatalogList(ListCreateAPIView):
 
     model = Catalog
@@ -734,6 +726,7 @@ class CatalogDetail(RetrieveUpdateDestroyAPIView):
 
     model = Catalog
     serializer_class = CatalogSerializer
+
 
 class Stats(ListAPIView):
 

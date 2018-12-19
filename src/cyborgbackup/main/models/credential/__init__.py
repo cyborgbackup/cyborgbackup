@@ -1,15 +1,8 @@
 from collections import OrderedDict
 import functools
-import json
 import logging
 import operator
-import os
 import re
-import stat
-import tempfile
-
-# Jinja2
-from jinja2 import Template
 
 # Django
 from django.db import models
@@ -174,7 +167,6 @@ class V1Credential(object):
             help_text=_('Secret Token for this credential'),
         ),
     }
-
 
 
 class Credential(PasswordFieldsModel, CommonModelNameNotUnique, models.Model):

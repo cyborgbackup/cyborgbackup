@@ -1,14 +1,12 @@
 # Python
 import json
-import re
 
 # Django
 from django.db import models
 
 # CyBorgBackup
 from cyborgbackup.api.versioning import reverse
-from cyborgbackup.main.models.base import CreatedModifiedModel, prevent_search
-from cyborgbackup.main.fields import JSONBField
+from cyborgbackup.main.models.base import CreatedModifiedModel
 from cyborgbackup.main.utils.encryption import encrypt_field, decrypt_field
 
 __all__ = ['Setting']

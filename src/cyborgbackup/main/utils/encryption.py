@@ -35,6 +35,7 @@ class Fernet256(Fernet):
         self._encryption_key = key[32:]
         self._backend = backend
 
+
 def get_encryption_key(field_name, pk=None):
     '''
     Generate key for encrypted password based on field name,
@@ -56,6 +57,7 @@ def get_encryption_key(field_name, pk=None):
 def encrypt_value(value, pk=None):
     TransientField = namedtuple('TransientField', ['pk', 'value'])
     return encrypt_field(TransientField(pk=pk, value=value), 'value')
+
 
 def encrypt_field(instance, field_name, ask=False, subfield=None, skip_utf8=False):
     '''
@@ -99,6 +101,7 @@ def decrypt_value(encryption_key, value):
     if utf8:
         value = value.decode('utf-8')
     return value
+
 
 def decrypt_field(instance, field_name, subfield=None):
     '''

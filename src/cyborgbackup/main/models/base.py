@@ -1,10 +1,8 @@
 import uuid
 
 # Django
-from django.conf import settings
 from django.db import models
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
-from django.utils.translation import ugettext_lazy as _
 from django.utils.timezone import now
 
 # Django-CRUM
@@ -143,7 +141,7 @@ class PasswordFieldsModel(BaseModel):
         abstract = True
 
     def _password_field_allows_ask(self, field):
-        return False # Override in subclasses if needed.
+        return False
 
     def save(self, *args, **kwargs):
         new_instance = not bool(self.pk)
@@ -153,7 +151,7 @@ class PasswordFieldsModel(BaseModel):
         # When first saving to the database, don't store any password field
         # values, but instead save them until after the instance is created.
         # Otherwise, store encrypted values to the database.
-        #for field in self.PASSWORD_FIELDS:
+        # for field in self.PASSWORD_FIELDS:
         #    if new_instance:
         #        value = getattr(self, field, '')
         #        setattr(self, '_saved_%s' % field, value)
@@ -162,7 +160,7 @@ class PasswordFieldsModel(BaseModel):
         #        #ask = self._password_field_allows_ask(field)
         #        #self.encrypt_field(field, ask)
         #        self.mark_field_for_save(update_fields, field)
-        #super(PasswordFieldsModel, self).save(*args, **kwargs)
+        # super(PasswordFieldsModel, self).save(*args, **kwargs)
         # After saving a new instance for the first time, set the password
         # fields and save again.
         if new_instance:
@@ -172,11 +170,6 @@ class PasswordFieldsModel(BaseModel):
                 setattr(self, field, saved_value)
                 self.mark_field_for_save(update_fields, field)
 
-            #from milkprovision.main.signals import disable_activity_stream
-            #with disable_activity_stream():
-                # We've already got an activity stream record for the object
-                # creation, there's no need to have an extra one for the
-                # secondary save for secrets
             self.save(update_fields=update_fields)
 
     def encrypt_field(self, field, ask):
@@ -312,7 +305,6 @@ class NotificationFieldsModel(BaseModel):
         blank=True,
         related_name='%(class)s_notification_templates_for_any'
     )
-
 
 
 def prevent_search(relation):

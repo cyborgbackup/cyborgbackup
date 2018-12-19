@@ -1,28 +1,14 @@
 # Python
-import base64
 import json
 import yaml
 import logging
 import os
 import re
 import subprocess
-import stat
-import sys
-import urllib
-import threading
-import contextlib
-import tempfile
 import six
-import psutil
 from itertools import chain
 from functools import reduce
 from io import StringIO
-from urllib.parse import urlparse
-
-from decimal import Decimal
-
-# Decorator
-from decorator import decorator
 
 # Django
 from django.conf import settings
@@ -33,7 +19,6 @@ from django.db.models.fields.related import ForeignObjectRel, ManyToManyField
 from django.db.models.query import QuerySet
 from django.db.models import Q
 
-
 # Django database
 from django.db.migrations.loader import MigrationLoader
 from django.db import connection
@@ -41,12 +26,7 @@ from django.db import connection
 # Django REST Framework
 from rest_framework.exceptions import ParseError, PermissionDenied
 from django.utils.encoding import smart_str
-from django.utils.text import slugify
-from django.apps import apps
 
-# Django database
-from django.db.migrations.loader import MigrationLoader
-from django.db import connection
 
 logger = logging.getLogger('cyborgbackup.main.utils')
 
@@ -55,8 +35,8 @@ __all__ = ['get_object_or_400', 'get_object_or_403', 'to_python_boolean', 'get_m
            'timestamp_apiformat', 'getattrd', 'has_model_field_prefetched', 'get_all_field_names',
            'prefetch_page_capabilities', 'copy_model_by_class', 'copy_m2m_relationships',
            'get_cyborgbackup_version', 'get_search_fields', 'could_be_script',
-           'model_instance_diff', 'model_to_dict', 'OutputEventFilter', 'get_ssh_version',
-           'get_module_provider']
+           'model_instance_diff', 'model_to_dict', 'OutputEventFilter', 'get_ssh_version']
+
 
 def get_module_provider():
     import importlib
@@ -75,16 +55,17 @@ def get_module_provider():
                     if hasattr(loadedmodule, 'module_name') and hasattr(loadedmodule, 'module_type'):
                         if loadedmodule.module_type() == 'vm':
                             module_name = loadedmodule.module_name()
-                            extra_vars=''
+                            extra_vars = ''
                             if hasattr(loadedmodule, 'module_extra_vars'):
                                 extra_vars = loadedmodule.module_extra_vars()
                             data.append({'module': p, 'name': module_name, 'extra_vars': extra_vars})
                     del loadedmodule
-            except Exception as e:
+            except Exception:
                 pass
     del importlib
     del pkgutil
     return data
+
 
 def load_module_provider(name):
     import importlib
@@ -108,6 +89,7 @@ def load_module_provider(name):
     del importlib
     del pkgutil
     return the_module
+
 
 def model_instance_diff(old, new, serializer_mapping=None):
     """
@@ -143,6 +125,7 @@ def model_instance_diff(old, new, serializer_mapping=None):
 
     return diff
 
+
 def get_allowed_fields(obj, serializer_mapping):
 
     if serializer_mapping is not None and obj.__class__ in serializer_mapping:
@@ -154,6 +137,7 @@ def get_allowed_fields(obj, serializer_mapping):
         field_blacklist = ['last_login']
         allowed_fields = [f for f in allowed_fields if f not in field_blacklist]
     return allowed_fields
+
 
 def _convert_model_field_for_display(obj, field_name, password_fields=None):
     # NOTE: Careful modifying the value of field_val, as it could modify
@@ -180,6 +164,7 @@ def _convert_model_field_for_display(obj, field_name, password_fields=None):
         field_val = smart_str(field_val)
     return field_val
 
+
 def model_to_dict(obj, serializer_mapping=None):
     """
     Serialize a model instance to a dictionary as best as possible
@@ -197,6 +182,7 @@ def model_to_dict(obj, serializer_mapping=None):
         attr_d[field.name] = _convert_model_field_for_display(obj, field.name, password_fields=password_fields)
 
     return attr_d
+
 
 def get_object_or_400(klass, *args, **kwargs):
     '''
@@ -239,6 +225,7 @@ def to_python_boolean(value, allow_none=False):
     else:
         raise ValueError(_(u'Unable to convert "%s" to boolean') % six.text_type(value))
 
+
 def camelcase_to_underscore(s):
     '''
     Convert CamelCase names to lowercase_with_underscore.
@@ -246,12 +233,14 @@ def camelcase_to_underscore(s):
     s = re.sub(r'(((?<=[a-z])[A-Z])|([A-Z](?![A-Z]|$)))', '_\\1', s)
     return s.lower().strip('_')
 
+
 def get_type_for_model(model):
     '''
     Return type name for a given model class.
     '''
     opts = model._meta.concrete_model._meta
     return camelcase_to_underscore(opts.object_name)
+
 
 def get_all_field_names(model):
     # Implements compatibility with _meta.get_all_field_names
@@ -264,6 +253,7 @@ def get_all_field_names(model):
         if not (field.many_to_one and field.related_model is None)
     )))
 
+
 def get_search_fields(model):
     fields = []
     for field in model._meta.fields:
@@ -271,6 +261,7 @@ def get_search_fields(model):
                           'name', 'description'):
             fields.append(field.name)
     return fields
+
 
 def validate_vars_type(vars_obj):
     if not isinstance(vars_obj, dict):
@@ -283,6 +274,7 @@ def validate_vars_type(vars_obj):
             _('Input type `{data_type}` is not a dictionary').format(
                 data_type=data_type)
         )
+
 
 def parse_yaml_or_json(vars_str, silent_failure=True):
     '''
@@ -315,6 +307,7 @@ def parse_yaml_or_json(vars_str, silent_failure=True):
                     json_error=str(json_err), yaml_error=str(yaml_err)))
     return vars_dict
 
+
 def get_cyborgbackup_version():
     '''
     Return CyBorgBackup version as reported by setuptools.
@@ -325,6 +318,7 @@ def get_cyborgbackup_version():
         return pkg_resources.require('cyborgbackup')[0].version
     except Exception:
         return __version__
+
 
 def get_cyborgbackup_migration_version():
     loader = MigrationLoader(connection, ignore_no_migrations=True)
@@ -337,6 +331,7 @@ def get_cyborgbackup_migration_version():
                 if migration_version > v:
                     v = migration_version
     return v
+
 
 def filter_insights_api_response(json):
     new_json = {}
@@ -375,6 +370,7 @@ def filter_insights_api_response(json):
             new_json['reports'].append(new_report)
     return new_json
 
+
 def get_model_for_type(type):
     '''
     Return model class for a given type name.
@@ -390,11 +386,13 @@ def get_model_for_type(type):
     else:
         raise DatabaseError('"{}" is not a valid CyBorgBackup model.'.format(type))
 
+
 def timestamp_apiformat(timestamp):
     timestamp = timestamp.isoformat()
     if timestamp.endswith('+00:00'):
         timestamp = timestamp[:-6] + 'Z'
     return timestamp
+
 
 class NoDefaultProvided(object):
     pass
@@ -414,10 +412,12 @@ def getattrd(obj, name, default=NoDefaultProvided):
             return default
         raise
 
+
 def has_model_field_prefetched(model_obj, field_name):
     # NOTE: Update this function if django internal implementation changes.
     return getattr(getattr(model_obj, field_name, None),
                    'prefetch_cache_name', '') in getattr(model_obj, '_prefetched_objects_cache', {})
+
 
 def prefetch_page_capabilities(model, page, prefetch_list, user):
     '''
@@ -491,6 +491,7 @@ def prefetch_page_capabilities(model, page, prefetch_list, user):
 
     return mapping
 
+
 def copy_model_by_class(obj1, Class2, fields, kwargs):
     '''
     Creates a new unsaved object of type Class2 using the fields from obj1
@@ -528,13 +529,6 @@ def copy_model_by_class(obj1, Class2, fields, kwargs):
 
     return Class2(**new_kwargs)
 
-def get_search_fields(model):
-    fields = []
-    for field in model._meta.fields:
-        if field.name in ('username', 'first_name', 'last_name', 'email',
-                          'name', 'description'):
-            fields.append(field.name)
-    return fields
 
 def copy_m2m_relationships(obj1, obj2, fields, kwargs=None):
     '''
@@ -557,6 +551,7 @@ def copy_m2m_relationships(obj1, obj2, fields, kwargs=None):
                         src_field_value = override_field_val
                 dest_field = getattr(obj2, field_name)
                 dest_field.add(*list(src_field_value.all().values_list('id', flat=True)))
+
 
 def could_be_script(scripts_path, dir_path, filename):
     if os.path.splitext(filename)[-1] not in ['.py']:
@@ -607,30 +602,6 @@ class OutputEventFilter(object):
         self._emit_event(data)
         self._buffer = StringIO()
 
-        # # keep a sliding window of the last chunk written so we can detect
-        # # event tokens and determine if we need to perform a search of the full
-        # # buffer
-        # should_search = '\x1b[K' in (self._last_chunk + data)
-        # self._last_chunk = data
-        #
-        # # Only bother searching the buffer if we recently saw a start/end
-        # # token (\x1b[K)
-        # while should_search:
-        #     value = self._buffer.getvalue()
-        #     match = self.EVENT_DATA_RE.search(value)
-        #     if not match:
-        #         break
-        #     try:
-        #         base64_data = re.sub(r'\x1b\[\d+D', '', match.group(1))
-        #         event_data = json.loads(base64.b64decode(base64_data))
-        #     except ValueError:
-        #         event_data = {}
-        #     self._emit_event(value[:match.start()], event_data)
-        #     remainder = value[match.end():]
-        #     self._buffer = StringIO()
-        #     self._buffer.write(remainder)
-        #     self._last_chunk = remainder
-
     def close(self):
         value = self._buffer.getvalue()
         if value:
@@ -665,6 +636,7 @@ class OutputEventFilter(object):
             self._current_event_data = next_event_data
         else:
             self._current_event_data = None
+
 
 def get_ssh_version():
     '''

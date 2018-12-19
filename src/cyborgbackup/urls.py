@@ -19,6 +19,9 @@ from django.contrib import admin
 app_name = 'cyborgbackup'
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
-    url(r'^api/', include(('cyborgbackup.api.urls', 'cyborgbackup'), namespace='api')),
+    url(r'^api/', include((
+        'cyborgbackup.api.urls',
+        'cyborgbackup'
+    ), namespace='api')),
     url(r'', include('cyborgbackup.ui.urls', namespace='ui')),
 ]

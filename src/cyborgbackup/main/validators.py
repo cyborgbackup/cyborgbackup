@@ -121,7 +121,7 @@ def validate_pem(data, min_keys=0, max_keys=None, min_certs=0, max_certs=None):
         pem_objects.append(pem_obj_info)
 
     # Validate that the number of keys and certs provided are within the limits.
-    key_count_dict = dict(min_keys=min_keys, max_keys=max_keys, key_count=key_count)
+    kdict = dict(min=min_keys, max=max_keys, cnt=key_count)
     if key_count < min_keys:
         if min_keys == 1:
             if max_keys == min_keys:
@@ -129,13 +129,13 @@ def validate_pem(data, min_keys=0, max_keys=None, min_certs=0, max_certs=None):
             else:
                 raise ValidationError(_('At least one private key is required.'))
         else:
-            raise ValidationError(_('At least %(min_keys)d private keys are required, only %(key_count)d provided.') % key_count_dict)
+            raise ValidationError(_('At least %(min)d private keys are required, only %(cnt)d provided.') % kdict)
     elif max_keys is not None and key_count > max_keys:
         if max_keys == 1:
-            raise ValidationError(_('Only one private key is allowed, %(key_count)d provided.') % key_count_dict)
+            raise ValidationError(_('Only one private key is allowed, %(cnt)d provided.') % kdict)
         else:
-            raise ValidationError(_('No more than %(max_keys)d private keys are allowed, %(key_count)d provided.') % key_count_dict)
-    cert_count_dict = dict(min_certs=min_certs, max_certs=max_certs, cert_count=cert_count)
+            raise ValidationError(_('No more than %(max)d private keys are allowed, %(cnt)d provided.') % kdict)
+    cdict = dict(min=min_certs, max=max_certs, cnt=cert_count)
     if cert_count < min_certs:
         if min_certs == 1:
             if max_certs == min_certs:
@@ -143,12 +143,12 @@ def validate_pem(data, min_keys=0, max_keys=None, min_certs=0, max_certs=None):
             else:
                 raise ValidationError(_('At least one certificate is required.'))
         else:
-            raise ValidationError(_('At least %(min_certs)d certificates are required, only %(cert_count)d provided.') % cert_count_dict)
+            raise ValidationError(_('At least %(min)d certificates are required, only %(cnt)d provided.') % cdict)
     elif max_certs is not None and cert_count > max_certs:
         if max_certs == 1:
-            raise ValidationError(_('Only one certificate is allowed, %(cert_count)d provided.') % cert_count_dict)
+            raise ValidationError(_('Only one certificate is allowed, %(cnt)d provided.') % cdict)
         else:
-            raise ValidationError(_('No more than %(max_certs)d certificates are allowed, %(cert_count)d provided.') % cert_count_dict)
+            raise ValidationError(_('No more than %(max)d certificates are allowed, %(cnt)d provided.') % cdict)
 
     return pem_objects
 

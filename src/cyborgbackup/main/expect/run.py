@@ -1,16 +1,14 @@
 #! /usr/bin/env python
 
-import argparse
-import base64
-import codecs
-import collections
 import io
+import codecs
+import base64
+import argparse
+import collections
 import logging
 import json
 import os
 import stat
-import pipes
-import re
 import signal
 import sys
 import threading

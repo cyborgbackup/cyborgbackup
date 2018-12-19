@@ -1,8 +1,6 @@
 # Python
-from collections import OrderedDict, namedtuple
-from io import StringIO
+from collections import OrderedDict
 import functools
-import importlib
 import json
 import logging
 import os
@@ -17,12 +15,7 @@ import six
 import smtplib
 from email.message import EmailMessage
 from email.headerregistry import Address
-from email.utils import make_msgid
-from six.moves import xrange
-from urllib.parse import urlparse
 from distutils.version import LooseVersion as Version
-import yaml
-import fcntl
 try:
     import psutil
 except Exception:
@@ -32,25 +25,17 @@ from contextlib import contextmanager
 
 # Celery
 from celery import Task, shared_task, Celery
-from celery.signals import celeryd_init, worker_process_init, worker_shutdown, worker_ready, celeryd_after_setup
 
 # Django
 from django.conf import settings
-from django.db import transaction, DatabaseError, IntegrityError
-from django.db.models.fields.related import ForeignKey
-from django.utils.timezone import now, timedelta
-from django.utils.encoding import smart_str
-from django.core.mail import send_mail
-from django.contrib.auth.models import User
-from django.utils.translation import ugettext_lazy as _
+from django.db import transaction, DatabaseError
+from django.utils.timezone import now
+# from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.core.exceptions import ObjectDoesNotExist
 from django_pglocks import advisory_lock as django_pglocks_advisory_lock
 from django.db import connection
 from rest_framework.authtoken.models import Token
-
-# Django-CRUM
-from crum import impersonate
 
 # CyBorgBackup
 from cyborgbackup.main.models.jobs import Job
@@ -61,16 +46,15 @@ from cyborgbackup.main.models.policies import Policy
 from cyborgbackup.main.models.catalogs import Catalog
 from cyborgbackup.main.models.users import User
 from cyborgbackup.main.models.schedules import CyborgBackupScheduleState
-from cyborgbackup.main.constants import ACTIVE_STATES
 from cyborgbackup.main.expect import run
 from cyborgbackup.main.consumers import emit_channel_notification
-from cyborgbackup.main.utils.common import OutputEventFilter, get_type_for_model, get_ssh_version, get_module_provider, load_module_provider
+from cyborgbackup.main.utils.common import OutputEventFilter, get_type_for_model, get_ssh_version, load_module_provider
 from cyborgbackup.main.utils.encryption import decrypt_field
 from cyborgbackup.main.utils.callbacks import CallbackQueueDispatcher
 
 __all__ = ['RunJob', 'handle_work_error', 'handle_work_success', 'advisory_lock', 'CallbackQueueDispatcher',
-           'CyBorgBackupTaskError', 'task_set_logger_pre_run', 'cyborgbackup_periodic_scheduler',
-           'LogErrorsTask', 'send_notifications', 'run_administrative_checks', 'purge_old_stdout_files']
+           'CyBorgBackupTaskError', 'cyborgbackup_periodic_scheduler',
+           'LogErrorsTask', 'purge_old_stdout_files']
 
 OPENSSH_KEY_ERROR = u'''\
 It looks like you're trying to use a private key in OpenSSH format, which \
@@ -79,6 +63,7 @@ Try upgrading OpenSSH or providing your private key in an different format. \
 '''
 
 logger = logging.getLogger('cyborgbackup.main.tasks')
+
 
 def build_report(type):
     since = 24*60*60
@@ -89,7 +74,7 @@ def build_report(type):
     elif type == 'monthly':
         since *= 31
     started = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(seconds=since)
-    jobs = Job.objects.filter(started__gte=started,job_type='job')
+    jobs = Job.objects.filter(started__gte=started, job_type='job')
     totalTimes = 0
     totalBackups = 0
     totalSize = 0
@@ -121,6 +106,7 @@ def build_report(type):
     }
     return report
 
+
 def generate_ascii_table(elements):
     for elt in elements['lines']:
         for col in elements['columns']:
@@ -131,16 +117,17 @@ def generate_ascii_table(elements):
         line += '-'*col['minsize']+'+'
     header = line + '\n'
     for col in elements['columns']:
-        header += '| '+ col['title'].ljust(col['minsize']-1)
+        header += '| ' + col['title'].ljust(col['minsize']-1)
     header += '|' + '\n' + line
     table = header
     for elt in elements['lines']:
         table += '\n'
         for col in elements['columns']:
-            table += '| '+ elt[col['key']].ljust(col['minsize']-1)
+            table += '| ' + elt[col['key']].ljust(col['minsize']-1)
         table += '|'
     table += '\n'+line
     return table
+
 
 def generate_html_table(elements):
     table = '<table>\n<thead><tr>'
@@ -153,9 +140,10 @@ def generate_html_table(elements):
         for col in elements['columns']:
             table += '<td>'+elt[col['key']]+'</td>\n'
         table += '</tr>\n'
-        i+=1
+        i += 1
     table += '</tbody></table>\n'
     return table
+
 
 def generate_html_joboutput(elements):
     output = """Job Output : <div class="job-results-standard-out">
@@ -175,16 +163,17 @@ def generate_html_joboutput(elements):
     </div>"""
     return output
 
+
 def send_email(elements, type, mail_to):
     try:
         setting = Setting.objects.get(key='cyborgbackup_mail_from')
         mail_address = setting.value
-    except Exception as e:
+    except Exception:
         mail_address = 'cyborgbackup@cyborgbackup.local'
     try:
         setting = Setting.objects.get(key='cyborgbackup_mail_server')
         mail_server = setting.value
-    except Exception as e:
+    except Exception:
         mail_server = 'localhost'
     msg = EmailMessage()
     msg['Subject'] = 'CyBorgBackup Report'
@@ -246,7 +235,10 @@ Job output :
          border-top: 0; text-align: center; border-bottom: none; vertical-align: bottom;
          white-space: nowrap;line-height: 1.42;font-weight: 400;padding: 8px;
        }
-       td { text-align: center; padding: 0 8px; line-height: 35px; border-top: 1px solid gainsboro; vertical-align: top; }
+       td {
+         text-align: center; padding: 0 8px; line-height: 35px;
+         border-top: 1px solid gainsboro; vertical-align: top;
+       }
        div.content { width: 1000px;padding: 15px 32px 15px 40px;font: 14px/16px "Roboto", sans-serif; }
        div.card { position: relative;padding: 0 15px;float: left;box-sizing: border-box; }
        div.panel {
@@ -330,7 +322,7 @@ Job output :
 <div class="card block-top"><div class="panel"><div class="panel-body">Total Size : {}</div></div></div>
 <div class="card block-top"><div class="panel"><div class="panel-body">Total Deduplicated Size : {}</div></div></div>
 """.format(elements['backups'], elements['times'],
-        elements['size'], elements['deduplicated'])
+           elements['size'], elements['deduplicated'])
     elif type == 'after':
         if elements['state'] == 'successful':
             logo = os.path.join(settings.BASE_DIR, 'cyborgbackup', 'icon_success.txt')
@@ -345,10 +337,12 @@ Job output :
         header += '<div class="alert {}"><img src="{}" />{}</div>'.format(css_class, state_icon, elements['title'])
         if elements['job'].job_explanation and elements['job'].job_explanation != '':
             header += """<div class="card block-top" style="width:400px; height: auto;">
-            <div class="panel"><div class="panel-body">Job Explanation : <br><span>{}</span></div></div></div>""".format(elements['job'].job_explanation)
+            <div class="panel"><div class="panel-body">Job Explanation : <br><span>{}</span>
+            </div></div></div>""".format(elements['job'].job_explanation)
         if elements['job'].result_traceback and elements['job'].result_traceback != '':
             header += """<div class="card block-top" style="width:400px; height: auto;">
-            <div class="panel"><div class="panel-body">Resutl Traceback : <br><span>{}</span></div></div></div>""".format(elements['job'].result_traceback)
+            <div class="panel"><div class="panel-body">Resutl Traceback : <br><span>{}</span>
+            </div></div></div>""".format(elements['job'].result_traceback)
 
     content = """\
 <div class="card" style="clear:both"><div class="panel"><div class="panel-body">
@@ -361,6 +355,7 @@ Job output :
     logger.debug('Send Email')
     with smtplib.SMTP(mail_server) as s:
         s.send_message(msg)
+
 
 @contextmanager
 def advisory_lock(*args, **kwargs):
@@ -413,38 +408,46 @@ class LogErrorsTask(Task):
         super(LogErrorsTask, self).on_failure(exc, task_id, args, kwargs, einfo)
 
 
-@shared_task(queue='cyborgbackup', base=LogErrorsTask)
-def send_notifications(notification_list, job_id=None):
-    if not isinstance(notification_list, list):
-        raise TypeError("notification_list should be of type list")
-    if job_id is not None:
-        job_actual = Job.objects.get(id=job_id)
+# @shared_task(queue='cyborgbackup', base=LogErrorsTask)
+# def send_notifications(notification_list, job_id=None):
+#     if not isinstance(notification_list, list):
+#         raise TypeError("notification_list should be of type list")
+#     if job_id is not None:
+#         job_actual = Job.objects.get(id=job_id)
+#
+#     notifications = Notification.objects.filter(id__in=notification_list)
+#     if job_id is not None:
+#         job_actual.notifications.add(*notifications)
+#
+#     for notification in notifications:
+#         try:
+#             sent = notification.notification_template.send(notification.subject, notification.body)
+#             notification.status = "successful"
+#             notification.notifications_sent = sent
+#         except Exception as e:
+#             logger.error(six.text_type("Send Notification Failed {}").format(e))
+#             notification.status = "failed"
+#             notification.error = smart_str(e)
+#         finally:
+#             notification.save()
 
-    notifications = Notification.objects.filter(id__in=notification_list)
-    if job_id is not None:
-        job_actual.notifications.add(*notifications)
-
-    for notification in notifications:
-        try:
-            sent = notification.notification_template.send(notification.subject, notification.body)
-            notification.status = "successful"
-            notification.notifications_sent = sent
-        except Exception as e:
-            logger.error(six.text_type("Send Notification Failed {}").format(e))
-            notification.status = "failed"
-            notification.error = smart_str(e)
-        finally:
-            notification.save()
 
 units = {"B": 1, "kB": 10**3, "MB": 10**6, "GB": 10**9, "TB": 10**12}
+
+
 def parseSize(size):
     number, unit = [string.strip() for string in size.split()]
     return int(float(number)*units[unit])
 
+
 @shared_task(bind=True, base=LogErrorsTask)
 def compute_borg_size(self):
     logger.debug('Compute Borg Size Report')
-    jobs = Job.objects.filter(original_size=0, deduplicated_size=0, compressed_size=0, status='successful', job_type='job').order_by('-finished')
+    jobs = Job.objects.filter(original_size=0,
+                              deduplicated_size=0,
+                              compressed_size=0,
+                              status='successful',
+                              job_type='job').order_by('-finished')
     if jobs.exists():
         for job in jobs:
             events = JobEvent.objects.filter(job_id=job.pk).order_by('-counter')
@@ -460,7 +463,9 @@ def compute_borg_size(self):
     repos = Repository.objects.filter(original_size=0, deduplicated_size=0, compressed_size=0, ready=True)
     if repos.exists():
         for repo in repos:
-            jobs = Job.objects.filter(policy__repository_id=repo.pk, status='successful', job_type='job').order_by('-finished')
+            jobs = Job.objects.filter(policy__repository_id=repo.pk,
+                                      status='successful',
+                                      job_type='job').order_by('-finished')
             if jobs.exists():
                 last_running_job = jobs.first()
                 events = JobEvent.objects.filter(job_id=last_running_job.pk).order_by('-counter')
@@ -473,6 +478,7 @@ def compute_borg_size(self):
                         repo.deduplicated_size = parseSize(m.group(3))
                         repo.save()
                         break
+
 
 @shared_task(bind=True, base=LogErrorsTask)
 def cyborgbackup_notifier(self, type, *kwargs):
@@ -507,58 +513,59 @@ def cyborgbackup_notifier(self, type, *kwargs):
             try:
                 setting = Setting.objects.get(key='cyborgbackup_catalog_enabled')
                 if setting.value == 'True':
-                    catalog_enabled=True
+                    catalog_enabled = True
                 else:
-                    catalog_enabled=False
-            except Exception as e:
-                catalog_enabled=True
+                    catalog_enabled = False
+            except Exception:
+                catalog_enabled = True
 
             try:
                 setting = Setting.objects.get(key='cyborgbackup_auto_prune')
                 if setting.value == 'True':
-                    auto_prune_enabled=True
+                    auto_prune_enabled = True
                 else:
-                    auto_prune_enabled=False
-            except Exception as e:
-                auto_prune_enabled=True
-            report = {'lines':[]}
-            order=1
+                    auto_prune_enabled = False
+            except Exception:
+                auto_prune_enabled = True
+            report = {'lines': []}
+            order = 1
             report['lines'].append({
                 'order': str(order),
                 'title': 'Policy {}'.format(policy.name),
                 'type': 'policy'
             })
-            order+=1
+            order += 1
             if not policy.repository.ready:
                 report['lines'].append({
                     'order': str(order),
                     'title': "Prepare Repository {}".format(policy.repository.name),
                     'type': "repository"
                 })
-            have_prune_info = policy.keep_hourly or policy.keep_daily or policy.keep_weekly or policy.keep_monthly or policy.keep_yearly
+            have_prune_info = (policy.keep_hourly or policy.keep_daily
+                               or policy.keep_weekly or policy.keep_monthly or policy.keep_yearly)
             for client in policy.clients.all():
                 if not client.ready:
-                    order+=1
+                    order += 1
                     report['lines'].append({
                         'order': str(order),
                         'title': "Prepare Client {}".format(client.hostname),
                         'type': "client"
                     })
-                order+=1
+                order += 1
                 report['lines'].append({
                     'order': str(order),
                     'title': "Backup Job {} {}".format(policy.name, client.hostname),
                     'type': policy.policy_type
                 })
                 if catalog_enabled:
-                    order+=1
+                    order += 1
                     report['lines'].append({
                         'order': str(order),
                         'title': "Catalog Job {} {}".format(policy.name, client.hostname),
                         'type': "catalog"
                     })
                 if auto_prune_enabled and have_prune_info:
-                    order+=1
+                    order += 1
                     report['lines'].append({
                         'order': str(order),
                         'title': "Prune Job {} {}".format(policy.name, client.hostname),
@@ -581,7 +588,7 @@ def cyborgbackup_notifier(self, type, *kwargs):
             lines = []
             for event in jobevents:
                 lines.append(event.stdout)
-            report = {'state': job.status, 'title':job.name, 'lines': lines, 'job': job}
+            report = {'state': job.status, 'title': job.name, 'lines': lines, 'job': job}
         for user in users:
             send_email(report, type, user.email)
 
@@ -598,8 +605,9 @@ def prune_catalog(self):
                 m = prg.match(event.stdout)
                 if m:
                     Catalog.objects.filter(archive_name=m.group(1)).delete()
-            job.pruned=True
+            job.pruned = True
             job.save()
+
 
 @shared_task(bind=True, base=LogErrorsTask)
 def borg_restore_test(self):
@@ -607,10 +615,11 @@ def borg_restore_test(self):
     try:
         setting = Setting.objects.get(key='cyborgbackup_auto_restore_test')
         restore_test = setting.value
-    except Exception as e:
+    except Exception:
         restore_test = False
     if restore_test == 'True':
         logger.debug('Launch Random Job Restore')
+
 
 @shared_task(bind=True, base=LogErrorsTask)
 def borg_repository_integrity(self):
@@ -618,10 +627,11 @@ def borg_repository_integrity(self):
     try:
         setting = Setting.objects.get(key='cyborgbackup_check_repository')
         check_repository = setting.value
-    except Exception as e:
+    except Exception:
         check_repository = False
     if check_repository == 'True':
         logger.debug('Launch Borg Repository Integrity')
+
 
 @shared_task(bind=True, base=LogErrorsTask)
 def purge_old_stdout_files(self):
@@ -630,6 +640,7 @@ def purge_old_stdout_files(self):
         if os.path.getctime(os.path.join(settings.JOBOUTPUT_ROOT, f)) < nowtime - settings.LOCAL_STDOUT_EXPIRE_TIME:
             os.unlink(os.path.join(settings.JOBOUTPUT_ROOT, f))
             logger.info(six.text_type("Removing {}").format(os.path.join(settings.JOBOUTPUT_ROOT, f)))
+
 
 @shared_task(bind=True, base=LogErrorsTask)
 def cyborgbackup_periodic_scheduler(self):
@@ -655,11 +666,13 @@ def cyborgbackup_periodic_scheduler(self):
             continue
         if not can_start:
             new_job.status = 'failed'
-            new_job.job_explanation = "Scheduled job could not start because it was not in the right state or required manual credentials"
+            expl = "Scheduled job could not start because it was not in the right state or required manual credentials"
+            new_job.job_explanation = expl
             new_job.save(update_fields=['status', 'job_explanation'])
             new_job.websocket_emit_status("failed")
         emit_channel_notification('schedules-changed', dict(id=policy.id, group_name="jobs"))
     state.save()
+
 
 @shared_task(bind=True, queue='cyborgbackup', base=LogErrorsTask)
 def handle_work_success(self, result, task_actual):
@@ -673,6 +686,7 @@ def handle_work_success(self, result, task_actual):
 
     from cyborgbackup.main.utils.tasks import run_job_complete
     run_job_complete.delay(instance.id)
+
 
 @shared_task(queue='cyborgbackup', base=LogErrorsTask)
 def handle_work_error(task_id, *args, **kwargs):
@@ -700,8 +714,9 @@ def handle_work_error(task_id, *args, **kwargs):
                 instance.status = 'failed'
                 instance.failed = True
                 if not instance.job_explanation:
-                    instance.job_explanation = 'Previous Task Failed: {"job_type": "%s", "job_name": "%s", "job_id": "%s"}' % \
-                                               (first_instance_type, first_instance.name, first_instance.id)
+                    expl = 'Previous Task Failed: {"job_type": "%s", "job_name": "%s", "job_id": "%s"}' % \
+                           (first_instance_type, first_instance.name, first_instance.id)
+                    instance.job_explanation = expl
                 instance.save()
                 instance.websocket_emit_status("failed")
 
@@ -713,6 +728,7 @@ def handle_work_error(task_id, *args, **kwargs):
         from cyborgbackup.main.utils.tasks import run_job_complete
         run_job_complete.delay(first_instance.id)
         pass
+
 
 def with_path_cleanup(f):
     @functools.wraps(f)
@@ -832,20 +848,20 @@ class BaseTask(LogErrorsTask):
             ssh_ver = get_ssh_version()
             ssh_too_old = True if ssh_ver == "unknown" else Version(ssh_ver) < Version("6.0")
             openssh_keys_supported = ssh_ver != "unknown" and Version(ssh_ver) >= Version("6.5")
-            for settings, data in private_data.get('credentials', {}).items():
+            for sets, data in private_data.get('credentials', {}).items():
                 # Bail out now if a private key was provided in OpenSSH format
                 # and we're running an earlier version (<6.5).
                 if 'OPENSSH PRIVATE KEY' in data and not openssh_keys_supported:
                     raise RuntimeError(OPENSSH_KEY_ERROR)
             listpaths = []
-            for settings, data in private_data.get('credentials', {}).items():
+            for sets, data in private_data.get('credentials', {}).items():
                 # OpenSSH formatted keys must have a trailing newline to be
                 # accepted by ssh-add.
                 if 'OPENSSH PRIVATE KEY' in data and not data.endswith('\n'):
                     data += '\n'
                 # For credentials used with ssh-add, write to a named pipe which
                 # will be read then closed, instead of leaving the SSH key on disk.
-                if settings and not ssh_too_old:
+                if sets and not ssh_too_old:
                     name = 'credential_{}'.format(settings.key)
                     path = os.path.join(kwargs['private_data_dir'], name)
                     run.open_fifo_write(path, data)
@@ -979,8 +995,6 @@ class BaseTask(LogErrorsTask):
             env = self.build_env(instance, **kwargs)
             instance = self.update_model(instance.pk, job_args=' '.join(args), job_cwd=cwd, job_env=json.dumps(env))
 
-            #safe_env = build_safe_env(env)
-
             stdout_handle = self.get_stdout_handle(instance)
             # If there is an SSH key path defined, wrap args with ssh-agent.
             ssh_key_path = self.get_ssh_key_path(instance, **kwargs)
@@ -1097,10 +1111,10 @@ class RunJob(BaseTask):
         Build command line argument list for running the task,
         optionally using ssh-agent for public/private key authentication.
         '''
-        creds = None
+        # creds = None
 
-        if creds:
-            ssh_username = kwargs.get('username', creds.username)
+        # if creds:
+        #    ssh_username = kwargs.get('username', creds.username)
         env = self.build_env(job, **kwargs)
         if job.job_type == 'check':
             agentUsers = User.objects.filter(is_agent=True)
@@ -1116,7 +1130,7 @@ class RunJob(BaseTask):
                 try:
                     setting_client_user = Setting.objects.get(key='cyborgbackup_backup_user')
                     client_user = setting_client_user.value
-                except Exception as e:
+                except Exception:
                     client_user = 'root'
                 handle, path = tempfile.mkstemp()
                 f = os.fdopen(handle, 'w')
@@ -1128,26 +1142,31 @@ class RunJob(BaseTask):
                 f.close()
                 handle_env, path_env = tempfile.mkstemp()
                 f = os.fdopen(handle_env, 'w')
-                for key,var in env.items():
+                for key, var in env.items():
                     f.write('export {}="{}"\n'.format(key, var))
                 f.close()
-                os.chmod(path, stat.S_IEXEC | stat.S_IREAD )
-                args= ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
-                args+= ['{}@{}'.format(client_user, job.client.hostname)]
-                args+= ['\"', 'mkdir', env['PRIVATE_DATA_DIR'], '\"', '&&']
-                args+= ['scp', '-qo', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
-                args+= [path, path_env, '{}@{}:{}/'.format(client_user, job.client.hostname, env['PRIVATE_DATA_DIR'])]
-                args+= [ '&&' ]
-                args+= ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
-                args+= ['{}@{}'.format(client_user, job.client.hostname)]
-                args+= ['\". ', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
-                args+= ['rm', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
-                args+= [os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path)), '; exicode=$?;', 'rm', '-rf', env['PRIVATE_DATA_DIR'], '; exit $exitcode\"']
+                os.chmod(path, stat.S_IEXEC | stat.S_IREAD)
+                args = ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
+                args += ['{}@{}'.format(client_user, job.client.hostname)]
+                args += ['\"', 'mkdir', env['PRIVATE_DATA_DIR'], '\"', '&&']
+                args += ['scp', '-qo', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
+                args += [path, path_env, '{}@{}:{}/'.format(client_user, job.client.hostname, env['PRIVATE_DATA_DIR'])]
+                args += ['&&']
+                args += ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
+                args += ['{}@{}'.format(client_user, job.client.hostname)]
+                args += ['\". ', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
+                args += ['rm', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
+                args += [os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path)),
+                         '; exicode=$?;',
+                         'rm',
+                         '-rf',
+                         env['PRIVATE_DATA_DIR'],
+                         '; exit $exitcode\"']
             if job.client_id and job.policy.policy_type == 'vm':
                 try:
                     setting_client_user = Setting.objects.get(key='cyborgbackup_backup_user')
                     client_user = setting_client_user.value
-                except Exception as e:
+                except Exception:
                     client_user = 'root'
                 handle, path_prepare = tempfile.mkstemp()
                 f = os.fdopen(handle, 'w')
@@ -1162,24 +1181,33 @@ class RunJob(BaseTask):
                 hypervisor_hostname = provider.get_client(job.client.hostname)
                 f.write(provider.get_script())
                 f.close()
-                env.update({'CYBORGBACKUP_BACKUP_SCRIPT': os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_backup_script))})
+                backupScriptPath = os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_backup_script))
+                env.update({'CYBORGBACKUP_BACKUP_SCRIPT': backupScriptPath})
                 handle_env, path_env = tempfile.mkstemp()
                 f = os.fdopen(handle_env, 'w')
-                for key,var in env.items():
+                for key, var in env.items():
                     f.write('export {}="{}"\n'.format(key, var))
                 f.close()
-                os.chmod(path_prepare, stat.S_IEXEC | stat.S_IREAD )
-                args= ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
-                args+= ['{}@{}'.format(client_user, hypervisor_hostname)]
-                args+= ['\"', 'mkdir', env['PRIVATE_DATA_DIR'], '\"', '&&']
-                args+= ['scp', '-qo', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
-                args+= [path_prepare, path_env, path_backup_script, '{}@{}:{}/'.format(client_user, hypervisor_hostname, env['PRIVATE_DATA_DIR'])]
-                args+= [ '&&' ]
-                args+= ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
-                args+= ['{}@{}'.format(client_user, hypervisor_hostname)]
-                args+= ['\". ', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
-                args+= ['rm', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
-                args+= [os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_prepare)), '; exicode=$?;', 'rm', '-rf', env['PRIVATE_DATA_DIR'], '; exit $exitcode\"']
+                os.chmod(path_prepare, stat.S_IEXEC | stat.S_IREAD)
+                args = ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
+                args += ['{}@{}'.format(client_user, hypervisor_hostname)]
+                args += ['\"', 'mkdir', env['PRIVATE_DATA_DIR'], '\"', '&&']
+                args += ['scp', '-qo', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
+                args += [path_prepare,
+                         path_env,
+                         path_backup_script,
+                         '{}@{}:{}/'.format(client_user, hypervisor_hostname, env['PRIVATE_DATA_DIR'])]
+                args += ['&&']
+                args += ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
+                args += ['{}@{}'.format(client_user, hypervisor_hostname)]
+                args += ['\". ', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
+                args += ['rm', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
+                args += [os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_prepare)),
+                         '; exicode=$?;',
+                         'rm',
+                         '-rf',
+                         env['PRIVATE_DATA_DIR'],
+                         '; exit $exitcode\"']
             if job.repository_id:
                 handle, path = tempfile.mkstemp()
                 f = os.fdopen(handle, 'w')
@@ -1192,23 +1220,28 @@ class RunJob(BaseTask):
                 os.chmod(path, stat.S_IEXEC | stat.S_IREAD)
                 handle_env, path_env = tempfile.mkstemp()
                 f = os.fdopen(handle_env, 'w')
-                for key,var in env.items():
+                for key, var in env.items():
                     if key == 'CYBORG_BORG_REPOSITORY' and ':' in var:
                         var = var.split(':')[1]
                     f.write('export {}="{}"\n'.format(key, var))
                 f.close()
                 repository_conn = job.policy.repository.path.split(':')[0]
-                args= ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
-                args+= [repository_conn]
-                args+= ['\"', 'mkdir', env['PRIVATE_DATA_DIR'], '\"', '&&']
-                args+= ['scp', '-qo', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
-                args+= [path, path_env, '{}:{}/'.format(repository_conn, env['PRIVATE_DATA_DIR'])]
-                args+= [ '&&' ]
-                args+= ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
-                args+= [repository_conn]
-                args+= ['\". ', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
-                args+= ['rm', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
-                args+= [os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path)), '; exicode=$?;', 'rm', '-rf', env['PRIVATE_DATA_DIR'], '; exit $exitcode\"']
+                args = ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
+                args += [repository_conn]
+                args += ['\"', 'mkdir', env['PRIVATE_DATA_DIR'], '\"', '&&']
+                args += ['scp', '-qo', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
+                args += [path, path_env, '{}:{}/'.format(repository_conn, env['PRIVATE_DATA_DIR'])]
+                args += ['&&']
+                args += ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
+                args += [repository_conn]
+                args += ['\". ', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
+                args += ['rm', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
+                args += [os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path)),
+                         '; exicode=$?;',
+                         'rm',
+                         '-rf',
+                         env['PRIVATE_DATA_DIR'],
+                         '; exit $exitcode\"']
         elif job.job_type == 'catalog':
             agentUsers = User.objects.filter(is_agent=True)
             if not agentUsers.exists():
@@ -1250,57 +1283,62 @@ class RunJob(BaseTask):
                     script = fs.read()
                 f.write(script)
                 f.close()
-                os.chmod(path, stat.S_IEXEC | stat.S_IREAD )
+                os.chmod(path, stat.S_IEXEC | stat.S_IREAD)
                 handle_env, path_env = tempfile.mkstemp()
                 f = os.fdopen(handle_env, 'w')
-                for key,var in env.items():
+                for key, var in env.items():
                     f.write('export {}="{}"\n'.format(key, var))
                 f.close()
                 repository_conn = job.policy.repository.path.split(':')[0]
-                args= ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
-                args+= [repository_conn]
-                args+= ['\"', 'mkdir', env['PRIVATE_DATA_DIR'], '\"', '&&']
-                args+= ['scp', '-qo', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
-                args+= [path, path_env, '{}:{}/'.format(repository_conn, env['PRIVATE_DATA_DIR'])]
-                args+= [ '&&' ]
-                args+= ['ssh', '-Ao', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
-                args+= [repository_conn]
-                args+= ['\". ', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
-                args+= ['rm', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
-                args+= [os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path)), '; exicode=$?;', 'rm', '-rf', env['PRIVATE_DATA_DIR'], '; exit $exitcode\"']
+                args = ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
+                args += [repository_conn]
+                args += ['\"', 'mkdir', env['PRIVATE_DATA_DIR'], '\"', '&&']
+                args += ['scp', '-qo', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
+                args += [path, path_env, '{}:{}/'.format(repository_conn, env['PRIVATE_DATA_DIR'])]
+                args += ['&&']
+                args += ['ssh', '-Ao', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
+                args += [repository_conn]
+                args += ['\". ', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
+                args += ['rm', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
+                args += [os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path)),
+                         '; exicode=$?;',
+                         'rm',
+                         '-rf',
+                         env['PRIVATE_DATA_DIR'],
+                         '; exit $exitcode\"']
         elif job.job_type == 'prune':
             if job.client_id:
                 prefix = '{}-{}-'.format(job.policy.policy_type, job.client.hostname)
                 args = ['borg', 'prune', '-v', '--list']
-                args+= ['--prefix', prefix]
+                args += ['--prefix', prefix]
                 if job.policy.keep_hourly and job.policy.keep_hourly > 0:
-                    args+= ['--keep-hourly={}'.format(job.policy.keep_hourly)]
+                    args += ['--keep-hourly={}'.format(job.policy.keep_hourly)]
                 if job.policy.keep_daily and job.policy.keep_daily > 0:
-                    args+= ['--keep-daily={}'.format(job.policy.keep_daily)]
+                    args += ['--keep-daily={}'.format(job.policy.keep_daily)]
                 if job.policy.keep_weekly and job.policy.keep_weekly > 0:
-                    args+= ['--keep-weekly={}'.format(job.policy.keep_weekly)]
+                    args += ['--keep-weekly={}'.format(job.policy.keep_weekly)]
                 if job.policy.keep_monthly and job.policy.keep_monthly > 0:
-                    args+= ['--keep-monthly={}'.format(job.policy.keep_monthly)]
+                    args += ['--keep-monthly={}'.format(job.policy.keep_monthly)]
                 if job.policy.keep_yearly and job.policy.keep_yearly > 0:
-                    args+= ['--keep-monthly={}'.format(job.policy.keep_yearly)]
+                    args += ['--keep-monthly={}'.format(job.policy.keep_yearly)]
         else:
             (client, client_user, args) = self.build_borg_cmd(job)
             handle_env, path_env = tempfile.mkstemp()
             f = os.fdopen(handle_env, 'w')
-            for key,var in env.items():
+            for key, var in env.items():
                 f.write('export {}="{}"\n'.format(key, var))
             f.close()
             new_args = ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
-            new_args+= ['{}@{}'.format(client_user, client)]
-            new_args+= ['\"', 'mkdir', env['PRIVATE_DATA_DIR'], '\"', '&&']
-            new_args+= ['scp', '-qo', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
-            new_args+= [path_env, '{}@{}:{}/'.format(client_user, client, env['PRIVATE_DATA_DIR'])]
-            new_args+= [ '&&' ]
-            new_args+= ['ssh', '-Ao', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
-            new_args+= ['{}@{}'.format(client_user, client)]
-            new_args+= ['\". ', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
-            new_args+= ['rm', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
-            new_args+= [' '.join(args), '; exicode=$?;', 'rm', '-rf', env['PRIVATE_DATA_DIR'], '; exit $exitcode\"']
+            new_args += ['{}@{}'.format(client_user, client)]
+            new_args += ['\"', 'mkdir', env['PRIVATE_DATA_DIR'], '\"', '&&']
+            new_args += ['scp', '-qo', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
+            new_args += [path_env, '{}@{}:{}/'.format(client_user, client, env['PRIVATE_DATA_DIR'])]
+            new_args += ['&&']
+            new_args += ['ssh', '-Ao', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
+            new_args += ['{}@{}'.format(client_user, client)]
+            new_args += ['\". ', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
+            new_args += ['rm', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
+            new_args += [' '.join(args), '; exicode=$?;', 'rm', '-rf', env['PRIVATE_DATA_DIR'], '; exit $exitcode\"']
             args = new_args
         return args
 
@@ -1319,13 +1357,16 @@ class RunJob(BaseTask):
 ########
 # rootfs
 #   push => ssh root@client "borg create borg@backupHost:/backup::archive /"
-#   pull => ssh borg@backupHost "sshfs root@client:/ /tmp/sshfs_XXX && cd /tmp/sshfs_XXX && borg create /backup::archive . && fusermount -u /tmp/sshfs"
+#   pull => ssh borg@backupHost "sshfs root@client:/ /tmp/sshfs_XXX
+#            && cd /tmp/sshfs_XXX && borg create /backup::archive . && fusermount -u /tmp/sshfs"
 # config
 #   push => ssh root@client "borg create borg@backupHost:/backup::archive /etc"
-#   pull => ssh borg@backupHost "sshfs root@client:/ /tmp/sshfs_XXX && cd /tmp/sshfs_XXX && borg create /backup::archive ./etc && fusermount -u /tmp/sshfs
+#   pull => ssh borg@backupHost "sshfs root@client:/ /tmp/sshfs_XXX
+#            && cd /tmp/sshfs_XXX && borg create /backup::archive ./etc && fusermount -u /tmp/sshfs
 # mail
 #   push => ssh root@client "borg create borg@backupHost:/backup::archive /var/lib/mail"
-#   pull => ssh borg@backupHost "sshfs root@client:/ /tmp/sshfs_XXX && cd /tmp/sshfs_XXX && borg create /backup::archive ./var/lib/mail && fusermount -u /tmp/sshfs
+#   pull => ssh borg@backupHost "sshfs root@client:/ /tmp/sshfs_XXX
+#            && cd /tmp/sshfs_XXX && borg create /backup::archive ./var/lib/mail && fusermount -u /tmp/sshfs
 # mysql
 #   pull => ssh root@client "mysqldump | borg create borg@backupHost:/backup::archive -"
 #   push => ssh borg@backupHost "ssh root@client "mysqldump" | borg create /backup::archive -"
@@ -1346,7 +1387,7 @@ class RunJob(BaseTask):
         try:
             setting_client_user = Setting.objects.get(key='cyborgbackup_backup_user')
             client_user = setting_client_user.value
-        except Exception as e:
+        except Exception:
             client_user = 'root'
         if client_user != 'root':
             args = ['sudo', '-E']+args
@@ -1359,7 +1400,16 @@ class RunJob(BaseTask):
         archive_client_name = job.client.hostname
         if policy_type == 'rootfs':
             path = '/'
-            excludedDirs = ['/media', '/dev', '/proc', '/sys', '/var/run', '/run', '/lost+found', '/mnt', '/var/lib/lxcfs', '/tmp']
+            excludedDirs = ['/media',
+                            '/dev',
+                            '/proc',
+                            '/sys',
+                            '/var/run',
+                            '/run',
+                            '/lost+found',
+                            '/mnt',
+                            '/var/lib/lxcfs',
+                            '/tmp']
         if policy_type == 'config':
             path = '/etc'
         if policy_type == 'mail':
@@ -1368,7 +1418,7 @@ class RunJob(BaseTask):
             path = '-'
             if policy_type == 'mysql':
                 piped += 'mysqldump'
-                database_specify=False
+                database_specify = False
                 if job.policy.extra_vars != '':
                     mysql_json = json.loads(job.policy.extra_vars)
                     if 'user' in mysql_json and mysql_json['user']:
@@ -1376,7 +1426,7 @@ class RunJob(BaseTask):
                     if 'password' in mysql_json and mysql_json['password']:
                         piped += " -p{}".format(mysql_json['password'])
                     if 'databases' in mysql_json and mysql_json['databases']:
-                        database_specify=True
+                        database_specify = True
                         if isinstance(mysql_json['databases'], list):
                             piped += " --databases {}".format(' '.join(mysql_json['databases']))
                         else:
@@ -1384,20 +1434,20 @@ class RunJob(BaseTask):
                 if not database_specify:
                     piped += " --all-databases"
             if policy_type == 'postgresql':
-                database_specify=False
+                database_specify = False
                 if job.policy.extra_vars != '':
                     pgsql_json = json.loads(job.policy.extra_vars)
                     if 'database' in pgsql_json and pgsql_json['database']:
-                        database_specify=True
+                        database_specify = True
                         piped += 'pg_dump {}'.format(pgsql_json['database'])
                 if not database_specify:
                     piped += 'pg_dumpall'
             if policy_type == 'piped':
-                command_specify=False
+                command_specify = False
                 if job.policy.extra_vars != '':
                     piped_json = json.loads(job.policy.extra_vars)
                     if 'command' in piped_json and piped_json['command']:
-                        command_specify=True
+                        command_specify = True
                         piped += piped_json['command']
                 if not command_specify:
                     raise Exception('Command for piped backup not defined')
@@ -1411,7 +1461,7 @@ class RunJob(BaseTask):
             piped_list = ['/var/cache/cyborgbackup/borg_backup_vm']
             piped = ' '.join(piped_list)
             if not job.policy.mode_pull:
-                 args = [piped, '|']+args
+                args = [piped, '|']+args
         args += ['{}::{}-{}-{}'.format(repositoryPath, policy_type, archive_client_name, jobDateString)]
         if job.policy.mode_pull and policy_type in ('rootfs', 'config', 'mail'):
             path = '.'+path
@@ -1463,7 +1513,7 @@ class RunJob(BaseTask):
             try:
                 set = Setting.objects.get(key='cyborgbackup_url')
                 base_url = set.value
-            except Exception as e:
+            except Exception:
                 base_url = 'http://web:8000'
             if job.job_type == 'check':
                 if job.client_id:

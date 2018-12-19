@@ -1,49 +1,36 @@
 # Python
 import copy
-import json
 import logging
-import re
-import six
-import urllib
 from collections import OrderedDict
-from datetime import timedelta
 
 # Django
-from django.conf import settings
-from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist, ValidationError as DjangoValidationError
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 from django.utils.encoding import force_text
 from django.utils.text import capfirst
 from django.utils.timezone import now
-from django.utils.functional import cached_property
 
 # Django REST Framework
-from rest_framework.exceptions import ValidationError, PermissionDenied
+from rest_framework.exceptions import ValidationError
 from rest_framework import fields
 from rest_framework import serializers
 from rest_framework import validators
-from rest_framework.utils.serializer_helpers import ReturnList
 
 # Django-Polymorphic
 from polymorphic.models import PolymorphicModel
 
 # cyborgbackup
 from cyborgbackup.main.constants import ANSI_SGR_PATTERN
-from cyborgbackup.main.models import * # noqa
+from cyborgbackup.main.models import *
 from cyborgbackup.main.models.credential import *
 from cyborgbackup.main.models.jobs import Job
 from cyborgbackup.main.models.users import User
 from cyborgbackup.main.models.settings import Setting
 from cyborgbackup.main.constants import ACTIVE_STATES
 from cyborgbackup.main.utils.common import (
-    get_type_for_model, get_model_for_type, timestamp_apiformat,
-    camelcase_to_underscore, getattrd, parse_yaml_or_json,
+    get_type_for_model, get_model_for_type, camelcase_to_underscore,
     has_model_field_prefetched, prefetch_page_capabilities)
-from cyborgbackup.main.utils.encryption import encrypt_dict
-from cyborgbackup.main.utils.filters import SmartFilter
-from cyborgbackup.main.utils.string import REPLACE_STR
 from cyborgbackup.main.validators import vars_validate_or_raise
 from cyborgbackup.api.versioning import reverse, get_request_version
 from cyborgbackup.api.fields import BooleanNullField, CharNullField, ChoiceNullField, VerbatimField
@@ -52,8 +39,9 @@ logger = logging.getLogger('cyborgbackup.api.serializers')
 
 DEPRECATED = 'This resource has been deprecated and will be removed in a future release'
 
+
 # Fields that should be summarized regardless of object type.
-DEFAULT_SUMMARY_FIELDS = ('id', 'name', 'created_by', 'modified_by')#, 'type')
+DEFAULT_SUMMARY_FIELDS = ('id', 'name', 'created_by', 'modified_by')
 
 
 # Keys are fields (foreign keys) where, if found on an instance, summary info
@@ -172,12 +160,12 @@ class BaseSerializerMetaclass(serializers.SerializerMetaclass):
                 meta_val = meta_val or []
                 new_vals = []
                 except_vals = []
-                if base: # Merge values from all bases.
+                if base:
                     new_vals.extend([x for x in meta_val])
                 for v in val:
-                    if not base and v == '*': # Inherit all values from previous base(es).
+                    if not base and v == '*':
                         new_vals.extend([x for x in meta_val])
-                    elif not base and v.startswith('-'): # Except these values.
+                    elif not base and v.startswith('-'):
                         except_vals.append(v[1:])
                     else:
                         new_vals.append(v)
@@ -282,7 +270,6 @@ class BaseSerializer(serializers.ModelSerializer, metaclass=BaseSerializerMetacl
 
     def get_related(self, obj):
         res = OrderedDict()
-        view = self.context.get('view', None)
         if getattr(obj, 'created_by', None):
             res['created_by'] = self.reverse('api:user_detail', kwargs={'pk': obj.created_by.pk})
         if getattr(obj, 'modified_by', None):
@@ -330,7 +317,6 @@ class BaseSerializer(serializers.ModelSerializer, metaclass=BaseSerializerMetacl
             for field in SUMMARIZABLE_FK_FIELDS['user']:
                 summary_fields['modified_by'][field] = getattr(obj.modified_by, field)
 
-
         return summary_fields
 
     def _obj_capability_dict(self, obj):
@@ -377,7 +363,7 @@ class BaseSerializer(serializers.ModelSerializer, metaclass=BaseSerializerMetacl
         if obj is None:
             return None
         elif isinstance(obj, User):
-            return obj.last_login # Not actually exposed for User.
+            return obj.last_login
         elif hasattr(obj, 'modified'):
             return obj.modified
         return None
@@ -533,18 +519,6 @@ class EmptySerializer(serializers.Serializer):
     pass
 
 
-class BaseFactSerializer(BaseSerializer):
-
-    __metaclass__ = BaseSerializerMetaclass
-
-    def get_fields(self):
-        ret = super(BaseFactSerializer, self).get_fields()
-        if 'module' in ret:
-            modules = Fact.objects.all().values_list('module', flat=True).distinct()
-            choices = [(o, o.title()) for o in modules]
-            ret['module'] = serializers.ChoiceField(choices=choices, read_only=True, required=False)
-        return ret
-
 class UserSerializer(BaseSerializer):
 
     password = serializers.CharField(required=False, default='', write_only=True,
@@ -554,11 +528,11 @@ class UserSerializer(BaseSerializer):
     class Meta:
         model = User
         fields = ('*', '-name', '-description', '-modified', '-username',
-                'first_name', 'last_name', 'email', 'is_superuser', 'password',
-                '-created_by', '-modified_by', 'notify_backup_daily',
-                'notify_backup_weekly', 'notify_backup_monthly',
-                'notify_backup_success', 'notify_backup_failed',
-                'notify_backup_summary')
+                  'first_name', 'last_name', 'email', 'is_superuser', 'password',
+                  '-created_by', '-modified_by', 'notify_backup_daily',
+                  'notify_backup_weekly', 'notify_backup_monthly',
+                  'notify_backup_success', 'notify_backup_failed',
+                  'notify_backup_summary')
 
     def to_representation(self, obj):
         ret = super(UserSerializer, self).to_representation(obj)
@@ -581,7 +555,6 @@ class UserSerializer(BaseSerializer):
         if new_password:
             obj.set_password(new_password)
             obj.save(update_fields=['password'])
-            #UserSessionMembership.clear_session_for_user(obj)
         elif not obj.password:
             obj.set_unusable_password()
             obj.save(update_fields=['password'])
@@ -605,296 +578,6 @@ class BaseSerializerWithVariables(BaseSerializer):
         return vars_validate_or_raise(value)
 
 
-class CredentialTypeSerializer(BaseSerializer):
-    show_capabilities = ['edit', 'delete']
-    managed_by_cyborgbackup = serializers.ReadOnlyField()
-
-    class Meta:
-        model = CredentialType
-        fields = ('*', 'kind', 'name', 'inputs',
-                  'injectors')
-
-    def validate(self, attrs):
-        if self.instance and self.instance.credentials.exists():
-            if 'inputs' in attrs and attrs['inputs'] != self.instance.inputs:
-                raise PermissionDenied(
-                    detail=_("Modifications to inputs are not allowed for credential types that are in use")
-                )
-        ret = super(CredentialTypeSerializer, self).validate(attrs)
-
-        if 'kind' in attrs and attrs['kind'] not in ('cloud', 'net'):
-            raise serializers.ValidationError({
-                "kind": _("Must be 'cloud' or 'net', not %s") % attrs['kind']
-            })
-
-        fields = attrs.get('inputs', {}).get('fields', [])
-        for field in fields:
-            if field.get('ask_at_runtime', False):
-                raise serializers.ValidationError({"inputs": _("'ask_at_runtime' is not supported for custom credentials.")})
-
-        return ret
-
-    def get_related(self, obj):
-        res = super(CredentialTypeSerializer, self).get_related(obj)
-        res['credentials'] = self.reverse(
-            'api:credential_type_credential_list',
-            kwargs={'pk': obj.pk}
-        )
-        res['activity_stream'] = self.reverse(
-            'api:credential_type_activity_stream_list',
-            kwargs={'pk': obj.pk}
-        )
-        return res
-
-    def to_representation(self, data):
-        value = super(CredentialTypeSerializer, self).to_representation(data)
-
-        # translate labels and help_text for credential fields "managed by cyborgbackup"
-        if value.get('managed_by_cyborgbackup'):
-            for field in value.get('inputs', {}).get('fields', []):
-                field['label'] = _(field['label'])
-                if 'help_text' in field:
-                    field['help_text'] = _(field['help_text'])
-        return value
-
-    def filter_field_metadata(self, fields, method):
-        # API-created/modified CredentialType kinds are limited to
-        # `cloud` and `net`
-        if method in ('PUT', 'POST'):
-            fields['kind']['choices'] = filter(
-                lambda choice: choice[0] in ('cloud', 'net'),
-                fields['kind']['choices']
-            )
-        return fields
-
-
-@six.add_metaclass(BaseSerializerMetaclass)
-class V1CredentialFields(BaseSerializer):
-
-    class Meta:
-        model = Credential
-        fields = ('*', 'kind', 'cloud', 'host', 'username',
-                  'password', 'security_token', 'project', 'domain',
-                  'ssh_key_data', 'ssh_key_unlock', 'become_method',
-                  'become_username', 'become_password', 'vault_password',
-                  'subscription', 'tenant', 'secret', 'client', 'authorize',
-                  'authorize_password')
-
-    def build_field(self, field_name, info, model_class, nested_depth):
-        if field_name in V1Credential.FIELDS:
-            return self.build_standard_field(field_name,
-                                             V1Credential.FIELDS[field_name])
-        return super(V1CredentialFields, self).build_field(field_name, info, model_class, nested_depth)
-
-
-@six.add_metaclass(BaseSerializerMetaclass)
-class V2CredentialFields(BaseSerializer):
-
-    class Meta:
-        model = Credential
-        fields = ('*', 'credential_type', 'inputs')
-
-
-class CredentialSerializer(BaseSerializer):
-    show_capabilities = ['edit', 'delete', 'copy']
-    capabilities_prefetch = ['admin', 'use']
-
-    class Meta:
-        model = Credential
-        fields = ('*', 'organization')
-
-    def get_fields(self):
-        fields = super(CredentialSerializer, self).get_fields()
-        fields.update(V1CredentialFields().get_fields())
-        return fields
-
-    def to_representation(self, data):
-        value = super(CredentialSerializer, self).to_representation(data)
-
-        if value.get('kind') == 'vault':
-            value['kind'] = 'ssh'
-        for field in V1Credential.PASSWORD_FIELDS:
-            if field in value and force_text(value[field]).startswith('$encrypted$'):
-                value[field] = '$encrypted$'
-
-        if 'inputs' in value:
-            value['inputs'] = data.display_inputs()
-        return value
-
-    def get_related(self, obj):
-        res = super(CredentialSerializer, self).get_related(obj)
-
-        if obj.organization:
-            res['organization'] = self.reverse('api:organization_detail', kwargs={'pk': obj.organization.pk})
-
-        res.update(dict(
-            activity_stream=self.reverse('api:credential_activity_stream_list', kwargs={'pk': obj.pk}),
-            access_list=self.reverse('api:credential_access_list', kwargs={'pk': obj.pk}),
-            object_roles=self.reverse('api:credential_object_roles_list', kwargs={'pk': obj.pk}),
-            owner_users=self.reverse('api:credential_owner_users_list', kwargs={'pk': obj.pk}),
-            owner_teams=self.reverse('api:credential_owner_teams_list', kwargs={'pk': obj.pk}),
-            copy=self.reverse('api:credential_copy', kwargs={'pk': obj.pk}),
-        ))
-
-        parents = [role for role in obj.admin_role.parents.all() if role.object_id is not None]
-        if parents:
-            res.update({parents[0].content_type.name:parents[0].content_object.get_absolute_url(self.context.get('request'))})
-        elif len(obj.admin_role.members.all()) > 0:
-            user = obj.admin_role.members.all()[0]
-            res.update({'user': self.reverse('api:user_detail', kwargs={'pk': user.pk})})
-
-        return res
-
-    def get_summary_fields(self, obj):
-        summary_dict = super(CredentialSerializer, self).get_summary_fields(obj)
-        summary_dict['owners'] = []
-
-        for user in obj.admin_role.members.all():
-            summary_dict['owners'].append({
-                'id': user.pk,
-                'type': 'user',
-                'name': user.username,
-                'description': ' '.join([user.first_name, user.last_name]),
-                'url': self.reverse('api:user_detail', kwargs={'pk': user.pk}),
-            })
-
-        for parent in [role for role in obj.admin_role.parents.all() if role.object_id is not None]:
-            summary_dict['owners'].append({
-                'id': parent.content_object.pk,
-                'type': camelcase_to_underscore(parent.content_object.__class__.__name__),
-                'name': parent.content_object.name,
-                'description': parent.content_object.description,
-                'url': parent.content_object.get_absolute_url(self.context.get('request')),
-            })
-
-        return summary_dict
-
-    def get_validation_exclusions(self, obj=None):
-        # CredentialType is now part of validation; legacy v1 fields (e.g.,
-        # 'username', 'password') in JSON POST payloads use the
-        # CredentialType's inputs definition to determine their validity
-        ret = super(CredentialSerializer, self).get_validation_exclusions(obj)
-        for field in ('credential_type', 'inputs'):
-            if field in ret:
-                ret.remove(field)
-        return ret
-
-    def to_internal_value(self, data):
-        if 'credential_type' not in data:
-            # If `credential_type` is not provided, assume the payload is a
-            # v1 credential payload that specifies a `kind` and a flat list
-            # of field values
-            #
-            # In this scenario, we should automatically detect the proper
-            # CredentialType based on the provided values
-            kind = data.get('kind', 'ssh')
-            credential_type = CredentialType.from_v1_kind(kind, data)
-            if credential_type is None:
-                raise serializers.ValidationError({"kind": _('"%s" is not a valid choice' % kind)})
-            data['credential_type'] = credential_type.pk
-            value = OrderedDict(
-                {'credential_type': credential_type}.items() +
-                super(CredentialSerializer, self).to_internal_value(data).items()
-            )
-
-            # Make a set of the keys in the POST/PUT payload
-            # - Subtract real fields (name, organization, inputs)
-            # - Subtract virtual v1 fields defined on the determined credential
-            #   type (username, password, etc...)
-            # - Any leftovers are invalid for the determined credential type
-            valid_fields = set(super(CredentialSerializer, self).get_fields().keys())
-            valid_fields.update(V2CredentialFields().get_fields().keys())
-            valid_fields.update(['kind', 'cloud'])
-
-            for field in set(data.keys()) - valid_fields - set(credential_type.defined_fields):
-                if data.get(field):
-                    raise serializers.ValidationError(
-                        {"detail": _("'%s' is not a valid field for %s") % (field, credential_type.name)}
-                    )
-            value.pop('kind', None)
-            return value
-        return super(CredentialSerializer, self).to_internal_value(data)
-
-    def validate_credential_type(self, credential_type):
-        if self.instance and credential_type.pk != self.instance.credential_type.pk:
-            for rel in (
-                    'ad_hoc_commands',
-                    'insights_inventories',
-                    'unifiedjobs',
-                    'unifiedjobtemplates',
-                    'projects',
-                    'projectupdates',
-                    'workflowjobnodes'
-            ):
-                if getattr(self.instance, rel).count() > 0:
-                    raise ValidationError(
-                        _('You cannot change the credential type of the credential, as it may break the functionality'
-                          ' of the resources using it.'),
-                    )
-
-        return credential_type
-
-
-class CredentialSerializerCreate(CredentialSerializer):
-
-    user = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.all(),
-        required=False, default=None, write_only=True, allow_null=True,
-        help_text=_('Write-only field used to add user to owner role. If provided, '
-                    'do not give either team or organization. Only valid for creation.'))
-
-    class Meta:
-        model = Credential
-        fields = ('*', 'user')
-
-    def validate(self, attrs):
-        owner_fields = set()
-        for field in ('user'):
-            if field in attrs:
-                if attrs[field]:
-                    owner_fields.add(field)
-                else:
-                    attrs.pop(field)
-        if not owner_fields:
-            raise serializers.ValidationError({"detail": _("Missing 'user'.")})
-
-        try:
-            return super(CredentialSerializerCreate, self).validate(attrs)
-        except ValidationError as e:
-            # If we have an `inputs` error on `/api/v1/`:
-            # {'inputs': {'username': [...]}}
-            # ...instead, send back:
-            # {'username': [...]}
-            if self.version == 1 and isinstance(e.detail.get('inputs'), dict):
-                e.detail = e.detail['inputs']+'toto'
-                raise e
-            else:
-                raise
-
-    def create(self, validated_data):
-        user = validated_data.pop('user', None)
-        team = validated_data.pop('team', None)
-
-        # If our payload contains v1 credential fields, translate to the new
-        # model
-        for attr in (
-                set(V1Credential.FIELDS) & set(validated_data.keys())  # set intersection
-        ):
-            validated_data.setdefault('inputs', {})
-            value = validated_data.pop(attr)
-            if value:
-                validated_data['inputs'][attr] = value
-        credential = super(CredentialSerializerCreate, self).create(validated_data)
-
-        return credential
-
-
-class UserCredentialSerializerCreate(CredentialSerializerCreate):
-
-    class Meta:
-        model = Credential
-        fields = ('*', '-team', '-organization')
-
 class LabelsListMixin(object):
 
     def _summary_field_labels(self, obj):
@@ -912,105 +595,6 @@ class LabelsListMixin(object):
         res = super(LabelsListMixin, self).get_summary_fields(obj)
         res['labels'] = self._summary_field_labels(obj)
         return res
-
-
-@six.add_metaclass(BaseSerializerMetaclass)
-class LegacyCredentialFields(BaseSerializer):
-
-    class Meta:
-        model = Credential
-        fields = ('*', 'credential', 'vault_credential')
-
-    LEGACY_FIELDS = {
-        'credential': models.PositiveIntegerField(blank=True, null=True, default=None, help_text=DEPRECATED),
-        'vault_credential': models.PositiveIntegerField(blank=True, null=True, default=None, help_text=DEPRECATED),
-    }
-
-    def build_field(self, field_name, info, model_class, nested_depth):
-        if field_name in self.LEGACY_FIELDS:
-            return self.build_standard_field(field_name,
-                                             self.LEGACY_FIELDS[field_name])
-        return super(LegacyCredentialFields, self).build_field(field_name, info, model_class, nested_depth)
-
-
-class JobOptionsSerializer(BaseSerializer):
-
-    class Meta:
-        fields = ('*', 'job_type', 'verbosity', 'timeout',)
-
-    def get_fields(self):
-        fields = super(JobOptionsSerializer, self).get_fields()
-        fields.update(V1JobOptionsSerializer().get_fields())
-        fields.update(LegacyCredentialFields().get_fields())
-        return fields
-
-    def to_representation(self, obj):
-        ret = super(JobOptionsSerializer, self).to_representation(obj)
-        if obj is None:
-            return ret
-        #ret['credential'] = obj.credential
-        #ret['vault_credential'] = obj.vault_credential
-        #ret['cloud_credential'] = obj.cloud_credential
-        #ret['network_credential'] = obj.network_credential
-        return ret
-
-    def create(self, validated_data):
-        deprecated_fields = {}
-        for key in ('credential', 'vault_credential', 'cloud_credential', 'network_credential'):
-            if key in validated_data:
-                deprecated_fields[key] = validated_data.pop(key)
-        obj = super(JobOptionsSerializer, self).create(validated_data)
-        if deprecated_fields:
-            self._update_deprecated_fields(deprecated_fields, obj)
-        return obj
-
-    def update(self, obj, validated_data):
-        deprecated_fields = {}
-        for key in ('credential', 'vault_credential', 'cloud_credential', 'network_credential'):
-            if key in validated_data:
-                deprecated_fields[key] = validated_data.pop(key)
-        obj = super(JobOptionsSerializer, self).update(obj, validated_data)
-        if deprecated_fields:
-            self._update_deprecated_fields(deprecated_fields, obj)
-        return obj
-
-    def _update_deprecated_fields(self, fields, obj):
-        for key, existing in (
-                ('credential', obj.credentials.filter(credential_type__kind='ssh')),
-                ('vault_credential', obj.credentials.filter(credential_type__kind='vault')),
-                ('cloud_credential', obj.cloud_credentials),
-                ('network_credential', obj.network_credentials),
-        ):
-            if key in fields:
-                for cred in existing:
-                    obj.credentials.remove(cred)
-                if fields[key]:
-                    obj.credentials.add(fields[key])
-        obj.save()
-
-    def validate(self, attrs):
-        v1_credentials = {}
-        view = self.context.get('view', None)
-        for attr, kind, error in (
-                ('cloud_credential', 'cloud', _('You must provide a cloud credential.')),
-                ('network_credential', 'net', _('You must provide a network credential.')),
-                ('credential', 'ssh', _('You must provide an SSH credential.')),
-                ('vault_credential', 'vault', _('You must provide a vault credential.')),
-        ):
-            if attr in attrs:
-                v1_credentials[attr] = None
-                pk = attrs.pop(attr)
-                if pk:
-                    cred = v1_credentials[attr] = Credential.objects.get(pk=pk)
-                    if cred.credential_type.kind != kind:
-                        raise serializers.ValidationError({attr: error})
-                    if ((not self.instance or cred.pk != getattr(self.instance, attr)) and
-                            view and view.request and view.request.user not in cred.use_role):
-                        raise PermissionDenied()
-
-        ret = super(JobOptionsSerializer, self).validate(attrs)
-        ret.update(v1_credentials)
-        return ret
 
 
 class JobSerializer(BaseSerializer):
@@ -1032,10 +616,9 @@ class JobSerializer(BaseSerializer):
 
     def get_types(self):
         if type(self) is JobSerializer:
-            return ['job',]
+            return ['job', ]
         else:
             return super(JobSerializer, self).get_types()
-
 
     def get_summary_fields(self, obj):
         summary_dict = super(JobSerializer, self).get_summary_fields(obj)
@@ -1074,19 +657,11 @@ class JobSerializer(BaseSerializer):
         return {}
 
     def to_internal_value(self, data):
-        #if not self.instance and isinstance(data, dict):
-        #    data.setdefault('name', job_template.name)
-        #    data.setdefault('description', job_template.description)
-        #    data.setdefault('job_type', job_template.job_type)
-        #    data.setdefault('verbosity', job_template.verbosity)
         return super(JobSerializer, self).to_internal_value(data)
 
     def to_representation(self, obj):
         ret = super(JobSerializer, self).to_representation(obj)
         serializer_class = None
-        #if type(self) is JobSerializer:
-        #    if isinstance(obj, Job):
-        #        serializer_class = BaseSerializer
         if serializer_class:
             serializer = serializer_class(instance=obj, context=self.context)
             ret = serializer.to_representation(obj)
@@ -1127,13 +702,13 @@ class JobCancelSerializer(JobSerializer):
 class JobRelaunchSerializer(BaseSerializer):
 
     retry_counts = serializers.SerializerMethodField()
+
     class Meta:
         model = Job
         fields = ('retry_counts',)
 
     def to_representation(self, obj):
         res = super(JobRelaunchSerializer, self).to_representation(obj)
-        view = self.context.get('view', None)
         return res
 
     def get_retry_counts(self, obj):
@@ -1147,7 +722,6 @@ class JobRelaunchSerializer(BaseSerializer):
         return r
 
     def validate(self, attrs):
-        obj = self.instance
         attrs = super(JobRelaunchSerializer, self).validate(attrs)
         return attrs
 
@@ -1161,11 +735,14 @@ class JobListSerializer(JobSerializer):
         field_names = super(JobListSerializer, self).get_field_names(declared_fields, info)
         # Meta multiple inheritance and -field_name options don't seem to be
         # taking effect above, so remove the undesired fields here.
-        return tuple(x for x in field_names if x not in ('job_args', 'job_cwd', 'job_env', 'result_traceback', 'event_processing_finished'))
+        return tuple(x for x in field_names if x not in (
+                                                         'job_args', 'job_cwd',
+                                                         'job_env', 'result_traceback', 'event_processing_finished'
+        ))
 
     def get_types(self):
         if type(self) is JobListSerializer:
-            return ['job',]
+            return ['job', ]
         else:
             return super(JobListSerializer, self).get_types()
 
@@ -1267,6 +844,7 @@ class SettingSerializer(BaseSerializer):
         attrs.pop('key', None)
         return attrs
 
+
 class SettingListSerializer(SettingSerializer):
 
     class Meta:
@@ -1296,12 +874,14 @@ class SettingListSerializer(SettingSerializer):
             ret = super(SettingListSerializer, self).to_representation(obj)
         return ret
 
+
 class ClientSerializer(BaseSerializer):
     show_capabilities = ['edit', 'delete']
 
     class Meta:
         model = Client
-        fields = ('*', '-name', '-description', 'hostname', 'ip', 'version', 'ready', 'hypervisor_ready', 'hypervisor_name', 'enabled', 'uuid')
+        fields = ('*', '-name', '-description', 'hostname', 'ip',
+                  'version', 'ready', 'hypervisor_ready', 'hypervisor_name', 'enabled', 'uuid')
 
 
 class ClientListSerializer(ClientSerializer):
@@ -1331,6 +911,7 @@ class ClientListSerializer(ClientSerializer):
             ret = super(ClientListSerializer, self).to_representation(obj)
         return ret
 
+
 class ScheduleSerializer(BaseSerializer):
     """Read-only serializer for activity stream."""
 
@@ -1344,6 +925,7 @@ class ScheduleSerializer(BaseSerializer):
 
     def validate(self, attrs):
         return attrs
+
 
 class ScheduleListSerializer(ScheduleSerializer):
 
@@ -1374,12 +956,14 @@ class ScheduleListSerializer(ScheduleSerializer):
             ret = super(ScheduleListSerializer, self).to_representation(obj)
         return ret
 
+
 class RepositorySerializer(BaseSerializer):
     """Read-only serializer for activity stream."""
 
     class Meta:
         model = Repository
-        fields = ('id', 'uuid', 'url', 'name', 'path', 'repository_key', 'original_size', 'compressed_size', 'deduplicated_size', 'ready', 'enabled', 'created', 'modified')
+        fields = ('id', 'uuid', 'url', 'name', 'path', 'repository_key',
+                  'original_size', 'compressed_size', 'deduplicated_size', 'ready', 'enabled', 'created', 'modified')
 
     def update(self, obj, validated_data):
         obj = super(RepositorySerializer, self).update(obj, validated_data)
@@ -1387,6 +971,7 @@ class RepositorySerializer(BaseSerializer):
 
     def validate(self, attrs):
         return attrs
+
 
 class RepositoryListSerializer(RepositorySerializer):
 
@@ -1417,14 +1002,15 @@ class RepositoryListSerializer(RepositorySerializer):
             ret = super(RepositoryListSerializer, self).to_representation(obj)
         return ret
 
+
 class PolicySerializer(BaseSerializer):
 
     class Meta:
         model = Policy
         fields = ('*', 'id', 'uuid', 'url', 'name', 'extra_vars',
-        'clients', 'repository', 'schedule', 'policy_type', 'keep_hourly',
-        'keep_yearly', 'keep_daily', 'keep_weekly', 'keep_monthly',
-        'vmprovider', 'next_run', 'mode_pull', 'enabled', 'created', 'modified')
+                  'clients', 'repository', 'schedule', 'policy_type', 'keep_hourly',
+                  'keep_yearly', 'keep_daily', 'keep_weekly', 'keep_monthly',
+                  'vmprovider', 'next_run', 'mode_pull', 'enabled', 'created', 'modified')
 
     def get_related(self, obj):
         res = super(PolicySerializer, self).get_related(obj)
@@ -1443,6 +1029,7 @@ class PolicySerializer(BaseSerializer):
         if obj is not None and 'repository' in ret and not obj.repository:
             ret['repository'] = None
         return ret
+
 
 class PolicyListSerializer(PolicySerializer):
 
@@ -1493,10 +1080,6 @@ class PolicyLaunchSerializer(BaseSerializer):
     def validate_extra_vars(self, value):
         return vars_validate_or_raise(value)
 
-    def validate(self, attrs):
-        policy = self.context.get('policy')
-        return attrs
-
 
 class PolicyCalendarSerializer(EmptySerializer):
     events = serializers.ListField(child=serializers.DateTimeField())
@@ -1524,11 +1107,13 @@ class CatalogSerializer(BaseSerializer):
             ret['job'] = None
         return ret
 
+
 class CatalogListSerializer(DynamicFieldsSerializerMixin, CatalogSerializer):
 
     class Meta:
         model = Catalog
         fields = ('id', 'url', 'archive_name', 'path', 'job', 'mode', 'mtime', 'owner', 'group', 'size', 'healthy')
+
 
 class StatsSerializer(EmptySerializer):
     stats = serializers.ListField(serializers.SerializerMethodField())

@@ -1,22 +1,16 @@
-import datetime
 import logging
 
-from django.conf import settings
 from django.db import models
 from django.db.models.query import QuerySet
-from django.utils.dateparse import parse_datetime
-from django.utils.timezone import utc
 from django.utils.translation import ugettext_lazy as _
-from django.utils.encoding import force_text
 
 import tzcron
 import pytz
 from dateutil.tz import datetime_exists
 
 from cyborgbackup.api.versioning import reverse
-from cyborgbackup.main.fields import JSONField
-from cyborgbackup.main.utils.common import could_be_script, copy_model_by_class, copy_m2m_relationships
-from cyborgbackup.main.models.base import CreatedModifiedModel, PrimordialModel
+from cyborgbackup.main.utils.common import copy_model_by_class
+from cyborgbackup.main.models.base import PrimordialModel
 from cyborgbackup.main.models.settings import Setting
 from cyborgbackup.main.consumers import emit_channel_notification
 
@@ -25,6 +19,7 @@ from cyborgbackup.celery import app
 logger = logging.getLogger('cyborgbackup.models.policy')
 
 __all__ = ['Policy']
+
 
 class PolicyFilterMethods(object):
 
@@ -167,25 +162,12 @@ class Policy(PrimordialModel):
             next_run_actual = next_run_actual.astimezone(pytz.utc)
 
         self.next_run = next_run_actual
-        #try:
-        #    self.dtstart = future_rs[0].astimezone(pytz.utc)
-        #except IndexError:
-        #    self.dtstart = None
-        #self.dtend = None
-        #if 'until' in self.rrule.lower() or 'count' in self.rrule.lower():
-        #    try:
-        #        self.dtend = future_rs[-1].astimezone(pytz.utc)
-        #    except IndexError:
-        #        self.dtend = None
         emit_channel_notification('schedules-changed', dict(id=self.id, group_name='schedules'))
 
     def save(self, *args, **kwargs):
-        #encrypted = settings_registry.is_setting_encrypted(self.key)
-        encrypted = False
         self.update_computed_fields()
         # If update_fields has been specified, add our field names to it,
         # if it hasn't been specified, then we're just doing a normal save.
-        update_fields = kwargs.get('update_fields', [])
         super(Policy, self).save(*args, **kwargs)
 
     @classmethod
@@ -205,38 +187,36 @@ class Policy(PrimordialModel):
         '''
         Create a new job based on this policy.
         '''
-        #eager_fields = kwargs.pop('_eager_fields', None)
 
         job_class = self._get_job_class()
-        #fields = self._get_job_field_names()
         fields = ('extra_vars', 'job_type')
         unallowed_fields = set(kwargs.keys()) - set(fields)
         if unallowed_fields:
             logger.warn('Fields {} are not allowed as overrides.'.format(unallowed_fields))
             map(kwargs.pop, unallowed_fields)
 
-        #from cyborgbackup.main.signals import disable_activity_stream
         try:
             setting = Setting.objects.get(key='cyborgbackup_catalog_enabled')
             if setting.value == 'True':
-                catalog_enabled=True
+                catalog_enabled = True
             else:
-                catalog_enabled=False
-        except Exception as e:
-            catalog_enabled=True
+                catalog_enabled = False
+        except Exception:
+            catalog_enabled = True
 
         try:
             setting = Setting.objects.get(key='cyborgbackup_auto_prune')
             if setting.value == 'True':
-                auto_prune_enabled=True
+                auto_prune_enabled = True
             else:
-                auto_prune_enabled=False
-        except Exception as e:
-            auto_prune_enabled=True
+                auto_prune_enabled = False
+        except Exception:
+            auto_prune_enabled = True
 
-        app.send_task('cyborgbackup.main.tasks.cyborgbackup_notifier', args=('summary',self.pk))
+        app.send_task('cyborgbackup.main.tasks.cyborgbackup_notifier', args=('summary', self.pk))
 
-        have_prune_info = self.keep_hourly or self.keep_daily or self.keep_weekly or self.keep_monthly or self.keep_yearly
+        have_prune_info = (self.keep_hourly or self.keep_daily
+                           or self.keep_weekly or self.keep_monthly or self.keep_yearly)
 
         jobs = []
         previous_job = None
@@ -293,11 +273,7 @@ class Policy(PrimordialModel):
                     previous_job.save()
                 previous_job = job
 
-            #fields=()
-            #with disable_activity_stream():
-            #    copy_m2m_relationships(self, job, fields, kwargs=kwargs)
             jobs.append(job)
-        #job.create_config_from_prompts(kwargs)
         jobs[0].status = 'new'
         jobs[0].save()
         return jobs[0]

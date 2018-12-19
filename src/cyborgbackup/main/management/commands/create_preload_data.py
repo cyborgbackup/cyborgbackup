@@ -4,7 +4,6 @@ from crum import impersonate
 from cyborgbackup.main.models import Policy, Client, Repository, Schedule
 from django.contrib.auth import get_user_model
 from cyborgbackup.main.models.settings import Setting
-#from cyborgbackup.main.signals import disable_computed_fields
 
 
 class Command(BaseCommand):
@@ -30,21 +29,20 @@ class Command(BaseCommand):
         except IndexError:
             superuser = None
         with impersonate(superuser):
-            r = Repository.objects.create(
-                name='Demo Repository',
-                path='/tmp/repository',
-                repository_key='0123456789abcdef',
-                enabled=False)
+            r = Repository.objects.create(name='Demo Repository',
+                                          path='/tmp/repository',
+                                          repository_key='0123456789abcdef',
+                                          enabled=False)
             s = Schedule.objects.create(name='Demo Schedule',
-                crontab='0 5 * * MON *',
-                enabled=False)
+                                        crontab='0 5 * * MON *',
+                                        enabled=False)
             c = Client.objects.create(hostname='localhost',
-                enabled=False)
+                                      enabled=False)
             p = Policy(name='Demo Policy',
-                        mode_pull=False,
-                        enabled=False,
-                        repository=r,
-                        schedule=s)
+                       mode_pull=False,
+                       enabled=False,
+                       repository=r,
+                       schedule=s)
             p.save()
             p.clients.add(c)
         print('Demo Client, Repository, Schedule and Policy added.')

@@ -3,21 +3,17 @@ from django.conf import settings # noqa
 
 # CyBorgBackup
 from cyborgbackup.main.models.base import * # noqa
-from cyborgbackup.main.models.jobs import *
-from cyborgbackup.main.models.users import *
+from cyborgbackup.main.models.jobs import * # noqa
+from cyborgbackup.main.models.users import * # noqa
 from cyborgbackup.main.models.events import * # noqa
-from cyborgbackup.main.models.channels import *
-from cyborgbackup.main.models.clients import *
-from cyborgbackup.main.models.schedules import *
-from cyborgbackup.main.models.repositories import *
-from cyborgbackup.main.models.catalogs import *
-from cyborgbackup.main.models.policies import *
-from cyborgbackup.main.models.activity_streams import *
-#TODO
-#from cyborgbackup.main.models.rbac import *
+from cyborgbackup.main.models.channels import * # noqa
+from cyborgbackup.main.models.clients import * # noqa
+from cyborgbackup.main.models.schedules import * # noqa
+from cyborgbackup.main.models.repositories import * # noqa
+from cyborgbackup.main.models.catalogs import * # noqa
+from cyborgbackup.main.models.policies import * # noqa
+from cyborgbackup.main.models.activity_streams import * # noqa
 from cyborgbackup.api.versioning import reverse
-
-
 
 # Monkeypatch Django serializer to ignore django-taggit fields (which break
 # the dumpdata command; see https://github.com/alex/django-taggit/issues/155).
@@ -34,7 +30,6 @@ def _new_handle_m2m_field(self, obj, field):
 
 
 _PythonSerializer.handle_m2m_field = _new_handle_m2m_field
-
 
 # Add custom methods to User model for permissions checks.
 from django.contrib.auth.models import User  # noqa

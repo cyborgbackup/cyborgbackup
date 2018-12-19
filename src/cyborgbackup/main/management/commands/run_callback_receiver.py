@@ -26,7 +26,6 @@ from cyborgbackup.main.models.jobs import Job
 from cyborgbackup.main.models.events import JobEvent
 from cyborgbackup.main.models.catalogs import Catalog
 from cyborgbackup.main.consumers import emit_channel_notification
-import cyborgbackup.main.signals
 
 logger = logging.getLogger('cyborgbackup.main.commands.run_callback_receiver')
 
@@ -59,7 +58,7 @@ class CallbackBrokerWorker(ConsumerMixin):
                     for active_worker in active_workers:
                         active_worker.terminate()
                     signal.signal(signum, signal.SIG_DFL)
-                    os.kill(os.getpid(), signum) # Rethrow signal, this time without catching it
+                    os.kill(os.getpid(), signum)  # Rethrow signal, this time without catching it
                 except Exception:
                     logger.exception('Error in shutdown_handler')
             return _handler
@@ -160,7 +159,8 @@ class CallbackBrokerWorker(ConsumerMixin):
 
                 if body.get('event') == 'EOF':
                     try:
-                        logger.info('Event processing is finished for Job {}, sending notifications'.format(job_identifier))
+                        msg = 'Event processing is finished for Job {}, sending notifications'
+                        logger.info(msg.format(job_identifier))
                         # EOF events are sent when stdout for the running task is
                         # closed. don't actually persist them to the database; we
                         # just use them to report `summary` websocket events as an
@@ -177,7 +177,8 @@ class CallbackBrokerWorker(ConsumerMixin):
                             retries = 0
                             while retries < 5:
                                 if j.finished:
-                                    j.send_notification_templates('succeeded' if j.status == 'successful' else 'failed')
+                                    state = 'succeeded' if j.status == 'successful' else 'failed'
+                                    j.send_notification_templates(state)
                                     break
                                 else:
                                     # wait a few seconds to avoid a race where the
@@ -195,9 +196,10 @@ class CallbackBrokerWorker(ConsumerMixin):
                     try:
                         _save_event_data()
                         break
-                    except (OperationalError, InterfaceError, InternalError) as e:
+                    except (OperationalError, InterfaceError, InternalError):
                         if retries >= self.MAX_RETRIES:
-                            logger.exception('Worker could not re-establish database connectivity, shutting down gracefully: Job {}'.format(job_identifier))
+                            msg = 'Worker could not re-establish database connection, shutting down gracefully: Job {}'
+                            logger.exception(msg.format(job_identifier))
                             os.kill(os.getppid(), signal.SIGINT)
                             return
                         delay = 60 * retries
@@ -208,7 +210,7 @@ class CallbackBrokerWorker(ConsumerMixin):
                         django_connection.close()
                         time.sleep(delay)
                         retries += 1
-                    except DatabaseError as e:
+                    except DatabaseError:
                         logger.exception('Database Error Saving Job Event for Job {}'.format(job_identifier))
                         break
             except Exception as exc:

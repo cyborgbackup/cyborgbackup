@@ -49,7 +49,7 @@ class SmartFilter(object):
             search_kwargs = self._expand_search(k, v)
             if search_kwargs:
                 kwargs.update(search_kwargs)
-                q = reduce(lambda x, y: x | y, [django.db.models.Q(**{u'%s__contains' % _k:_v}) for _k, _v in kwargs.items()])
+                q = reduce(lambda x, y: x | y, [django.db.models.Q(**{u'%s__contains' % _k: _v}) for _k, _v in kwargs.items()])
                 self.result = Host.objects.filter(q)
             else:
                 kwargs[k] = v
@@ -89,7 +89,6 @@ class SmartFilter(object):
             # ="something"
             if t_len > (v_offset + 2) and t[v_offset] == "\"" and t[v_offset + 2] == "\"":
                 v = u'"' + six.text_type(t[v_offset + 1]) + u'"'
-                #v = t[v_offset + 1]
             # empty ""
             elif t_len > (v_offset + 1):
                 v = u""
@@ -124,7 +123,6 @@ class SmartFilter(object):
                     search_kwargs[k] = v
             return search_kwargs
 
-
     class BoolBinOp(object):
         def __init__(self, t):
             self.result = None
@@ -136,16 +134,13 @@ class SmartFilter(object):
                 self.result = self.execute_logic(self.result, right)
                 i += 2
 
-
     class BoolAnd(BoolBinOp):
         def execute_logic(self, left, right):
             return left & right
 
-
     class BoolOr(BoolBinOp):
         def execute_logic(self, left, right):
             return left | right
-
 
     @classmethod
     def query_from_string(cls, filter_string):

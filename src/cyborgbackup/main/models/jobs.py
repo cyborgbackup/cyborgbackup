@@ -4,8 +4,6 @@ import json
 import logging
 import os
 import re
-import sys
-import traceback
 import subprocess
 import tempfile
 from collections import OrderedDict
@@ -13,22 +11,12 @@ from collections import OrderedDict
 # Django
 from django.conf import settings
 from django.db import models, connection
-from django.core.exceptions import NON_FIELD_ERRORS
 from django.utils.translation import ugettext_lazy as _
 from django.utils.timezone import now
 from django.utils.encoding import smart_text
 from django.apps import apps
-from django.contrib.contenttypes.models import ContentType
 
 from django_celery_results.models import TaskResult
-
-# REST Framework
-from rest_framework.exceptions import ParseError
-
-# Django-Polymorphic
-from polymorphic.models import PolymorphicModel
-
-from celery.task.control import inspect
 
 # CyBorgBackup
 from cyborgbackup.api.versioning import reverse
@@ -36,11 +24,11 @@ from cyborgbackup.main.models.base import * # noqa
 from cyborgbackup.main.models.events import JobEvent
 from cyborgbackup.main.utils.common import (
     copy_model_by_class, copy_m2m_relationships,
-    get_type_for_model, parse_yaml_or_json
+    get_type_for_model
 )
-from cyborgbackup.main.utils.encryption import encrypt_dict, decrypt_field
+from cyborgbackup.main.utils.encryption import decrypt_field
 from cyborgbackup.main.constants import ACTIVE_STATES, CAN_CANCEL
-from cyborgbackup.main.utils.string import UriCleaner, REPLACE_STR
+from cyborgbackup.main.utils.string import UriCleaner
 from cyborgbackup.main.consumers import emit_channel_notification
 from cyborgbackup.main.fields import JSONField, AskForField
 
@@ -63,8 +51,6 @@ class JobTypeStringMixin(object):
 
     @classmethod
     def _model_type(cls, job_type):
-        # Django >= 1.9
-        #app = apps.get_app_config('main')
         model_str = cls._underscore_to_camel(job_type)
         try:
             return apps.get_model('main', model_str)
@@ -115,7 +101,8 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
     Concrete base class for job run by the task engine.
     '''
 
-    # status inherits from related jobs. Thus, status must be able to be set to any status that a job status is settable to.
+    # status inherits from related jobs.
+    # Thus, status must be able to be set to any status that a job status is settable to.
     JOB_STATUS_CHOICES = [
         ('new', 'New'),                  # Job has been created, but not started.
         ('pending', 'Pending'),          # Job has been queued, but is not yet running.
@@ -166,7 +153,6 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
 
     PASSWORD_FIELDS = ('start_args',)
 
-    # NOTE: Working around a django-polymorphic issue: https://github.com/django-polymorphic/django-polymorphic/issues/229
     base_manager_name = 'base_objects'
 
     class Meta:
@@ -378,7 +364,7 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
         return update_fields
 
     def _get_current_status(self):
-        if  self.status:
+        if self.status:
             return self.status
 
     def _set_status_and_last_job_run(self, save=True):
@@ -446,10 +432,6 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
 
         # Okay; we're done. Perform the actual save.
         result = super(Job, self).save(*args, **kwargs)
-
-        # If status changed, update the parent instance.
-        #if self.status != status_before:
-        #    self._update_parent_instance()
 
         # Done.
         return result
@@ -752,7 +734,9 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
         return 1
 
     def websocket_emit_data(self):
-        ''' Return extra data that should be included when submitting data to the browser over the websocket connection '''
+        '''
+        Return extra data that should be included when submitting data to the browser over the websocket connection
+        '''
         websocket_data = dict(job_name=self.name)
         return websocket_data
 
@@ -781,7 +765,9 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
 
     def pre_start(self, **kwargs):
         if not self.can_start:
-            self.job_explanation = u'%s is not in a startable state: %s, expecting one of %s' % (self._meta.verbose_name, self.status, str(('new', 'waiting')))
+            msg - u'%s is not in a startable state: %s, expecting one of %s' % (self._meta.verbose_name,
+                                                                                self.status, str(('new', 'waiting')))
+            self.job_explanation = msg
             self.save(update_fields=['job_explanation'])
             return (False, None)
 
@@ -818,6 +804,7 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
         args = [self.pk]
         kwargs['queue'] = 'celery'
         async_result = task_class().apply(args, opts, **kwargs)
+        return async_result
 
     def start(self, error_callback, success_callback, **kwargs):
         '''
@@ -842,22 +829,9 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
 
         # Save the pending status, and inform the SocketIO listener.
         self.update_fields(start_args=json.dumps(kwargs), status='pending')
-        #self.websocket_emit_status("pending")
 
         from cyborgbackup.main.utils.tasks import run_job_launch
         connection.on_commit(lambda: run_job_launch.delay(self.id))
-
-        # Each type of unified job has a different Task class; get the
-        # appropirate one.
-        # task_type = get_type_for_model(self)
-
-        # Actually tell the task runner to run this task.
-        # FIXME: This will deadlock the task runner
-        #from awx.main.tasks import notify_task_runner
-        #notify_task_runner.delay({'id': self.id, 'metadata': kwargs,
-        #                          'task_type': task_type})
-
-        # Done!
         return True
 
     @property
@@ -897,7 +871,7 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
                     update_fields.append('job_explanation')
                 instance.save(update_fields=update_fields)
                 self.websocket_emit_status("canceled")
-        except Exception: # FIXME: Log this exception!
+        except Exception:
             if settings.DEBUG:
                 raise
 
@@ -907,13 +881,8 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
                    (self.model_to_str(), self.name, self.id)
         return None
 
-    #def get_jobs_fail_chain(self):
-    #    return list(self.dependent_jobs.all())
-
     def cancel(self, job_explanation=None, is_chain=False):
         if self.can_cancel:
-            #if not is_chain:
-            #    map(lambda x: x.cancel(job_explanation=self._build_job_explanation(), is_chain=True), self.get_jobs_fail_chain())
 
             if not self.cancel_flag:
                 self.cancel_flag = True
@@ -930,7 +899,6 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
             if settings.BROKER_URL.startswith('amqp://'):
                 self._force_cancel()
         return self.cancel_flag
-
 
     def dependent_jobs_finished(self):
         for j in self.__class__.objects.filter(dependent_jobs=self.pk):

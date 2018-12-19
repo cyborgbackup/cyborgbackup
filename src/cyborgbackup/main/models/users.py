@@ -36,7 +36,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     notify_backup_monthly = models.BooleanField(
         default=False
     )
-    #avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
+    # avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
 
     objects = UserManager()
 

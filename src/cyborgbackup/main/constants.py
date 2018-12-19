@@ -1,7 +1,5 @@
 import re
 
-from django.utils.translation import ugettext_lazy as _
-
 __all__ = [
     'SCHEDULEABLE_PROVIDERS',
     'ANSI_SGR_PATTERN', 'CAN_CANCEL', 'ACTIVE_STATES'

@@ -1,6 +1,3 @@
-# Django
-from django.utils.translation import ugettext_lazy as _
-
 # Django REST Framework
 from rest_framework import serializers
 

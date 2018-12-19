@@ -1,6 +1,5 @@
 from django.conf.urls import url
-from django.views.generic.base import TemplateView, RedirectView
-from django.contrib.staticfiles.urls import staticfiles_urlpatterns
+from django.views.generic.base import TemplateView
 from django.contrib.staticfiles import views
 from django.urls import re_path
 
@@ -15,6 +14,7 @@ class IndexView(TemplateView):
         context = super(IndexView, self).get_context_data(**kwargs)
         # Add any additional context info here.
         return context
+
 
 index = IndexView.as_view()
 

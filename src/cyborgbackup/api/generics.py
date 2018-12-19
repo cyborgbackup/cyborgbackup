@@ -2,7 +2,6 @@
 import inspect
 import logging
 import time
-import six
 
 # Django
 from django.conf import settings
@@ -14,7 +13,6 @@ from django.shortcuts import get_object_or_404
 from django.template.loader import render_to_string
 from django.utils.encoding import smart_text
 from django.utils.safestring import mark_safe
-from django.contrib.contenttypes.models import ContentType
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.auth import views as auth_views
 
@@ -25,17 +23,13 @@ from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework import views
-from rest_framework.permissions import AllowAny
-
-# cryptography
-from cryptography.fernet import InvalidToken
 
 # CyBorgBackup
 from cyborgbackup.api.filters import FieldLookupBackend
 from cyborgbackup.main.models import *
 from cyborgbackup.main.utils.common import *
 from cyborgbackup.api.versioning import URLPathVersioning, get_request_version
-from cyborgbackup.api.metadata import SublistAttachDetatchMetadata, Metadata
+from cyborgbackup.api.metadata import SublistAttachDetatchMetadata
 
 __all__ = ['APIView', 'GenericAPIView', 'ListAPIView', 'SimpleListAPIView',
            'ListCreateAPIView', 'SubListAPIView', 'SubListCreateAPIView',
@@ -283,13 +277,11 @@ class GenericAPIView(generics.GenericAPIView, APIView):
             if query_fields:
                 fields = tuple(query_fields.split(','))
 
-
         kwargs['context'] = self.get_serializer_context()
         if fields:
             kwargs['fields'] = fields
 
         serializer = serializer_class(*args, **kwargs)
-        #serializer = super(GenericAPIView, self).get_serializer(*args, **kwargs)
         # Override when called from browsable API to generate raw data form;
         # update serializer "validated" data to be displayed by the raw data
         # form.
@@ -393,8 +385,6 @@ class ListAPIView(generics.ListAPIView, GenericAPIView):
             fields.add('{}__search'.format(name))
         m2m_rel = []
         m2m_rel += self.model._meta.local_many_to_many
-        #if issubclass(self.model, Job) and self.model != UnifiedJob:
-        #    m2m_rel += UnifiedJob._meta.local_many_to_many
         for relationship in m2m_rel:
             if skip_related_name(relationship.name):
                 continue
@@ -440,6 +430,7 @@ class ParentMixin(object):
             args = (self.parent_model, parent_access, parent)
         else:
             args = (self.parent_model, parent_access, parent, None)
+        return args
 
 
 class SubListAPIView(ParentMixin, ListAPIView):
@@ -464,7 +455,6 @@ class SubListAPIView(ParentMixin, ListAPIView):
 
     def get_queryset(self):
         parent = self.get_parent_object()
-        #qs = self.request.user.get_queryset(self.model).distinct()
         sublist_qs = getattrd(parent, self.relationship).distinct()
         return sublist_qs
 
@@ -491,7 +481,6 @@ class SubListLoopAPIView(ParentMixin, ListAPIView):
 
     def get_queryset(self):
         parent = self.get_parent_object()
-        #qs = self.request.user.get_queryset(self.model).distinct()
         sublist_qs = getattrd(parent, self.relationship).distinct()
         return sublist_qs
 
@@ -680,7 +669,6 @@ class SubListCreateAttachDetachAPIView(SubListCreateAPIView):
             return self.attach(request, *args, **kwargs)
 
 
-
 class SubListAttachDetachAPIView(SubListCreateAttachDetachAPIView):
     '''
     Derived version of SubListCreateAttachDetachAPIView that prohibits creation
@@ -699,7 +687,7 @@ class SubListAttachDetachAPIView(SubListCreateAttachDetachAPIView):
     def update_raw_data(self, data):
         request_method = getattr(self, '_raw_data_request_method', None)
         response_status = getattr(self, '_raw_data_response_status', 0)
-        if request_method == 'POST' and response_status in xrange(400, 500):
+        if request_method == 'POST' and response_status in range(400, 500):
             return super(SubListAttachDetachAPIView, self).update_raw_data(data)
         return {'id': None}
 
@@ -744,7 +732,10 @@ class RetrieveUpdateAPIView(RetrieveAPIView, generics.RetrieveUpdateAPIView):
         return super(RetrieveUpdateAPIView, self).partial_update(request, *args, **kwargs)
 
     def update_filter(self, request, *args, **kwargs):
-        ''' scrub any fields the user cannot/should not put/patch, based on user context.  This runs after read-only serialization filtering '''
+        '''
+        scrub any fields the user cannot/should not put/patch, based on user context.
+        This runs after read-only serialization filtering
+        '''
         pass
 
 

@@ -26,7 +26,10 @@ class ActivityStream(models.Model):
         ('disassociate', _("Entity was Disassociated with another Entity"))
     ]
 
-    actor = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL, related_name='activity_stream')
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL,
+                              null=True,
+                              on_delete=models.SET_NULL,
+                              related_name='activity_stream')
     operation = models.CharField(max_length=13, choices=OPERATION_CHOICES)
     timestamp = models.DateTimeField(auto_now_add=True)
     changes = models.TextField(blank=True)

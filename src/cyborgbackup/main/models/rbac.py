@@ -1,11 +1,10 @@
 # Python
 import logging
 import threading
-import contextlib
 import re
 
 # Django
-from django.db import models, transaction, connection
+from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.utils.translation import ugettext_lazy as _
@@ -61,7 +60,7 @@ role_descriptions = {
 }
 
 
-tls = threading.local() # thread local storage
+tls = threading.local()  # thread local storage
 
 
 def check_singleton(func):
@@ -80,6 +79,7 @@ def check_singleton(func):
             return Role.objects.all()
         return func(*args, **kwargs)
     return wrapper
+
 
 class Role(models.Model):
     '''
@@ -170,6 +170,7 @@ class Role(models.Model):
 
     def is_singleton(self):
         return self.singleton_name in [ROLE_SINGLETON_SYSTEM_ADMINISTRATOR, ROLE_SINGLETON_SYSTEM_AUDITOR]
+
 
 def role_summary_fields_generator(content_object, role_field):
     global role_descriptions

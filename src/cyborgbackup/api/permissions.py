@@ -7,11 +7,11 @@ from rest_framework import permissions
 
 # CyBorgBackup
 from cyborgbackup.main.models import * # noqa
-from cyborgbackup.main.utils.common import get_object_or_400
 
 logger = logging.getLogger('cyborgbackup.api.permissions')
 
 __all__ = ['ModelAccessPermission', 'UserPermission', 'IsSuperUser', ]
+
 
 def check_user_access(user, model_class, action, *args, **kwargs):
     '''
@@ -25,6 +25,7 @@ def check_user_access(user, model_class, action, *args, **kwargs):
         method_perms = getattr(model_class, 'can_{}'.format(action))
         result = method_perms(user, *args, **kwargs)
     return result
+
 
 class ModelAccessPermission(permissions.BasePermission):
     '''
@@ -127,9 +128,6 @@ class ModelAccessPermission(permissions.BasePermission):
         return result
 
     def has_permission(self, request, view, obj=None):
-        #logger.debug('has_permission(user=%s method=%s data=%r, %s, %r)',
-        #             request.user, request.method, request.data,
-        #             view.__class__.__name__, obj)
         logger.debug('has_permission(user=%s method=%s, %s, %r)',
                      request.user, request.method,
                      view.__class__.__name__, obj)
@@ -144,6 +142,7 @@ class ModelAccessPermission(permissions.BasePermission):
 
     def has_object_permission(self, request, view, obj):
         return self.has_permission(request, view, obj)
+
 
 class UserPermission(ModelAccessPermission):
     def check_post_permissions(self, request, view, obj=None):

@@ -2,17 +2,14 @@
 from datetime import datetime, timedelta
 import logging
 import uuid
-import json
 import six
 
 # Django
 from django.conf import settings
 from django.core.cache import cache
 from django.db import transaction, connection, DatabaseError
-from django.utils.translation import ugettext_lazy as _
 from django.utils.timezone import now as tz_now, utc
 from django.db.models import Q
-from django.contrib.contenttypes.models import ContentType
 
 # CyBorgBackup
 from cyborgbackup.main.models.jobs import (
@@ -20,24 +17,20 @@ from cyborgbackup.main.models.jobs import (
 )
 from cyborgbackup.main.models.clients import Client
 from cyborgbackup.main.models.repositories import Repository
-from cyborgbackup.main.models.policies import Policy
-from cyborgbackup.main.utils.common import get_type_for_model, get_module_provider, load_module_provider
+from cyborgbackup.main.utils.common import get_type_for_model, load_module_provider
 from cyborgbackup.main.signals import disable_activity_stream
-
-from cyborgbackup.main.utils.encryption import decrypt_field
 
 # Celery
 from celery import Celery
 from celery.app.control import Inspect
-from celery.contrib import rdb
-
-
-logger = logging.getLogger('cyborgbackup.main.scheduler')
 
 from contextlib import contextmanager
 
 from django_pglocks import advisory_lock as django_pglocks_advisory_lock
-from django.db import connection
+
+
+logger = logging.getLogger('cyborgbackup.main.scheduler')
+
 
 @contextmanager
 def advisory_lock(*args, **kwargs):
@@ -47,10 +40,10 @@ def advisory_lock(*args, **kwargs):
     else:
         yield True
 
-from django.utils.timezone import now as tz_now
 
 class DependencyGraph(object):
     JOBS = 'jobs'
+
     def __init__(self, queue):
         self.queue = queue
         self.data = {}
@@ -75,6 +68,7 @@ class DependencyGraph(object):
 
     def add_jobs(self, jobs):
         map(lambda j: self.add_job(j), jobs)
+
 
 class TaskManager():
 
@@ -111,7 +105,7 @@ class TaskManager():
         waiting_jobs = []
         now = tz_now()
         jobs = Job.objects.exclude(job_type='workflow').filter((Q(status='running') |
-                Q(status='waiting', modified__lte=now - timedelta(seconds=60))))
+                                   Q(status='waiting', modified__lte=now - timedelta(seconds=60))))
         for j in jobs:
             waiting_jobs.append(j)
         return (execution_nodes, waiting_jobs)
@@ -199,7 +193,10 @@ class TaskManager():
         def post_commit():
             task.websocket_emit_status(task.status)
             if task.status != 'failed':
-                task.start_celery_task(opts, error_callback=error_handler, success_callback=success_handler, queue='cyborgbackup')
+                task.start_celery_task(opts,
+                                       error_callback=error_handler,
+                                       success_callback=success_handler,
+                                       queue='cyborgbackup')
 
         connection.on_commit(post_commit)
 
@@ -212,7 +209,8 @@ class TaskManager():
         map(lambda task: self.graph['cyborgbackup']['graph'].add_job(task), running_tasks)
 
     def get_latest_repository_creation(self, job):
-        latest_repository_creation = Job.objects.filter(repository=job.policy.repository_id, job_type='check').order_by("-created")
+        latest_repository_creation = Job.objects.filter(repository=job.policy.repository_id,
+                                                        job_type='check').order_by("-created")
         if not latest_repository_creation.exists():
             return None
         return latest_repository_creation.first()
@@ -348,14 +346,16 @@ class TaskManager():
                 logger.debug(six.text_type("Skipping group {} capacity <= 0").format('cyborgbackup'))
                 continue
             if not self.would_exceed_capacity(task, 'cyborgbackup'):
-                logger.debug(six.text_type("Starting dependent {} in group {}").format(task.log_format, 'cyborgbackup'))
+                msg = six.text_type("Starting dependent {} in group {}")
+                logger.debug(msg.format(task.log_format, 'cyborgbackup'))
                 self.graph['cyborgbackup']['graph'].add_job(task)
                 tasks_to_fail = list(filter(lambda t: t != task, dependency_tasks))
                 tasks_to_fail += [dependent_task]
                 self.start_task(task, tasks_to_fail)
                 found_acceptable_queue = True
             if not found_acceptable_queue:
-                logger.debug(six.text_type("Dependent {} couldn't be scheduled on graph, waiting for next cycle").format(task.log_format))
+                msg = six.text_type("Dependent {} couldn't be scheduled on graph, waiting for next cycle")
+                logger.debug(msg.format(task.log_format))
 
     def process_pending_tasks(self, pending_tasks):
         for task in pending_tasks:
@@ -381,7 +381,8 @@ class TaskManager():
                 logger.debug(six.text_type("Not enough capacity to run {} on {} (remaining_capacity={})").format(
                     task.log_format, 'cyborgbackup', remaining_capacity))
             if not found_acceptable_queue:
-                logger.debug(six.text_type("{} couldn't be scheduled on graph, waiting for next cycle").format(task.log_format))
+                msg = six.text_type("{} couldn't be scheduled on graph, waiting for next cycle")
+                logger.debug(msg.format(task.log_format))
 
     def fail_jobs_if_not_in_celery(self, node_jobs, active_tasks, celery_task_start_time,
                                    isolated=False):
@@ -447,8 +448,6 @@ class TaskManager():
                                  "The node is currently executing jobs {}".format(
                                      node, [j.log_format for j in node_jobs]))
                     active_tasks = []
-                elif instance.capacity == 0:
-                    active_tasks = []
                 else:
                     continue
 
@@ -458,8 +457,7 @@ class TaskManager():
             )
 
     def calculate_capacity_consumed(self, tasks):
-        #self.graph = InstanceGroup.objects.capacity_values(tasks=tasks, graph=self.graph)
-        self.graph['cyborgbackup']['consumed_capacity']=0;
+        self.graph['cyborgbackup']['consumed_capacity'] = 0
 
     def would_exceed_capacity(self, task, instance_group):
         current_capacity = self.graph['cyborgbackup']['consumed_capacity']
@@ -487,11 +485,9 @@ class TaskManager():
         self.process_pending_tasks(pending_tasks)
 
     def _schedule(self):
-        finished_wfjs = []
         all_sorted_tasks = self.get_tasks()
         if len(all_sorted_tasks) > 0:
             self.process_tasks(all_sorted_tasks)
-        return finished_wfjs
 
     def schedule(self):
         with transaction.atomic():
@@ -503,4 +499,4 @@ class TaskManager():
                 logger.debug("Starting Scheduler")
 
                 self.cleanup_inconsistent_celery_tasks()
-                finished_wfjs = self._schedule()
+                self._schedule()

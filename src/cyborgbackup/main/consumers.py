@@ -34,9 +34,9 @@ def ws_connect(message):
 def ws_disconnect(message):
     discard_groups(message)
 
+
 @channel_session_user
 def ws_receive(message):
-    user = message.user
     raw_data = message.content['text']
     data = json.loads(raw_data)
 

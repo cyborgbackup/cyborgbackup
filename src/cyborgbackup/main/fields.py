@@ -6,7 +6,6 @@ import six
 import urllib
 
 # Python
-import logging
 from urllib.parse import urlparse
 from collections import OrderedDict
 
@@ -22,20 +21,8 @@ from jinja2.exceptions import UndefinedError
 
 # Django
 from django.core import exceptions as django_exceptions
-from django.db.models.signals import (
-    post_save,
-    post_delete,
-)
-from django.db.models.signals import m2m_changed
 from django.db import models
-from django.db.models.fields.related_descriptors import (
-    ReverseOneToOneDescriptor,
-    ForwardManyToOneDescriptor,
-    ManyToManyDescriptor,
-    ReverseManyToOneDescriptor,
-)
-from django.utils.encoding import smart_text
-from django.utils.translation import ugettext_lazy as _
+from django.db.models.fields.related_descriptors import ReverseOneToOneDescriptor
 
 # jsonschema
 from jsonschema import Draft4Validator, FormatChecker
@@ -53,8 +40,6 @@ from cyborgbackup.main.utils.filters import SmartFilter
 from cyborgbackup.main.validators import validate_ssh_private_key
 from cyborgbackup.main import utils
 
-
-
 # Provide a (better) custom error message for enum jsonschema validation
 def __enum_validate__(validator, enums, instance, schema):
     if instance not in enums:
@@ -65,13 +50,10 @@ def __enum_validate__(validator, enums, instance, schema):
 
 Draft4Validator.VALIDATORS['enum'] = __enum_validate__
 
+
 class CharField(CharField):
 
     def to_representation(self, value):
-        # django_rest_frameworks' default CharField implementation casts `None`
-        # to a string `"None"`:
-        #
-        # https://github.com/tomchristie/django-rest-framework/blob/cbad236f6d817d992873cd4df6527d46ab243ed1/rest_framework/fields.py#L761
         if value is None:
             return None
         return super(CharField, self).to_representation(value)
@@ -86,6 +68,7 @@ class IntegerField(IntegerField):
             return None
         return ret
 
+
 class StringListField(ListField):
 
     child = CharField()
@@ -94,6 +77,7 @@ class StringListField(ListField):
         if value is None and self.allow_null:
             return None
         return super(StringListField, self).to_representation(value)
+
 
 class StringListBooleanField(ListField):
 
@@ -135,6 +119,7 @@ class StringListBooleanField(ListField):
             pass
         self.fail('type_error', input_type=type(data))
 
+
 class URLField(CharField):
 
     def __init__(self, **kwargs):
@@ -164,10 +149,15 @@ class URLField(CharField):
                             netloc = '{}:{}@{}' % (url_parts.username, url_parts.password, netloc)
                         else:
                             netloc = '{}@{}' % (url_parts.username, netloc)
-                    value = urlparse.urlunsplit([url_parts.scheme, netloc, url_parts.path, url_parts.query, url_parts.fragment])
+                    value = urlparse.urlunsplit([url_parts.scheme,
+                                                 netloc,
+                                                 url_parts.path,
+                                                 url_parts.query,
+                                                 url_parts.fragment])
             except Exception:
                 raise  # If something fails here, just fall through and let the validators check it.
         super(URLField, self).run_validators(value)
+
 
 class KeyValueField(DictField):
     child = CharField()
@@ -271,6 +261,7 @@ class AutoOneToOneField(models.OneToOneField):
     def contribute_to_related_class(self, cls, related):
         setattr(cls, related.get_accessor_name(),
                 AutoSingleRelatedObjectDescriptor(related))
+
 
 class SmartFilterField(models.TextField):
     def get_prep_value(self, value):
@@ -610,7 +601,6 @@ class CredentialTypeInputField(JSONSchemaField):
                         code='invalid',
                         params={'value': value},
                     )
-
 
 
 class CredentialTypeInjectorField(JSONSchemaField):

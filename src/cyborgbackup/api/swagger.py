@@ -1,5 +1,4 @@
 import json
-import re
 import warnings
 
 from coreapi.document import Object, Link
@@ -37,7 +36,8 @@ class AutoSchema(DRFAuthSchema):
                 serializer.Meta.model._meta.verbose_name_plural
             ).title()
         elif hasattr(self.view, 'model'):
-            link.__dict__['topic'] = str(self.view.model._meta.verbose_name_plural).title()
+            strTopic = str(self.view.model._meta.verbose_name_plural)
+            link.__dict__['topic'] = strTopic.title()
         else:
             warnings.warn('Could not determine a Swagger tag for path {}'.format(path))
         return link

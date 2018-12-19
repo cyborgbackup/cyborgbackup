@@ -1,22 +1,14 @@
-import datetime
 import logging
 
-from django.conf import settings
 from django.db import models
-from django.utils.dateparse import parse_datetime
-from django.utils.timezone import utc
-from django.utils.translation import ugettext_lazy as _
-from django.utils.encoding import force_text
-
 from cyborgbackup.api.versioning import reverse
-from cyborgbackup.main.fields import JSONField
-from cyborgbackup.main.models.base import CreatedModifiedModel, PrimordialModel
-from cyborgbackup.main.utils.common import could_be_script, copy_model_by_class, copy_m2m_relationships
-from cyborgbackup.main.consumers import emit_channel_notification
+from cyborgbackup.main.models.base import PrimordialModel
+from cyborgbackup.main.utils.common import copy_model_by_class, copy_m2m_relationships
 
-analytics_logger = logging.getLogger('cyborgbackup.models.client')
+logger = logging.getLogger('cyborgbackup.models.client')
 
 __all__ = ['Client']
+
 
 class Client(PrimordialModel):
     hostname = models.CharField(
@@ -64,21 +56,6 @@ class Client(PrimordialModel):
     def get_ui_url(self):
         return "/#/clients/{}".format(self.pk)
 
-    def save(self, *args, **kwargs):
-        #encrypted = settings_registry.is_setting_encrypted(self.key)
-        encrypted = False
-        # If update_fields has been specified, add our field names to it,
-        # if it hasn't been specified, then we're just doing a normal save.
-        update_fields = kwargs.get('update_fields', [])
-        # When first saving to the database, don't store any encrypted field
-        # value, but instead save it until after the instance is created.
-        # Otherwise, store encrypted value to the database.
-        if encrypted:
-                self.value = encrypt_field(self, 'value')
-                if 'value' not in update_fields:
-                    update_fields.append('value')
-        super(Client, self).save(*args, **kwargs)
-
     @classmethod
     def get_cache_key(self, key):
         return key
@@ -122,8 +99,6 @@ class Client(PrimordialModel):
         with disable_activity_stream():
             copy_m2m_relationships(self, job, fields, kwargs=kwargs)
 
-        #job.create_config_from_prompts(kwargs)
-
         return job
 
     def create_prepare_hypervisor(self, **kwargs):
@@ -155,7 +130,5 @@ class Client(PrimordialModel):
         fields = ()
         with disable_activity_stream():
             copy_m2m_relationships(self, job, fields, kwargs=kwargs)
-
-        #job.create_config_from_prompts(kwargs)
 
         return job

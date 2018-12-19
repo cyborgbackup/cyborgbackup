@@ -1,20 +1,19 @@
 import datetime
 import logging
 
-from django.conf import settings
 from django.db import models
 from django.utils.dateparse import parse_datetime
 from django.utils.timezone import utc
 from django.utils.translation import ugettext_lazy as _
-from django.utils.encoding import force_text
 
 from cyborgbackup.api.versioning import reverse
 from cyborgbackup.main.fields import JSONField
 from cyborgbackup.main.models.base import CreatedModifiedModel
 
-analytics_logger = logging.getLogger('cyborgbackup.analytics.job_events')
+logger = logging.getLogger('cyborgbackup.analytics.job_events')
 
 __all__ = ['JobEvent']
+
 
 class JobEvent(CreatedModifiedModel):
     '''
@@ -118,7 +117,6 @@ class JobEvent(CreatedModifiedModel):
         # Change display for runner events triggered by async polling.  Some of
         # these events may not show in most cases, due to filterting them out
         # of the job event queryset returned to the user.
-        res = self.event_data.get('res', {})
         return msg
 
     def _update_from_event_data(self):
@@ -169,12 +167,12 @@ class JobEvent(CreatedModifiedModel):
                 kwargs.pop(key)
 
         job_event = self.objects.create(**kwargs)
-        analytics_logger.info('Event data saved.', extra=dict(python_objects=dict(job_event=job_event)))
+        logger.info('Event data saved.', extra=dict(python_objects=dict(job_event=job_event)))
         return job_event
 
     @property
     def job_verbosity(self):
-        return 0
+        return self.job.verbosity
 
     def save(self, *args, **kwargs):
         # If update_fields has been specified, add our field names to it,
@@ -196,7 +194,3 @@ class JobEvent(CreatedModifiedModel):
 
     def __unicode__(self):
         return u'%s @ %s' % (self.get_event_display2(), self.created.isoformat())
-
-    @property
-    def job_verbosity(self):
-        return self.job.verbosity

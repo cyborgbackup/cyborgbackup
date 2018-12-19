@@ -4,7 +4,6 @@ from collections import OrderedDict
 from django.core.exceptions import PermissionDenied
 from django.http import Http404
 from django.utils.encoding import force_text, smart_text
-from django.utils.translation import ugettext_lazy as _
 
 # Django REST Framework
 from rest_framework import exceptions
@@ -12,7 +11,6 @@ from rest_framework import metadata
 from rest_framework import serializers
 from rest_framework.relations import RelatedField, ManyRelatedField
 from rest_framework.request import clone_request
-
 
 
 class Metadata(metadata.SimpleMetadata):
@@ -73,7 +71,7 @@ class Metadata(metadata.SimpleMetadata):
             field_info['children'] = self.get_serializer_info(field)
 
         if not isinstance(field, (RelatedField, ManyRelatedField)) and hasattr(field, 'choices'):
-            field_info['choices'] = [(choice_value, choice_name) for choice_value, choice_name in field.choices.items()]
+            field_info['choices'] = [(choice_v, choice_n) for choice_v, choice_n in field.choices.items()]
 
         # Indicate if a field is write-only.
         if getattr(field, 'write_only', False):
