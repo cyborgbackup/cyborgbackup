@@ -27,7 +27,7 @@ PyYAML==3.12
 requests>=2.20.0
 simplejson==3.13.2
 uritemplate==3.0.0
-urllib3==1.22
+urllib3>=1.23
 uWSGI==2.0.17
 sphinxcontrib-httpdomain
 setuptools_scm
