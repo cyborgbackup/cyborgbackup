@@ -22,7 +22,7 @@ before_script:
   - make DEVVERSION
   - cd src && python manage.py migrate
   - python manage.py create_preload_data
-  - flake8 --max-line-length=119 --exclude './cyborgbackup/ui/static/,./cyborgbackup/main/migrations/' .
+  #- flake8 --max-line-length=119 --exclude './cyborgbackup/ui/static/,./cyborgbackup/main/migrations/' .
 test:
   adapter: postgresql
   database: cyborgbackup
