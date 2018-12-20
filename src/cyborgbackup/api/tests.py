@@ -11,7 +11,10 @@ logger = logging.getLogger('cyborgbackup')
 logger.setLevel(logging.CRITICAL)
 
 class CyborgbackupApiTest(APITestCase):
-    fixtures = ["tests.json"]
+    fixtures = ["settings.json", "tests.json"]
+    user_login = 'admin@cyborg.local'
+    user_pass = 'adminadmin'
+
     def test_page_not_found(self):
         response = self.client.get('/notFound', format='json')
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
@@ -71,3 +74,69 @@ class CyborgbackupApiTest(APITestCase):
         self.assertFalse(response.data['debug'])
         self.assertFalse(response.data['sql_debug'])
         self.assertEqual(response.data['version'], '1.0')
+
+    def test_api_v1_access_me(self):
+        url = reverse('api:user_me_list', kwargs={'version': 'v1'})
+        self.client.login(username=self.user_login, password=self.user_pass)
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['count'], 1)
+        self.assertEqual(response.data['results'][0]['type'], 'user')
+        self.assertTrue(response.data['results'][0]['is_superuser'])
+        self.assertEqual(response.data['results'][0]['email'], 'admin@cyborg.local')
+
+    def test_api_v1_access_users(self):
+        url = reverse('api:user_list', kwargs={'version': 'v1'})
+        self.client.login(username=self.user_login, password=self.user_pass)
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['count'], 1)
+
+    def test_api_v1_access_settings(self):
+        url = reverse('api:setting_list', kwargs={'version': 'v1'})
+        self.client.login(username=self.user_login, password=self.user_pass)
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['count'], 13)
+
+    def test_api_v1_access_clients(self):
+        url = reverse('api:client_list', kwargs={'version': 'v1'})
+        self.client.login(username=self.user_login, password=self.user_pass)
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['count'], 1)
+
+    def test_api_v1_access_schedules(self):
+        url = reverse('api:schedule_list', kwargs={'version': 'v1'})
+        self.client.login(username=self.user_login, password=self.user_pass)
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['count'], 1)
+
+    def test_api_v1_access_repositories(self):
+        url = reverse('api:repository_list', kwargs={'version': 'v1'})
+        self.client.login(username=self.user_login, password=self.user_pass)
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['count'], 1)
+
+    def test_api_v1_access_policies(self):
+        url = reverse('api:policy_list', kwargs={'version': 'v1'})
+        self.client.login(username=self.user_login, password=self.user_pass)
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['count'], 1)
+
+    def test_api_v1_access_catalogs(self):
+        url = reverse('api:catalog_list', kwargs={'version': 'v1'})
+        self.client.login(username=self.user_login, password=self.user_pass)
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['count'], 0)
+
+    def test_api_v1_access_stats(self):
+        url = reverse('api:stats', kwargs={'version': 'v1'})
+        self.client.login(username=self.user_login, password=self.user_pass)
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, [])
