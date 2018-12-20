@@ -194,7 +194,7 @@ class ApiV1ConfigView(APIView):
             debug=dsettings.DEBUG,
             sql_debug=dsettings.SQL_DEBUG,
             allowed_hosts=dsettings.ALLOWED_HOSTS,
-            beat_schedule=dsettings.CELERY_BEAT_SCHEDULE,
+            # beat_schedule=dsettings.CELERY_BEAT_SCHEDULE,
             version=get_cyborgbackup_version(),
         )
 

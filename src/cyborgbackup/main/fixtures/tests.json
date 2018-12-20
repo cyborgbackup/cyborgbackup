@@ -1,0 +1,97 @@
+[
+  {
+    "model": "main.repository",
+    "pk": 1,
+    "fields": {
+      "created": "2018-12-20T15:38:09.979Z",
+      "modified": "2018-12-20T15:38:09.979Z",
+      "created_by": 1,
+      "modified_by": 1,
+      "uuid": "72c12a9f-6938-4bb3-b197-2449a7a6b35f",
+      "name": "Demo Repository",
+      "path": "/tmp/repository",
+      "enabled": false,
+      "repository_key": "0123456789abcdef",
+      "ready": false,
+      "original_size": 0,
+      "compressed_size": 0,
+      "deduplicated_size": 0,
+      "latest_prepare": null
+    }
+  },{
+    "model": "main.schedule",
+    "pk": 1,
+    "fields": {
+      "created": "2018-12-20T15:38:09.991Z",
+      "modified": "2018-12-20T15:38:09.991Z",
+      "created_by": 1,
+      "modified_by": 1,
+      "uuid": "539f15ad-934f-4456-b69a-d2609b3044d9",
+      "name": "Demo Schedule",
+      "crontab": "0 5 * * MON *",
+      "enabled": false
+    }
+  },{
+    "model": "main.client",
+    "pk": 1,
+    "fields": {
+      "created": "2018-12-20T15:38:10.001Z",
+      "modified": "2018-12-20T15:38:10.001Z",
+      "created_by": 1,
+      "modified_by": 1,
+      "uuid": "fe31b804-a063-4f99-b9ea-bccc2c064985",
+      "hostname": "localhost",
+      "enabled": false,
+      "ip": "",
+      "version": "",
+      "ready": false,
+      "hypervisor_ready": false,
+      "hypervisor_name": "",
+      "latest_prepare": null
+    }
+  },{
+    "model": "main.user",
+    "pk": 1,
+    "fields": {
+      "password": "pbkdf2_sha256$120000$b4tXGkbEszM5$Lm21gW4J/HQ4vP+E/L9pfNlKIgO1XG/aOzAhoiDu+M8=",
+      "last_login": null,
+      "is_superuser": true,
+      "email": "admin@cyborg.local",
+      "first_name": "",
+      "last_name": "",
+      "date_joined": "2018-12-20T15:38:09.909Z",
+      "is_active": true,
+      "is_agent": false,
+      "notify_backup_failed": false,
+      "notify_backup_success": false,
+      "notify_backup_summary": false,
+      "notify_backup_daily": false,
+      "notify_backup_weekly": false,
+      "notify_backup_monthly": false
+    }
+  },{
+    "model": "main.policy",
+    "pk": 1,
+    "fields": {
+      "created": "2018-12-20T15:38:10.068Z",
+      "modified": "2018-12-20T15:38:10.068Z",
+      "created_by": 1,
+      "modified_by": 1,
+      "uuid": "a40ea581-a171-45c5-80fb-f8311d193856",
+      "name": "Demo Policy",
+      "schedule": 1,
+      "repository": 1,
+      "policy_type": "rootfs",
+      "enabled": false,
+      "extra_vars": "",
+      "mode_pull": false,
+      "keep_hourly": null,
+      "keep_daily": null,
+      "keep_weekly": null,
+      "keep_monthly": null,
+      "keep_yearly": null,
+      "vmprovider": "",
+      "next_run": "2018-12-24T05:00:00Z"
+    }
+  }
+]
