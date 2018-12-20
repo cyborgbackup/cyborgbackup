@@ -14,7 +14,7 @@ from django.core.validators import URLValidator
 from django.utils.translation import ugettext_lazy as _
 
 # Django REST Framework
-from rest_framework.fields import CharField, IntegerField, ListField, NullBooleanField, basestring, DictField
+from rest_framework.fields import CharField, IntegerField, ListField, NullBooleanField, DictField
 
 from jinja2 import Environment, StrictUndefined
 from jinja2.exceptions import UndefinedError

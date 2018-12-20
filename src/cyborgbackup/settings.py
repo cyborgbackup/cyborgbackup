@@ -48,7 +48,7 @@ except NameError:
             to generate your secret key!' % SECRET_FILE)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 SQL_DEBUG = False
 
 ALLOWED_HOSTS = ['web', 'localhost', '127.0.0.1', '::1', '*']

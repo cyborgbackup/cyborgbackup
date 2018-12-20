@@ -107,7 +107,7 @@ v1_urls = [
     url(r'^$', ApiV1RootView.as_view(), name='api_v1_root_view'),
     url(r'^ping/$', ApiV1PingView.as_view(), name='api_v1_ping_view'),
     url(r'^config/$', ApiV1ConfigView.as_view(), name='api_v1_config_view'),
-    url(r'^auth/$', AuthView.as_view()),
+    url(r'^auth/$', AuthView.as_view(), name="auth"),
     url(r'^me/$', UserMeList.as_view(), name='user_me_list'),
     url(r'^users/', include(user_urls)),
     url(r'^jobs/', include(job_urls)),
