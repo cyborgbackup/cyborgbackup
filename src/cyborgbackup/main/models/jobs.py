@@ -20,7 +20,7 @@ from django_celery_results.models import TaskResult
 
 # CyBorgBackup
 from cyborgbackup.api.versioning import reverse
-from cyborgbackup.main.models.base import * # noqa
+from cyborgbackup.main.models.base import prevent_search, VarsDictProperty, CommonModelNameNotUnique
 from cyborgbackup.main.models.events import JobEvent
 from cyborgbackup.main.utils.common import (
     copy_model_by_class, copy_m2m_relationships,
@@ -386,14 +386,14 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
                 update_fields.append(field)
 
         # Get status before save...
-        status_before = self.status or 'new'
+        # status_before = self.status or 'new'
 
         # If this job already exists in the database, retrieve a copy of
         # the job in its prior state.
-        if self.pk:
-            self_before = self.__class__.objects.get(pk=self.pk)
-            if self_before.status != self.status:
-                status_before = self_before.status
+        # if self.pk:
+        #     self_before = self.__class__.objects.get(pk=self.pk)
+        #     if self_before.status != self.status:
+        #         status_before = self_before.status
 
         # Sanity check: Is this a failure? Ensure that the failure value
         # matches the status.
@@ -765,7 +765,7 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
 
     def pre_start(self, **kwargs):
         if not self.can_start:
-            msg - u'%s is not in a startable state: %s, expecting one of %s' % (self._meta.verbose_name,
+            msg = u'%s is not in a startable state: %s, expecting one of %s' % (self._meta.verbose_name,
                                                                                 self.status, str(('new', 'waiting')))
             self.job_explanation = msg
             self.save(update_fields=['job_explanation'])

@@ -27,17 +27,38 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.settings import api_settings
 from rest_framework.views import exception_handler
-from rest_framework import status
+from rest_framework import status, renderers
 
 # CyBorgBackup
-from cyborgbackup.api.generics import *
-from cyborgbackup.main.models import *
-from cyborgbackup.main.utils.common import * # noqa
+from cyborgbackup.api.generics import (APIView, GenericAPIView, ListAPIView,
+                                       ListCreateAPIView, SubListAPIView, RetrieveAPIView,
+                                       RetrieveUpdateAPIView, RetrieveUpdateDestroyAPIView,
+                                       get_view_name)
+from cyborgbackup.main.models import reverse
+from cyborgbackup.main.models.events import JobEvent
+from cyborgbackup.main.models.catalogs import Catalog
+from cyborgbackup.main.models.clients import Client
+from cyborgbackup.main.models.schedules import Schedule
+from cyborgbackup.main.models.repositories import Repository
+from cyborgbackup.main.models.policies import Policy
+from cyborgbackup.main.models.jobs import Job
+from cyborgbackup.main.models.users import User
+from cyborgbackup.main.models.settings import Setting
+from cyborgbackup.main.utils.common import get_module_provider, camelcase_to_underscore, get_cyborgbackup_version
 from cyborgbackup.main.utils.callbacks import CallbackQueueDispatcher
-from cyborgbackup.api.renderers import * # noqa
-from cyborgbackup.api.serializers import * # noqa
+from cyborgbackup.api.renderers import (BrowsableAPIRenderer, PlainTextRenderer,
+                                        DownloadTextRenderer, AnsiDownloadRenderer, AnsiTextRenderer)
+from cyborgbackup.api.serializers import (EmptySerializer, UserSerializer,
+                                          JobSerializer, JobStdoutSerializer, JobCancelSerializer,
+                                          JobRelaunchSerializer, JobListSerializer, JobEventSerializer,
+                                          SettingSerializer, SettingListSerializer,
+                                          ClientSerializer, ClientListSerializer, ScheduleSerializer,
+                                          ScheduleListSerializer, RepositorySerializer, RepositoryListSerializer,
+                                          PolicySerializer, PolicyLaunchSerializer,
+                                          PolicyCalendarSerializer, PolicyVMModuleSerializer,
+                                          CatalogSerializer, CatalogListSerializer, StatsSerializer)
 from cyborgbackup.main.constants import ACTIVE_STATES
-from cyborgbackup.api.permissions import *
+from cyborgbackup.api.permissions import UserPermission
 
 import ansiconv
 from wsgiref.util import FileWrapper
@@ -188,27 +209,8 @@ class AuthView(APIView):
     swagger_topic = 'System Configuration'
 
     def get(self, request):
-        from rest_framework.reverse import reverse
         data = OrderedDict()
         err_backend, err_message = request.session.get('social_auth_error', (None, None))
-        auth_backends = load_backends(settings.AUTHENTICATION_BACKENDS, force_load=True).items()
-        # Return auth backends in consistent order: Google, GitHub, SAML.
-        auth_backends.sort(key=lambda x: 'g' if x[0] == 'google-oauth2' else x[0])
-        for name, backend in auth_backends:
-            if (not feature_exists('enterprise_auth') and
-                    not feature_enabled('ldap')) or \
-                (not feature_enabled('enterprise_auth') and
-                 name in ['saml', 'radius']):
-                    continue
-            login_url = reverse('social:begin', args=(name,))
-            complete_url = request.build_absolute_uri(reverse('social:complete', args=(name,)))
-            backend_data = {
-                'login_url': login_url,
-                'complete_url': complete_url,
-            }
-            if err_backend == name and err_message:
-                backend_data['error'] = err_message
-            data[name] = backend_data
         return Response(data)
 
 
@@ -243,7 +245,7 @@ class UserDetail(RetrieveUpdateDestroyAPIView):
         obj = self.get_object()
 
         su_only_edit_fields = ('is_superuser')
-        admin_only_edit_fields = ('username', 'is_active')
+        # admin_only_edit_fields = ('username', 'is_active')
 
         fields_to_check = ()
         if not request.user.is_superuser:
@@ -257,10 +259,6 @@ class UserDetail(RetrieveUpdateDestroyAPIView):
                 bad_changes[field] = (left, right)
         if bad_changes:
             raise PermissionDenied(_('Cannot change %s.') % ', '.join(bad_changes.keys()))
-
-    def destroy(self, request, *args, **kwargs):
-        obj = self.get_object()
-        return super(UserDetail, self).destroy(request, *args, **kwargs)
 
 
 class StdoutANSIFilter(object):
@@ -367,9 +365,11 @@ class JobStdout(RetrieveAPIView):
                     return Response(mark_safe(data))
                 if target_format == 'json':
                     if content_encoding == 'base64' and content_format == 'ansi':
-                        return Response({'range': {'start': start, 'end': end, 'absolute_end': absolute_end}, 'content': b64encode(content.encode('utf-8'))})
+                        return Response({'range': {'start': start, 'end': end, 'absolute_end': absolute_end},
+                                         'content': b64encode(content.encode('utf-8'))})
                     elif content_format == 'html':
-                        return Response({'range': {'start': start, 'end': end, 'absolute_end': absolute_end}, 'content': body})
+                        return Response({'range': {'start': start, 'end': end, 'absolute_end': absolute_end},
+                                         'content': body})
                 return Response(data)
             elif target_format == 'txt':
                 return Response(job.result_stdout)
@@ -388,7 +388,7 @@ class JobStdout(RetrieveAPIView):
                 response["Content-Disposition"] = 'attachment; filename="{}"'.format(filename)
                 return response
             else:
-                return super(UnifiedJobStdout, self).retrieve(request, *args, **kwargs)
+                return super(JobStdout, self).retrieve(request, *args, **kwargs)
         except StdoutMaxBytesExceeded as e:
             response_message = _(
                 "Standard Output too large to display ({text_size} bytes), "
@@ -420,7 +420,7 @@ class JobStart(GenericAPIView):
         if obj.can_start:
             result = obj.signal_start(**request.data)
             if not result:
-                return Response(data, status=status.HTTP_400_BAD_REQUEST)
+                return Response(request.data, status=status.HTTP_400_BAD_REQUEST)
             else:
                 return Response(status=status.HTTP_202_ACCEPTED)
         else:
@@ -477,7 +477,8 @@ class JobRelaunch(RetrieveAPIView):
         if jobs.exists():
             for job in jobs:
                 if job.status in ['waiting', 'pending', 'running']:
-                    return Response({'detail': 'Backup job already running for this client.'}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({'detail': 'Backup job already running for this client.'},
+                                    status=status.HTTP_400_BAD_REQUEST)
 
         copy_kwargs = {}
 
@@ -631,14 +632,14 @@ class PolicyCalendar(ListAPIView):
     serializer_class = PolicyCalendarSerializer
 
     def list(self, request, *args, **kwargs):
-        data = OrderedDict()
         obj = self.get_object()
         now = datetime.datetime.now(pytz.utc)
         start_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         year = now.year
         if start_month.month == 12:
             year += 1
-        end_month = datetime.datetime(year, (start_month + dateutil.relativedelta.relativedelta(months=1)).month, 1) - datetime.timedelta(days=1)
+        relative_month = dateutil.relativedelta.relativedelta(months=1)
+        end_month = datetime.datetime(year, (start_month + relative_month).month, 1) - datetime.timedelta(days=1)
         end_month = end_month.replace(hour=23, minute=59, second=50, tzinfo=pytz.utc)
         schedule = tzcron.Schedule(obj.schedule.crontab, pytz.utc, start_month, end_month)
         return Response([s.isoformat() for s in schedule])
@@ -668,7 +669,8 @@ class PolicyLaunch(RetrieveAPIView):
             if jobs.exists():
                 for job in jobs:
                     if job.status in ['waiting', 'pending', 'running']:
-                        return Response({'detail': 'Backup job already running for theses clients.'}, status=status.HTTP_400_BAD_REQUEST)
+                        return Response({'detail': 'Backup job already running for theses clients.'},
+                                        status=status.HTTP_400_BAD_REQUEST)
 
         new_job = obj.create_job(**serializer.validated_data)
         result = new_job.signal_start()

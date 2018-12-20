@@ -14,7 +14,7 @@ from django.core.validators import URLValidator
 from django.utils.translation import ugettext_lazy as _
 
 # Django REST Framework
-from rest_framework.fields import *  # noqa
+from rest_framework.fields import CharField, IntegerField, ListField, NullBooleanField, basestring, DictField
 
 from jinja2 import Environment, StrictUndefined
 from jinja2.exceptions import UndefinedError
@@ -39,6 +39,7 @@ from rest_framework import serializers
 from cyborgbackup.main.utils.filters import SmartFilter
 from cyborgbackup.main.validators import validate_ssh_private_key
 from cyborgbackup.main import utils
+
 
 # Provide a (better) custom error message for enum jsonschema validation
 def __enum_validate__(validator, enums, instance, schema):
@@ -448,10 +449,10 @@ class CredentialInputField(JSONSchemaField):
                 # string)
                 match = re.search(
                     # 'foo' is a dependency of 'bar'
-                    "'"         # apostrophe
-                    "([^']+)"   # one or more non-apostrophes (first group)
-                    "'[\w ]+'"  # one or more words/spaces
-                    "([^']+)",  # second group
+                    r"'"         # apostrophe
+                    r"([^']+)"   # one or more non-apostrophes (first group)
+                    r"'[\w ]+'"  # one or more words/spaces
+                    r"([^']+)",  # second group
                     error.message,
                 )
                 if match:
@@ -617,7 +618,7 @@ class CredentialTypeInjectorField(JSONSchemaField):
                 'file': {
                     'type': 'object',
                     'patternProperties': {
-                        '^template(\.[a-zA-Z_]+[a-zA-Z0-9_]*)?$': {'type': 'string'},
+                        r'^template(\.[a-zA-Z_]+[a-zA-Z0-9_]*)?$': {'type': 'string'},
                     },
                     'additionalProperties': False,
                 },
@@ -629,14 +630,14 @@ class CredentialTypeInjectorField(JSONSchemaField):
                         # of underscores, digits, and alphabetics from the portable
                         # character set. The first character of a name is not
                         # a digit.
-                        '^[a-zA-Z_]+[a-zA-Z0-9_]*$': {'type': 'string'},
+                        r'^[a-zA-Z_]+[a-zA-Z0-9_]*$': {'type': 'string'},
                     },
                     'additionalProperties': False,
                 },
                 'extra_vars': {
                     'type': 'object',
                     'patternProperties': {
-                        '^[a-zA-Z_]+[a-zA-Z0-9_]*$': {'type': 'string'},
+                        r'^[a-zA-Z_]+[a-zA-Z0-9_]*$': {'type': 'string'},
                     },
                     'additionalProperties': False,
                 },

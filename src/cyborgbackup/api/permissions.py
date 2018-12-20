@@ -10,7 +10,7 @@ from cyborgbackup.main.models import * # noqa
 
 logger = logging.getLogger('cyborgbackup.api.permissions')
 
-__all__ = ['ModelAccessPermission', 'UserPermission', 'IsSuperUser', ]
+__all__ = ['ModelAccessPermission', 'UserPermission', 'IsSuperUser', 'check_user_acccess']
 
 
 def check_user_access(user, model_class, action, *args, **kwargs):

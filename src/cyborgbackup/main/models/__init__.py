@@ -3,16 +3,16 @@ from django.conf import settings # noqa
 
 # CyBorgBackup
 from cyborgbackup.main.models.base import * # noqa
-from cyborgbackup.main.models.jobs import * # noqa
-from cyborgbackup.main.models.users import * # noqa
-from cyborgbackup.main.models.events import * # noqa
-from cyborgbackup.main.models.channels import * # noqa
-from cyborgbackup.main.models.clients import * # noqa
-from cyborgbackup.main.models.schedules import * # noqa
-from cyborgbackup.main.models.repositories import * # noqa
-from cyborgbackup.main.models.catalogs import * # noqa
-from cyborgbackup.main.models.policies import * # noqa
-from cyborgbackup.main.models.activity_streams import * # noqa
+from cyborgbackup.main.models.jobs import Job
+from cyborgbackup.main.models.users import User
+from cyborgbackup.main.models.events import JobEvent
+from cyborgbackup.main.models.channels import ChannelGroup
+from cyborgbackup.main.models.clients import Client
+from cyborgbackup.main.models.schedules import Schedule
+from cyborgbackup.main.models.repositories import Repository
+from cyborgbackup.main.models.catalogs import Catalog
+from cyborgbackup.main.models.policies import Policy
+from cyborgbackup.main.models.activity_streams import ActivityStream
 from cyborgbackup.api.versioning import reverse
 
 # Monkeypatch Django serializer to ignore django-taggit fields (which break
@@ -50,6 +50,7 @@ def user_is_system_auditor(user):
 import cyborgbackup.main.signals # noqa
 
 from cyborgbackup.main.registrar import activity_stream_registrar # noqa
+
 activity_stream_registrar.connect(Client)
 activity_stream_registrar.connect(User)
 activity_stream_registrar.connect(Repository)

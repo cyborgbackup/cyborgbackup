@@ -17,7 +17,7 @@ from cyborgbackup.main.fields import (CredentialInputField,
                                       CredentialTypeInjectorField)
 from cyborgbackup.main.utils.encryption import encrypt_field, decrypt_field
 from cyborgbackup.main.validators import validate_ssh_private_key
-from cyborgbackup.main.models.base import *
+from cyborgbackup.main.models.base import PasswordFieldsModel, CommonModelNameNotUnique
 
 __all__ = ['Credential', 'CredentialType', 'V1Credential', 'build_safe_env']
 

@@ -19,7 +19,7 @@ from rest_framework.exceptions import ParseError, PermissionDenied
 from rest_framework.filters import BaseFilterBackend
 
 # cyborgbackup
-from cyborgbackup.main.utils.common import get_type_for_model, to_python_boolean
+from cyborgbackup.main.utils.common import get_type_for_model, to_python_boolean, get_all_field_names
 
 logger = logging.getLogger('cyborgbackup.main.tasks')
 

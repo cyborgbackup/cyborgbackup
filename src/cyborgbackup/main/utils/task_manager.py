@@ -105,7 +105,8 @@ class TaskManager():
         waiting_jobs = []
         now = tz_now()
         jobs = Job.objects.exclude(job_type='workflow').filter((Q(status='running') |
-                                   Q(status='waiting', modified__lte=now - timedelta(seconds=60))))
+                                                                Q(status='waiting',
+                                                                  modified__lte=now - timedelta(seconds=60))))
         for j in jobs:
             waiting_jobs.append(j)
         return (execution_nodes, waiting_jobs)

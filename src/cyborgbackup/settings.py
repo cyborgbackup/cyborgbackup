@@ -38,7 +38,8 @@ except NameError:
     except IOError:
         try:
             import random
-            SECRET_KEY = ''.join([random.SystemRandom().choice('abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)') for i in range(50)])
+            choices = 'abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)'
+            SECRET_KEY = ''.join([random.SystemRandom().choice(choices) for i in range(50)])
             secret = open(SECRET_FILE, 'w')
             secret.write(SECRET_KEY)
             secret.close()
@@ -102,7 +103,7 @@ ROOT_URLCONF = 'cyborgbackup.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'cyborgbackup/templates'),],
+        'DIRS': [os.path.join(BASE_DIR, 'cyborgbackup/templates'), ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -170,7 +171,7 @@ REST_FRAMEWORK = {
     'VIEW_DESCRIPTION_FUNCTION': 'cyborgbackup.api.generics.get_view_description',
     'NON_FIELD_ERRORS_KEY': '__all__',
     'DEFAULT_VERSION': 'v1',
-    #'URL_FORMAT_OVERRIDE': None,
+    # 'URL_FORMAT_OVERRIDE': None,
 }
 
 # Absolute filesystem path to the directory to store logs
@@ -221,7 +222,7 @@ LOGGING = {
         },
     },
 }
-#LOGGING['handlers']['console']['()'] = 'milkyprovision.main.utils.handlers.ColorHandler'
+# LOGGING['handlers']['console']['()'] = 'cyborgbackup.main.utils.handlers.ColorHandler'
 LOGGING['handlers']['console'] = {
     '()': 'logging.StreamHandler',
     'level': 'DEBUG',
@@ -262,8 +263,6 @@ USE_I18N = True
 USE_L10N = True
 
 USE_TZ = True
-
-
 
 
 # Static files (CSS, JavaScript, Images)
@@ -332,17 +331,17 @@ CELERY_BEAT_SCHEDULE = {
     'cyborgbackup_scheduler': {
         'task': 'cyborgbackup.main.tasks.cyborgbackup_periodic_scheduler',
         'schedule': timedelta(seconds=30),
-        'options': {'expires': 20,}
+        'options': {'expires': 20}
     },
     'cyborgbackup_compute_Size': {
         'task': 'cyborgbackup.main.tasks.compute_borg_size',
         'schedule': timedelta(seconds=10),
-        'options': {'expires': 20,}
+        'options': {'expires': 20}
     },
     'cyborgbackup_prune_catalog': {
         'task': 'cyborgbackup.main.tasks.prune_catalog',
         'schedule': timedelta(seconds=30),
-        'options': {'expires': 20,}
+        'options': {'expires': 20}
     },
     'task_manager': {
         'task': 'cyborgbackup.main.utils.tasks.run_task_manager',

@@ -452,7 +452,7 @@ def compute_borg_size(self):
         for job in jobs:
             events = JobEvent.objects.filter(job_id=job.pk).order_by('-counter')
             for event in events:
-                prg = re.compile("This archive:\s*([0-9\.]*\s*.B)\s*([0-9\.]*\s*.B)\s*([0-9\.]*\s*.B)\s*")
+                prg = re.compile(r"This archive:\s*([0-9\.]*\s*.B)\s*([0-9\.]*\s*.B)\s*([0-9\.]*\s*.B)\s*")
                 m = prg.match(event.stdout)
                 if m:
                     job.original_size = parseSize(m.group(1))
@@ -470,7 +470,7 @@ def compute_borg_size(self):
                 last_running_job = jobs.first()
                 events = JobEvent.objects.filter(job_id=last_running_job.pk).order_by('-counter')
                 for event in events:
-                    prg = re.compile("All archives:\s*([0-9\.]*\s*.B)\s*([0-9\.]*\s*.B)\s*([0-9\.]*\s*.B)\s*")
+                    prg = re.compile(r"All archives:\s*([0-9\.]*\s*.B)\s*([0-9\.]*\s*.B)\s*([0-9\.]*\s*.B)\s*")
                     m = prg.match(event.stdout)
                     if m:
                         repo.original_size = parseSize(m.group(1))
@@ -601,7 +601,7 @@ def prune_catalog(self):
         for job in jobs:
             events = JobEvent.objects.filter(job_id=job.pk).order_by('-counter')
             for event in events:
-                prg = re.compile("Pruning\sarchive:\s([^\s]*)\s.*")
+                prg = re.compile(r"Pruning\sarchive:\s([^\s]*)\s.*")
                 m = prg.match(event.stdout)
                 if m:
                     Catalog.objects.filter(archive_name=m.group(1)).delete()
@@ -656,7 +656,7 @@ def cyborgbackup_periodic_scheduler(self):
         policy.save()
     policies = Policy.objects.enabled().between(last_run, run_now)
     for policy in policies:
-        policy.save() # To update next_run timestamp.
+        policy.save()  # To update next_run timestamp.
         try:
             new_job = policy.create_job('scheduled')
             new_job.launch_type = 'scheduled'
@@ -813,10 +813,10 @@ class BaseTask(LogErrorsTask):
         Return structure is a dict of the form:
         '''
         private_data = {'credentials': {}}
-        for settings in Setting.objects.filter(key__contains='ssh_key'):
+        for sets in Setting.objects.filter(key__contains='ssh_key'):
             # If we were sent SSH credentials, decrypt them and send them
             # back (they will be written to a temporary file).
-            private_data['credentials'][settings] = decrypt_field(settings, 'value') or ''
+            private_data['credentials'][sets] = decrypt_field(sets, 'value') or ''
 
         return private_data
 
@@ -1563,7 +1563,7 @@ class RunJob(BaseTask):
     def get_password_prompts(self, **kwargs):
         d = super(RunJob, self).get_password_prompts(**kwargs)
         for k, v in kwargs['passwords'].items():
-            d[re.compile(r'Enter passphrase for .*'+k+':\s*?$', re.M)] = k
+            d[re.compile(r'Enter passphrase for .*'+k+r':\s*?$', re.M)] = k
             d[re.compile(r'Enter passphrase for .*'+k, re.M)] = k
         d[re.compile(r'Bad passphrase, try again for .*:\s*?$', re.M)] = ''
         return d

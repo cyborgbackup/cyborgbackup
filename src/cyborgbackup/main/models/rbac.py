@@ -1,5 +1,4 @@
 # Python
-import logging
 import threading
 import re
 
@@ -111,7 +110,6 @@ class Role(models.Model):
 
     def save(self, *args, **kwargs):
         super(Role, self).save(*args, **kwargs)
-        #self.rebuild_role_ancestor_list([self.id], [])
 
     def get_absolute_url(self, request=None):
         return reverse('api:role_detail', kwargs={'pk': self.pk}, request=request)

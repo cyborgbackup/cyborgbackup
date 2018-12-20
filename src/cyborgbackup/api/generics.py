@@ -26,8 +26,8 @@ from rest_framework import views
 
 # CyBorgBackup
 from cyborgbackup.api.filters import FieldLookupBackend
-from cyborgbackup.main.models import *
-from cyborgbackup.main.utils.common import *
+from cyborgbackup.main.utils.common import (get_object_or_400, camelcase_to_underscore,
+                                            getattrd, get_all_field_names, get_search_fields)
 from cyborgbackup.api.versioning import URLPathVersioning, get_request_version
 from cyborgbackup.api.metadata import SublistAttachDetatchMetadata
 

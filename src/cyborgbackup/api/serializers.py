@@ -22,8 +22,12 @@ from polymorphic.models import PolymorphicModel
 
 # cyborgbackup
 from cyborgbackup.main.constants import ANSI_SGR_PATTERN
-from cyborgbackup.main.models import *
-from cyborgbackup.main.models.credential import *
+from cyborgbackup.main.models.events import JobEvent
+from cyborgbackup.main.models.clients import Client
+from cyborgbackup.main.models.catalogs import Catalog
+from cyborgbackup.main.models.schedules import Schedule
+from cyborgbackup.main.models.repositories import Repository
+from cyborgbackup.main.models.policies import Policy
 from cyborgbackup.main.models.jobs import Job
 from cyborgbackup.main.models.users import User
 from cyborgbackup.main.models.settings import Setting

@@ -14,8 +14,9 @@ from crum import get_current_request, get_current_user
 from crum.signals import current_user_getter
 
 # CyBorgBackup
-from cyborgbackup.main.models import * # noqa
-from cyborgbackup.api.serializers import * # noqa
+from cyborgbackup.main.models import User, JobEvent, Client, Policy, Schedule, Job, ActivityStream, Repository
+from cyborgbackup.api.serializers import (JobEventWebSocketSerializer, JobSerializer, ClientSerializer,
+                                          RepositorySerializer, ScheduleSerializer, PolicySerializer)
 from cyborgbackup.main.utils.common import model_instance_diff, model_to_dict, camelcase_to_underscore
 
 from cyborgbackup.main import consumers
@@ -70,6 +71,7 @@ def disable_activity_stream():
         yield
     finally:
         activity_stream_enabled.enabled = previous_value
+
 
 model_serializer_mapping = {
     Job: JobSerializer,
@@ -212,20 +214,21 @@ def sync_superuser_status_to_rbac(instance, **kwargs):
         return
 
 
-def create_user_role(instance, **kwargs):
-    if not kwargs.get('created', True):
-        return
-    try:
-        Role.objects.get(
-            content_type=ContentType.objects.get_for_model(instance),
-            object_id=instance.id,
-            role_field='admin_role'
-        )
-    except Role.DoesNotExist:
-        role = Role.objects.create(
-            role_field='admin_role',
-            content_object=instance,
-        )
-        role.members.add(instance)
+# def create_user_role(instance, **kwargs):
+#     if not kwargs.get('created', True):
+#         return
+#     try:
+#         Role.objects.get(
+#             content_type=ContentType.objects.get_for_model(instance),
+#             object_id=instance.id,
+#             role_field='admin_role'
+#         )
+#     except Role.DoesNotExist:
+#         role = Role.objects.create(
+#             role_field='admin_role',
+#             content_object=instance,
+#         )
+#         role.members.add(instance)
+
 
 post_save.connect(sync_superuser_status_to_rbac, sender=User)
