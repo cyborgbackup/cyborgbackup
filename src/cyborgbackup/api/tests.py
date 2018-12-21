@@ -376,3 +376,81 @@ class CyborgbackupApiTest(APITestCase):
         count_after_delete = response.data['count']
 
         self.assertEqual(count_before_delete, count_after_delete)
+
+    def test_api_v1_get_policy_1(self):
+        url = reverse('api:policy_detail', kwargs={'version': 'v1', 'pk': 1})
+        self.client.login(username=self.user_login, password=self.user_pass)
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['id'], 1)
+        self.assertEqual(response.data['name'], "Demo Policy")
+        self.assertFalse(response.data['enabled'])
+        self.assertEqual(response.data['policy_type'], "rootfs")
+
+    def test_api_v1_access_policies_create_policy(self):
+        url = reverse('api:policy_list', kwargs={'version': 'v1'})
+        self.client.login(username=self.user_login, password=self.user_pass)
+        data = {"name": "Test Create Policy", "policy_type": "config", "schedule": 1, "repository": 1, "clients": [1]}
+        response = self.client.post(url, data=data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['name'], "Test Create Policy")
+        self.assertEqual(response.data['policy_type'], "config")
+        self.assertTrue(response.data['enabled'])
+
+    def test_api_v1_access_policies_after_policy(self):
+        url = reverse('api:policy_list', kwargs={'version': 'v1'})
+        self.client.login(username=self.user_login, password=self.user_pass)
+        data = {"name": "Test List Policy", "policy_type": "config", "schedule": 1, "repository": 1, "clients": [1]}
+        response = self.client.post(url, data=data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        url = reverse('api:policy_list', kwargs={'version': 'v1'})
+        self.client.login(username=self.user_login, password=self.user_pass)
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertNotEqual(response.data['count'], 0)
+
+    def test_api_v1_access_policies_update_policy(self):
+        url = reverse('api:policy_list', kwargs={'version': 'v1'})
+        self.client.login(username=self.user_login, password=self.user_pass)
+        data = {"name": "Test Update Policy", "policy_type": "config", "schedule": 1, "repository": 1, "clients": [1]}
+        response = self.client.post(url, data=data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        id = response.data['id']
+        url = response.data['url']
+
+        url = reverse('api:policy_detail', kwargs={'version': 'v1', 'pk': response.data['id']})
+        self.client.login(username=self.user_login, password=self.user_pass)
+        data = {"enabled": False}
+        response = self.client.patch(url, data=data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['id'], id)
+        self.assertEqual(response.data['name'], "Test Update Policy")
+        self.assertEqual(response.data['url'], url)
+        self.assertFalse(response.data['enabled'])
+
+    def test_api_v1_access_policies_delete_policy(self):
+        url = reverse('api:policy_list', kwargs={'version': 'v1'})
+        self.client.login(username=self.user_login, password=self.user_pass)
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        count_before_delete = response.data['count']
+
+        url = reverse('api:policy_list', kwargs={'version': 'v1'})
+        self.client.login(username=self.user_login, password=self.user_pass)
+        data = {"name": "Test Delete Policy", "policy_type": "config", "schedule": 1, "repository": 1, "clients": [1]}
+        response = self.client.post(url, data=data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        url = reverse('api:policy_detail', kwargs={'version': 'v1', 'pk': response.data['id']})
+        self.client.login(username=self.user_login, password=self.user_pass)
+        response = self.client.delete(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        url = reverse('api:policy_list', kwargs={'version': 'v1'})
+        self.client.login(username=self.user_login, password=self.user_pass)
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        count_after_delete = response.data['count']
+
+        self.assertEqual(count_before_delete, count_after_delete)
