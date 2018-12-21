@@ -208,11 +208,168 @@ class CyborgbackupApiTest(APITestCase):
 
         url = reverse('api:schedule_detail', kwargs={'version': 'v1', 'pk': response.data['id']})
         self.client.login(username=self.user_login, password=self.user_pass)
-        data = {"enabled": False}
         response = self.client.delete(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
         url = reverse('api:schedule_list', kwargs={'version': 'v1'})
+        self.client.login(username=self.user_login, password=self.user_pass)
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        count_after_delete = response.data['count']
+
+        self.assertEqual(count_before_delete, count_after_delete)
+
+    def test_api_v1_get_repository_1(self):
+        url = reverse('api:repository_detail', kwargs={'version': 'v1', 'pk': 1})
+        self.client.login(username=self.user_login, password=self.user_pass)
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['id'], 1)
+        self.assertEqual(response.data['name'], "Demo Repository")
+        self.assertFalse(response.data['enabled'])
+        self.assertEqual(response.data['path'], "/tmp/repository")
+        self.assertEqual(response.data['repository_key'], "0123456789abcdef")
+
+    def test_api_v1_access_repositories_create_repository(self):
+        url = reverse('api:repository_list', kwargs={'version': 'v1'})
+        self.client.login(username=self.user_login, password=self.user_pass)
+        data = {"name": "Test Create Repository", "path": "/dev/null", "repository_key": "abcedf02"}
+        response = self.client.post(url, data=data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['name'], "Test Create Repository")
+        self.assertEqual(response.data['path'], "/dev/null")
+        self.assertTrue(response.data['enabled'])
+
+    def test_api_v1_access_repositories_after_creation(self):
+        url = reverse('api:repository_list', kwargs={'version': 'v1'})
+        self.client.login(username=self.user_login, password=self.user_pass)
+        data = {"name": "Test List Repository", "path": "/dev/log", "repository_key": "abcedf03"}
+        response = self.client.post(url, data=data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        url = reverse('api:repository_list', kwargs={'version': 'v1'})
+        self.client.login(username=self.user_login, password=self.user_pass)
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertNotEqual(response.data['count'], 0)
+
+    def test_api_v1_access_repositories_update_repository(self):
+        url = reverse('api:repository_list', kwargs={'version': 'v1'})
+        self.client.login(username=self.user_login, password=self.user_pass)
+        data = {"name": "Test Update Repository", "path": "/dev/log", "repository_key": "abcedf04"}
+        response = self.client.post(url, data=data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        id = response.data['id']
+        url = response.data['url']
+
+        url = reverse('api:repository_detail', kwargs={'version': 'v1', 'pk': response.data['id']})
+        self.client.login(username=self.user_login, password=self.user_pass)
+        data = {"enabled": False, "path": "/dev/null"}
+        response = self.client.patch(url, data=data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['id'], id)
+        self.assertEqual(response.data['path'], "/dev/null")
+        self.assertEqual(response.data['name'], "Test Update Repository")
+        self.assertEqual(response.data['url'], url)
+        self.assertFalse(response.data['enabled'])
+
+    def test_api_v1_access_repositories_delete_repository(self):
+        url = reverse('api:repository_list', kwargs={'version': 'v1'})
+        self.client.login(username=self.user_login, password=self.user_pass)
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        count_before_delete = response.data['count']
+
+        url = reverse('api:repository_list', kwargs={'version': 'v1'})
+        self.client.login(username=self.user_login, password=self.user_pass)
+        data = {"name": "Test Delete Repository", "path": "/dev/none", "repository_key": "abcedf05"}
+        response = self.client.post(url, data=data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        url = reverse('api:repository_detail', kwargs={'version': 'v1', 'pk': response.data['id']})
+        self.client.login(username=self.user_login, password=self.user_pass)
+        response = self.client.delete(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        url = reverse('api:repository_list', kwargs={'version': 'v1'})
+        self.client.login(username=self.user_login, password=self.user_pass)
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        count_after_delete = response.data['count']
+
+        self.assertEqual(count_before_delete, count_after_delete)
+
+    def test_api_v1_get_client_1(self):
+        url = reverse('api:client_detail', kwargs={'version': 'v1', 'pk': 1})
+        self.client.login(username=self.user_login, password=self.user_pass)
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['id'], 1)
+        self.assertEqual(response.data['hostname'], "localhost")
+        self.assertFalse(response.data['enabled'])
+        self.assertEqual(response.data['ip'], "")
+        self.assertFalse(response.data['ready'])
+
+    def test_api_v1_access_clients_create_client(self):
+        url = reverse('api:client_list', kwargs={'version': 'v1'})
+        self.client.login(username=self.user_login, password=self.user_pass)
+        data = {"hostname": "localhost.localdomain"}
+        response = self.client.post(url, data=data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['hostname'], "localhost.localdomain")
+        self.assertTrue(response.data['enabled'])
+
+    def test_api_v1_access_clients_after_creation(self):
+        url = reverse('api:client_list', kwargs={'version': 'v1'})
+        self.client.login(username=self.user_login, password=self.user_pass)
+        data = {"hostname": "localhost.contoso"}
+        response = self.client.post(url, data=data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        url = reverse('api:client_list', kwargs={'version': 'v1'})
+        self.client.login(username=self.user_login, password=self.user_pass)
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertNotEqual(response.data['count'], 0)
+
+    def test_api_v1_access_clients_update_client(self):
+        url = reverse('api:client_list', kwargs={'version': 'v1'})
+        self.client.login(username=self.user_login, password=self.user_pass)
+        data = {"hostname": "localhost.example"}
+        response = self.client.post(url, data=data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        id = response.data['id']
+        url = response.data['url']
+
+        url = reverse('api:client_detail', kwargs={'version': 'v1', 'pk': response.data['id']})
+        self.client.login(username=self.user_login, password=self.user_pass)
+        data = {"enabled": False}
+        response = self.client.patch(url, data=data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['id'], id)
+        self.assertEqual(response.data['hostname'], "localhost.example")
+        self.assertEqual(response.data['url'], url)
+        self.assertFalse(response.data['enabled'])
+
+    def test_api_v1_access_clients_delete_client(self):
+        url = reverse('api:client_list', kwargs={'version': 'v1'})
+        self.client.login(username=self.user_login, password=self.user_pass)
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        count_before_delete = response.data['count']
+
+        url = reverse('api:client_list', kwargs={'version': 'v1'})
+        self.client.login(username=self.user_login, password=self.user_pass)
+        data = {"hostname": "localhost.test"}
+        response = self.client.post(url, data=data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        url = reverse('api:client_detail', kwargs={'version': 'v1', 'pk': response.data['id']})
+        self.client.login(username=self.user_login, password=self.user_pass)
+        response = self.client.delete(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        url = reverse('api:client_list', kwargs={'version': 'v1'})
         self.client.login(username=self.user_login, password=self.user_pass)
         response = self.client.get(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
