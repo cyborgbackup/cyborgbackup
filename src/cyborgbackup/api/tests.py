@@ -387,6 +387,25 @@ class CyborgbackupApiTest(APITestCase):
         self.assertFalse(response.data['enabled'])
         self.assertEqual(response.data['policy_type'], "rootfs")
 
+    def test_api_v1_get_policy_vmmmodule(self):
+        url = reverse('api:policy_vmmodule', kwargs={'version': 'v1'})
+        self.client.login(username=self.user_login, password=self.user_pass)
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, [])
+
+    def test_api_v1_get_policy_calendar_1(self):
+        url = reverse('api:policy_calendar', kwargs={'version': 'v1', 'pk': 1})
+        self.client.login(username=self.user_login, password=self.user_pass)
+        response = self.client.get(url, format='json')
+        expectedCalendar = ['2018-12-03T05:00:00+00:00',
+                            '2018-12-10T05:00:00+00:00',
+                            '2018-12-17T05:00:00+00:00',
+                            '2018-12-24T05:00:00+00:00',
+                            '2018-12-31T05:00:00+00:00']
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, expectedCalendar)
+
     def test_api_v1_access_policies_create_policy(self):
         url = reverse('api:policy_list', kwargs={'version': 'v1'})
         self.client.login(username=self.user_login, password=self.user_pass)
