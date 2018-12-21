@@ -140,3 +140,82 @@ class CyborgbackupApiTest(APITestCase):
         response = self.client.get(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, [])
+
+    def test_api_v1_get_schedule_1(self):
+        url = reverse('api:schedule_detail', kwargs={'version': 'v1', 'pk': 1})
+        self.client.login(username=self.user_login, password=self.user_pass)
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['id'], 1)
+        self.assertEqual(response.data['crontab'], "0 5 * * MON *")
+        self.assertFalse(response.data['enabled'])
+
+    def test_api_v1_access_schedules_create_schedule(self):
+        url = reverse('api:schedule_list', kwargs={'version': 'v1'})
+        self.client.login(username=self.user_login, password=self.user_pass)
+        data = {"name": "Test Create Schedule", "crontab": "1 1 1 1 * *"}
+        response = self.client.post(url, data=data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['crontab'], "1 1 1 1 * *")
+        self.assertEqual(response.data['name'], "Test Create Schedule")
+        self.assertTrue(response.data['enabled'])
+
+    def test_api_v1_access_schedules_after_creation(self):
+        url = reverse('api:schedule_list', kwargs={'version': 'v1'})
+        self.client.login(username=self.user_login, password=self.user_pass)
+        data = {"name": "Test List Schedule", "crontab": "1 1 1 1 * *"}
+        response = self.client.post(url, data=data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        url = reverse('api:schedule_list', kwargs={'version': 'v1'})
+        self.client.login(username=self.user_login, password=self.user_pass)
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertNotEqual(response.data['count'], 0)
+
+    def test_api_v1_access_schedules_update_schedule(self):
+        url = reverse('api:schedule_list', kwargs={'version': 'v1'})
+        self.client.login(username=self.user_login, password=self.user_pass)
+        data = {"name": "Test Update Schedule", "crontab": "2 2 2 2 * *"}
+        response = self.client.post(url, data=data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        id = response.data['id']
+        url = response.data['url']
+
+        url = reverse('api:schedule_detail', kwargs={'version': 'v1', 'pk': response.data['id']})
+        self.client.login(username=self.user_login, password=self.user_pass)
+        data = {"enabled": False}
+        response = self.client.patch(url, data=data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['id'], id)
+        self.assertEqual(response.data['crontab'], "2 2 2 2 * *")
+        self.assertEqual(response.data['name'], "Test Update Schedule")
+        self.assertEqual(response.data['url'], url)
+        self.assertFalse(response.data['enabled'])
+
+    def test_api_v1_access_schedules_delete_schedule(self):
+        url = reverse('api:schedule_list', kwargs={'version': 'v1'})
+        self.client.login(username=self.user_login, password=self.user_pass)
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        count_before_delete = response.data['count']
+
+        url = reverse('api:schedule_list', kwargs={'version': 'v1'})
+        self.client.login(username=self.user_login, password=self.user_pass)
+        data = {"name": "Test Delete Schedule", "crontab": "1 1 1 1 * *"}
+        response = self.client.post(url, data=data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        url = reverse('api:schedule_detail', kwargs={'version': 'v1', 'pk': response.data['id']})
+        self.client.login(username=self.user_login, password=self.user_pass)
+        data = {"enabled": False}
+        response = self.client.delete(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        url = reverse('api:schedule_list', kwargs={'version': 'v1'})
+        self.client.login(username=self.user_login, password=self.user_pass)
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        count_after_delete = response.data['count']
+
+        self.assertEqual(count_before_delete, count_after_delete)
