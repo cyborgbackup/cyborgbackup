@@ -560,9 +560,6 @@ class ClientList(ListCreateAPIView):
         methods = super(ClientList, self).allowed_methods
         return methods
 
-    def post(self, request, *args, **kwargs):
-        return super(ClientList, self).post(request, *args, **kwargs)
-
 
 class ClientDetail(RetrieveUpdateDestroyAPIView):
 
