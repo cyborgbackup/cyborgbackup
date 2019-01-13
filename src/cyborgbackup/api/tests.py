@@ -398,11 +398,23 @@ class CyborgbackupApiTest(APITestCase):
         url = reverse('api:policy_calendar', kwargs={'version': 'v1', 'pk': 1})
         self.client.login(username=self.user_login, password=self.user_pass)
         response = self.client.get(url, format='json')
-        expectedCalendar = ['2018-12-03T05:00:00+00:00',
-                            '2018-12-10T05:00:00+00:00',
-                            '2018-12-17T05:00:00+00:00',
-                            '2018-12-24T05:00:00+00:00',
-                            '2018-12-31T05:00:00+00:00']
+
+        import datetime
+        import tzcron
+        import dateutil
+        import pytz
+
+        now = datetime.datetime.now(pytz.utc)
+        start_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        year = now.year
+        if start_month.month == 12:
+            year += 1
+        relative_month = dateutil.relativedelta.relativedelta(months=1)
+        end_month = datetime.datetime(year, (start_month + relative_month).month, 1) - datetime.timedelta(days=1)
+        end_month = end_month.replace(hour=23, minute=59, second=50, tzinfo=pytz.utc)
+        schedule = tzcron.Schedule("0 5 * * MON *", pytz.utc, start_month, end_month)
+
+        expectedCalendar = [s.isoformat() for s in schedule]
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, expectedCalendar)
 
