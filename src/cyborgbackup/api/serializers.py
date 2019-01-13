@@ -711,10 +711,6 @@ class JobRelaunchSerializer(BaseSerializer):
         model = Job
         fields = ('retry_counts',)
 
-    def to_representation(self, obj):
-        res = super(JobRelaunchSerializer, self).to_representation(obj)
-        return res
-
     def get_retry_counts(self, obj):
         if obj.status in ACTIVE_STATES:
             return _('Relaunch by host status not available until job finishes running.')
@@ -866,18 +862,6 @@ class SettingListSerializer(SettingSerializer):
         else:
             return super(SettingListSerializer, self).get_types()
 
-    def to_representation(self, obj):
-        serializer_class = None
-        if type(self) is SettingListSerializer:
-            if isinstance(obj, Setting):
-                serializer_class = SettingSerializer
-        if serializer_class:
-            serializer = serializer_class(instance=obj, context=self.context)
-            ret = serializer.to_representation(obj)
-        else:
-            ret = super(SettingListSerializer, self).to_representation(obj)
-        return ret
-
 
 class ClientSerializer(BaseSerializer):
     show_capabilities = ['edit', 'delete']
@@ -902,18 +886,6 @@ class ClientListSerializer(ClientSerializer):
             return ['client']
         else:
             return super(ClientListSerializer, self).get_types()
-
-    def to_representation(self, obj):
-        serializer_class = None
-        if type(self) is ClientListSerializer:
-            if isinstance(obj, Client):
-                serializer_class = ClientSerializer
-        if serializer_class:
-            serializer = serializer_class(instance=obj, context=self.context)
-            ret = serializer.to_representation(obj)
-        else:
-            ret = super(ClientListSerializer, self).to_representation(obj)
-        return ret
 
 
 class ScheduleSerializer(BaseSerializer):
@@ -948,18 +920,6 @@ class ScheduleListSerializer(ScheduleSerializer):
         else:
             return super(ScheduleListSerializer, self).get_types()
 
-    def to_representation(self, obj):
-        serializer_class = None
-        if type(self) is ScheduleListSerializer:
-            if isinstance(obj, Schedule):
-                serializer_class = ScheduleSerializer
-        if serializer_class:
-            serializer = serializer_class(instance=obj, context=self.context)
-            ret = serializer.to_representation(obj)
-        else:
-            ret = super(ScheduleListSerializer, self).to_representation(obj)
-        return ret
-
 
 class RepositorySerializer(BaseSerializer):
     """Read-only serializer for activity stream."""
@@ -993,18 +953,6 @@ class RepositoryListSerializer(RepositorySerializer):
             return ['repository']
         else:
             return super(RepositoryListSerializer, self).get_types()
-
-    def to_representation(self, obj):
-        serializer_class = None
-        if type(self) is RepositoryListSerializer:
-            if isinstance(obj, Repository):
-                serializer_class = RepositorySerializer
-        if serializer_class:
-            serializer = serializer_class(instance=obj, context=self.context)
-            ret = serializer.to_representation(obj)
-        else:
-            ret = super(RepositoryListSerializer, self).to_representation(obj)
-        return ret
 
 
 class PolicySerializer(BaseSerializer):
@@ -1051,18 +999,6 @@ class PolicyListSerializer(PolicySerializer):
             return ['policy']
         else:
             return super(PolicyListSerializer, self).get_types()
-
-    def to_representation(self, obj):
-        serializer_class = None
-        if type(self) is PolicyListSerializer:
-            if isinstance(obj, Policy):
-                serializer_class = PolicySerializer
-        if serializer_class:
-            serializer = serializer_class(instance=obj, context=self.context)
-            ret = serializer.to_representation(obj)
-        else:
-            ret = super(PolicyListSerializer, self).to_representation(obj)
-        return ret
 
 
 class PolicyLaunchSerializer(BaseSerializer):
