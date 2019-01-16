@@ -1,0 +1,40 @@
+#!/bin/bash
+
+postgres_passwd = $(tr -cd '[:alnum:]' < /dev/urandom | fold -w50 | head -n1)
+rabbitmq_passwd = $(tr -cd '[:alnum:]' < /dev/urandom | fold -w50 | head -n1)
+
+if [ "$1" = configure ]; then
+    [ "$DPKG_MAINTSCRIPT_PACKAGE" ] && quiet="--quiet" # RedHat doesn't have this
+    # Make sure the administrative user exists
+    if ! getent passwd cyborgbackup > /dev/null; then
+        adduser --system $quiet --home /opt/cyborgbackup --no-create-home \
+            --shell /bin/bash --group --gecos "CyBorgBackup administrator" cyborgbackup
+    fi
+    # if the user was created manually, make sure the group is there as well
+    if ! getent group cyborgbackup > /dev/null; then
+        addgroup --system $quiet cyborgbackup
+    fi
+    # make sure cyborgbackup is in the postgres group
+    if ! id -Gn cyborgbackup | grep -qw cyborgbackup; then
+        adduser $quiet cyborgbackup cyborgbackup
+    fi
+
+    # check validity of postgres user and group
+    if [ "`id -u cyborgbackup`" -eq 0 ]; then
+        echo "The cyborgbackup system user must not have uid 0 (root).
+Please fix this and reinstall this package." >&2
+        exit 1
+    fi
+    if [ "`id -g cyborgbackup`" -eq 0 ]; then
+        echo "The cyborgbackup system user must not have root as primary group.
+Please fix this and reinstall this package." >&2
+        exit 1
+    fi
+
+    # ensure home directory ownership
+    mkdir -p /opt/cyborgbackup
+    su -s /bin/sh cyborgbackup -c "test -O /opt/cyborgbackup &&
+            test -G /opt/cyborgbackup" || \
+        chown cyborgbackup:cyborgbackup /opt/cyborgbackup
+
+fi

@@ -1,10 +1,12 @@
 .env
+deploy.sh
 src/secret.txt
 celerybeat.pid
-src/cyborgbackup/ui/static
+src/cyborgbackup/static
 src/cyborgbackup/templates/ui
 src/cyborgbackup/ui/src/bower_components
 src/cyborgbackup/ui/src/.tmp
+src/cyborgbackup/ui/src/node_modules
 src/cyborgbackup/ui/src/dev-release
 src/cyborgbackup/ui/src/release
 **/__pycache__

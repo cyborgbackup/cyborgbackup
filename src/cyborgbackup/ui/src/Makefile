@@ -22,7 +22,7 @@ gulp-dev: docker-build
 	gulp dev-release
 
 clean-static:
-	rm -Rf ${CURDIR}/../static
+	rm -Rf ${CURDIR}/../../static
 	mkdir -p ${CURDIR}/../../templates/ui/
 
 clean:
@@ -41,16 +41,20 @@ dev: gulp-dev clean
 
 ui-build-dev: clean-static
 	docker run --rm -it -v ${CURDIR}:/src node:latest /bin/bash -c 'cd /src; make dev'
-	cp -r ${CURDIR}/dev-release ${CURDIR}/../static
-	cp -r ${CURDIR}/bower_components ${CURDIR}/../static
-	cp -r ${CURDIR}/src/app ${CURDIR}/../static/
-	mv ${CURDIR}/../static/index.html ${CURDIR}/../../templates/ui/
+	mkdir -p ${CURDIR}/../../static
+	cd ${CURDIR}/src/ && find . -iname '*.html' -print0 |  rsync -0 -v --files-from=- . ${CURDIR}/../../static/
+	cp -r ${CURDIR}/dev-release/* ${CURDIR}/../../static
+	cp -r ${CURDIR}/bower_components ${CURDIR}/../../static
+	cp -r ${CURDIR}/src/app ${CURDIR}/../../static/
+	mv ${CURDIR}/../../static/index.html ${CURDIR}/../../templates/ui/
+	cp -r ${CURDIR}/../static/* ${CURDIR}/../../static/
 	$(MAKE) clean-build
 
 ui-build: clean-static
 	docker run -it -v ${CURDIR}:/src node:latest /bin/bash -c 'cd /src; make build'
-	cp -r ${CURDIR}/release ${CURDIR}/../static
-	cp -r ${CURDIR}/bower_components ${CURDIR}/../static
-	cp -r ${CURDIR}/src/app ${CURDIR}/../static/
-	mv ${CURDIR}/../static/index.html ${CURDIR}/../../templates/ui/
+	mkdir -p ${CURDIR}/../../static
+	cd ${CURDIR}/src/ && find . -iname '*.html' -print0 |  rsync -0 -v --files-from=- . ${CURDIR}/../../static/
+	cp -r ${CURDIR}/release/* ${CURDIR}/../../static
+	mv ${CURDIR}/../../static/index.html ${CURDIR}/../../templates/ui/
+	cp -r ${CURDIR}/../static/* ${CURDIR}/../../static/
 	$(MAKE) clean-build
