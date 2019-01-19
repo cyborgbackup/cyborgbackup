@@ -42,7 +42,7 @@ su - postgres -c /usr/share/cyborgbackup/tools/scripts/makedb.sh || exit $?
 
 /usr/share/cyborgbackup/tools/scripts/initrabbitmq.sh || exit $?
 
-su - cyborgbackup -c '/bin/bash /usr/share/cyborgbackup/tools/scripts/initcyborg.sh' || exit $?
+su - cyborgbackup -c 'source $HOME/venv/bin/activate && /usr/share/cyborgbackup/tools/scripts/initcyborg.sh' || exit $?
 
 if [ ! -f /etc/supervisor/conf.d/cyborgbackup.conf ]
 then

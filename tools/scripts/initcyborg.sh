@@ -4,6 +4,7 @@ set -e
 . /opt/cyborgbackup/.env
 
 echo "Install Python3 requirements"
+pip3 install --upgrade wheel
 pip3 install -r /usr/share/cyborgbackup/requirements.txt
 
 python3 $HOME/manage.py migrate

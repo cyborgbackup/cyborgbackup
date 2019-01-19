@@ -69,7 +69,7 @@ SDIST_TAR_FILE ?= $(SDIST_TAR_NAME).tar.gz
 WHEEL_FILE ?= $(WHEEL_NAME)-py2-none-any.whl
 
 DEVVERSION:
-	@echo "0.2-dev" > VERSION
+	@echo "0.3-dev" > VERSION
 
 clean-ui:
 	rm -rf src/cyborgbackup/ui/src/node_modules

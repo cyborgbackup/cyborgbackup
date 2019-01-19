@@ -20,7 +20,7 @@ server {
     root /opt/cyborgbackup/cyborgbackup/static;
 
     location / {
-        try_files $uri $uri/ @uwsgi;
+        try_files $uri $uri @uwsgi;
     }
 
     location /websocket {
