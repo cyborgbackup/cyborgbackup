@@ -35,12 +35,50 @@
       var curNode = data.node;
       var url, url_info;
       if(curNode.parent == '#'){
-        url = path+'?archive_name='+curNode.text+'&path__regex=^[^/]*$&order=path';
+        function requestPages(startPath) {
+            function request(startPath, items){
+                return $.ajax({
+                    url: path+'?archive_name='+curNode.text+'&path__regex=^'+startPath+'$&order=path',
+                    method: 'GET'
+                }).then(function(data) {
+                    items=startPath + "/[^/]*";
+                    if (data.count == 0){
+                        return request(startPath + "/[^/]*", items);
+                    } else {
+                        return(startPath);
+                    }
+                });
+            }
+            return request(startPath, "[^/]*");
+        }
+        requestPages("[^/]*").then(function(items) {
+            var url=path+'?archive_name='+curNode.text+'&path__regex=^'+items+'$&order=path';
+            QuerySet.search(url).then(function(data){
+              if(curNode.children.length == 0){
+                _.forEach(data.data.results, function(v){
+                  var type;
+                  if(v.mode[0] == 'd'){
+                    type = 'folder';
+                  }else{
+                    type = 'default';
+                  }
+                  $scope.treeData.push({id: (newId++).toString(), parent: curNode.id, children: [], type: type, text: v['path']});
+                });
+              }
+              _.forEach(curNode.parents, function(v){
+                if(v != '#'){
+                  _.find($scope.treeData, { id : v } ).state = {opened: true};
+                }
+              });
+              _.find($scope.treeData, { id : curNode.id } ).state = {opened: true};
+              $scope.basicConfig.version ++;
+            });
+        });
         QuerySet.search(path+'?archive_name='+curNode.text).then(function(data){
-          var a_catalog_entry = data.data.results[0];
-          QuerySet.search(GetBasePath('jobs')+a_catalog_entry.job+'/').then(function(data){
-            $scope.currentBackup = data.data;
-          });
+            var a_catalog_entry = data.data.results[0];
+            QuerySet.search(GetBasePath('jobs')+a_catalog_entry.job+'/').then(function(data){
+                $scope.currentBackup = data.data;
+            });
         });
       }else{
         var master_item = _.find($scope.treeData, { id : curNode.parents[curNode.parents.length-2] } );
@@ -48,27 +86,27 @@
         QuerySet.search(path+'?archive_name='+master_item.text+'&path='+curNode.text).then(function(data){
           $scope.currentElement = data.data.results[0];
         });
-      }
-      QuerySet.search(url).then(function(data){
-        if(curNode.children.length == 0){
-          _.forEach(data.data.results, function(v){
-            var type;
-            if(v.mode[0] == 'd'){
-              type = 'folder';
-            }else{
-              type = 'default';
-            }
-            $scope.treeData.push({id: (newId++).toString(), parent: curNode.id, children: [], type: type, text: v['path']});
-          });
-        }
-        _.forEach(curNode.parents, function(v){
-          if(v != '#'){
-            _.find($scope.treeData, { id : v } ).state = {opened: true};
+        QuerySet.search(url).then(function(data){
+          if(curNode.children.length == 0){
+            _.forEach(data.data.results, function(v){
+              var type;
+              if(v.mode[0] == 'd'){
+                type = 'folder';
+              }else{
+                type = 'default';
+              }
+              $scope.treeData.push({id: (newId++).toString(), parent: curNode.id, children: [], type: type, text: v['path']});
+            });
           }
+          _.forEach(curNode.parents, function(v){
+            if(v != '#'){
+              _.find($scope.treeData, { id : v } ).state = {opened: true};
+            }
+          });
+          _.find($scope.treeData, { id : curNode.id } ).state = {opened: true};
+          $scope.basicConfig.version ++;
         });
-        _.find($scope.treeData, { id : curNode.id } ).state = {opened: true};
-        $scope.basicConfig.version ++;
-      });
+      }
     }
 
     QuerySet.search(path+'?fields=archive_name&order=-archive_name').then(function(data){
