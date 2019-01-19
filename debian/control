@@ -7,6 +7,6 @@ Standards-Version: 3.9.5
 
 Package: cyborgbackup
 Architecture: all
-Depends: ${misc:Depends}, postgresql-all, rabbitmq-server, python3-pip, python3-virtualenv, python3-setuptools, python3-venv, supervisor, nginx, git, bash
+Depends: ${misc:Depends}, postgresql-all, rabbitmq-server, python3-pip, python3-virtualenv, python3-setuptools, python3-venv, supervisor, nginx, bash
 Description: CyBorgBackup web interface frontend of Borg backup utility.
  CyBorgBackup is a web interface and api interface to manage backup from multiple clients and policy. It's a frontend of Borg backup utility.
