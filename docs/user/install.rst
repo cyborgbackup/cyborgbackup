@@ -9,7 +9,7 @@ The first step to using any software package is getting it properly installed.
 Debian Package
 --------------
 
-A debian package have been build with CyBorgBackup latest release and can be download from Releases github page::
+A debian package have been build with CyBorgBackup latest release and can be downloaded from Releases github page::
 
     # apt install postgresql-all rabbitmq-server python3-pip python3-virtualenv python3-setuptools python3-venv supervisor nginx
     # dpkg -i cyborgbackup_X.X.X_all.deb
