@@ -142,7 +142,7 @@ DATABASES = {
 
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'cyborgbackup.api.pagination.Pagination',
-    'PAGE_SIZE': 25,
+    'PAGE_SIZE': 100,
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'cyborgbackup.api.authentication.SessionAuthentication',
         'cyborgbackup.api.authentication.LoggedBasicAuthentication',
@@ -306,8 +306,6 @@ CELERY_ROUTES = {}
 CELERY_BEAT_SCHEDULER = 'celery.beat.PersistentScheduler'
 CELERY_BEAT_SCHEDULE_FILENAME = os.path.join(
     BASE_DIR,
-    '..',
-    '..',
     'var',
     'run',
     'celerybeat-schedule')

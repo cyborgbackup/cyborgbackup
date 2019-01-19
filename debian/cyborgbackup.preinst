@@ -1,0 +1,13 @@
+#!/bin/sh
+
+set -e
+. /usr/share/debconf/confmodule 
+
+case "$1" in 
+  install|upgrade|configure)
+      if ! getent passwd cyborgbackup > /dev:null ; then
+         useradd -m -d /opt/cyborgbackup -s /bin/bash cyborgbackup
+      fi
+
+      ;;
+esac

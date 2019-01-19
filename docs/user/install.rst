@@ -6,14 +6,29 @@ Installation of CyBorgBackup
 This part of the documentation covers the installation of CyBorgBackup.
 The first step to using any software package is getting it properly installed.
 
+Debian Package
+--------------
 
-$ git clone && make docker-compose-up
---------------------------------
+A debian package have been build with CyBorgBackup latest release and can be download from Releases github page::
 
-To install CyBorgBackup, simply run this simple command in your terminal of choice::
+    # apt install postgresql-all rabbitmq-server python3-pip python3-virtualenv python3-setuptools python3-venv supervisor nginx
+    # dpkg -i cyborgbackup_X.X.X_all.deb
 
-    $ git clone https://github.com/gaetanf/cyborgbackup
-    $ make docker-compose-up
+$ docker-compose up
+-------------------
+
+To install CyBorgBackup under Docker, simply run this simple command in your terminal of choice::
+
+    $ wget https://raw.githubusercontent.com/GaetanF/cyborgbackup/master/docker-compose.yml
+    $ cat > .env <<EOF
+    POSTGRES_PASSWORD=cyborgbackup
+    POSTGRES_USER=cyborgbackup
+    POSTGRES_NAME=cyborgbackup
+    RABBITMQ_DEFAULT_USER=cyborgbackup
+    RABBITMQ_DEFAULT_PASS=cyborgbackup
+    RABBITMQ_DEFAULT_VHOST=cyborgbackup
+    EOF
+    $ docker-compose up
 
 
 If you don't have `docker-compose <https://docs.docker.com/compose/>`_ or `docker <https://www.docker.com/>`_ installed  head over to the website for installation instructions.

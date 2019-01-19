@@ -72,7 +72,6 @@ DEVVERSION:
 	@echo "0.2-dev" > VERSION
 
 clean-ui:
-	rm -rf src/cyborgbackup/ui/static
 	rm -rf src/cyborgbackup/ui/src/node_modules
 	rm -rf src/cyborgbackup/ui/src/bower_components
 	rm -rf src/cyborgbackup/ui/src/dev-release
@@ -97,110 +96,6 @@ clean: clean-ui clean-dist
 	find . -type f -regex ".*\.py[co]$$" -delete
 	find . -type d -name "__pycache__" -delete
 
-# Create Django superuser.
-adduser:
-	$(MANAGEMENT_COMMAND) createsuperuser
-
-# Create database tables and apply any new migrations.
-migrate:
-	if [ "$(VENV_BASE)" ]; then \
-		. $(VENV_BASE)/cyborgbackup/bin/activate; \
-	fi; \
-	$(MANAGEMENT_COMMAND) migrate --noinput
-
-# Run after making changes to the models to create a new migration.
-dbchange:
-	$(MANAGEMENT_COMMAND) makemigrations
-
-# access database shell, asks for password
-dbshell:
-	sudo -u postgres psql -d cyborgbackup-dev
-
-server_noattach:
-	tmux new-session -d -s cyborgbackup 'exec make uwsgi'
-	tmux rename-window 'CyBorgBackup'
-	tmux select-window -t cyborgbackup:0
-	tmux split-window -v 'exec make celeryd'
-	tmux new-window 'exec make daphne'
-	tmux select-window -t cyborgbackup:1
-	tmux rename-window 'WebSockets'
-	tmux split-window -h 'exec make runworker'
-	tmux split-window -v 'exec make nginx'
-	tmux new-window 'exec make receiver'
-	tmux select-window -t cyborgbackup:2
-	tmux rename-window 'Extra Services'
-	tmux select-window -t cyborgbackup:0
-
-server: server_noattach
-	tmux -2 attach-session -t cyborgbackup
-
-# Use with iterm2's native tmux protocol support
-servercc: server_noattach
-	tmux -2 -CC attach-session -t cyborgbackup
-
-flower:
-	@if [ "$(VENV_BASE)" ]; then \
-		. $(VENV_BASE)/cyborgbackup/bin/activate; \
-	fi; \
-	celery flower --address=0.0.0.0 --port=5555 --broker=amqp://guest:guest@$(RABBITMQ_HOST):5672//
-
-collectstatic:
-	@if [ "$(VENV_BASE)" ]; then \
-		. $(VENV_BASE)/cyborgbackup/bin/activate; \
-	fi; \
-	mkdir -p src/cyborgbackup/public/static && $(PYTHON) manage.py collectstatic --clear --noinput > /dev/null 2>&1
-
-uwsgi: collectstatic
-	@if [ "$(VENV_BASE)" ]; then \
-		. $(VENV_BASE)/cyborgbackup/bin/activate; \
-	fi; \
-	uwsgi -b 32768 --socket 127.0.0.1:8050 --module=cyborgbackup.wsgi:application --home=/venv/cyborgbackup --chdir=/cyborgbackup_devel/ --vacuum --processes=5 --harakiri=120 --master --no-orphans --py-autoreload 1 --max-requests=1000 --stats /tmp/stats.socket --lazy-apps --logformat "%(addr) %(method) %(uri) - %(proto) %(status)" --hook-accepting1-once="exec:/bin/sh -c '[ -f /tmp/celery_pid ] && kill -1 `cat /tmp/celery_pid` || true'"
-
-daphne:
-	@if [ "$(VENV_BASE)" ]; then \
-		. $(VENV_BASE)/cyborgbackup/bin/activate; \
-	fi; \
-	daphne -b 127.0.0.1 -p 8051 cyborgbackup.asgi:channel_layer
-
-runworker:
-	@if [ "$(VENV_BASE)" ]; then \
-		. $(VENV_BASE)/cyborgbackup/bin/activate; \
-	fi; \
-	$(PYTHON) manage.py runworker --only-channels websocket.*
-
-# Run the built-in development webserver (by default on http://localhost:8013).
-runserver:
-	@if [ "$(VENV_BASE)" ]; then \
-		. $(VENV_BASE)/cyborgbackup/bin/activate; \
-	fi; \
-	$(PYTHON) manage.py runserver
-
-# Run to start the background celery worker for development.
-celeryd:
-	rm -f /tmp/celery_pid
-	@if [ "$(VENV_BASE)" ]; then \
-		. $(VENV_BASE)/cyborgbackup/bin/activate; \
-	fi; \
-	celery worker -A cyborgbackup -B -Ofair --autoscale=100,4 --schedule=$(CELERY_SCHEDULE_FILE) -n celery@$(COMPOSE_HOST) --pidfile /tmp/celery_pid
-
-# Run to start the background celery worker for development.
-celery_beat:
-	rm -f /tmp/celerybeat.pid
-	@if [ "$(VENV_BASE)" ]; then \
-		. $(VENV_BASE)/cyborgbackup/bin/activate; \
-	fi; \
-	celery beat -A cyborgbackup --pidfile /tmp/celerybeat.pid
-
-# Run to start the zeromq callback receiver
-receiver:
-	@if [ "$(VENV_BASE)" ]; then \
-		. $(VENV_BASE)/cyborgbackup/bin/activate; \
-	fi; \
-	$(PYTHON) manage.py run_callback_receiver
-
-nginx:
-	nginx -g "daemon off;"
-
 initenv:
 	echo "POSTGRES_HOST=postgres" > .env
 	echo "POSTGRES_PASSWORD=cyborgbackup" >> .env
@@ -212,6 +107,15 @@ initenv:
 
 ui-build:
 	$(MAKE) -C $(UI_DIR) node-build
+
+deb:
+	apt update && apt install -y build-essential debhelper
+	make -f debian/rules binary
+	make -f debian/rules clean
+	cp /*.deb ./
+
+package:
+	docker run --rm -it -v ${CURDIR}:/src debian:latest /bin/bash -c 'cd /src && apt update && apt install -y make && make deb'
 
 cyborgbackup-ui:
 	$(MAKE) -C $(UI_DIR)

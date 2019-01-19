@@ -862,7 +862,7 @@ class BaseTask(LogErrorsTask):
                 # For credentials used with ssh-add, write to a named pipe which
                 # will be read then closed, instead of leaving the SSH key on disk.
                 if sets and not ssh_too_old:
-                    name = 'credential_{}'.format(settings.key)
+                    name = 'credential_{}'.format(sets.key)
                     path = os.path.join(kwargs['private_data_dir'], name)
                     run.open_fifo_write(path, data)
                     listpaths.append(path)
@@ -1147,12 +1147,15 @@ class RunJob(BaseTask):
                 f.close()
                 os.chmod(path, stat.S_IEXEC | stat.S_IREAD)
                 args = ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
+                args += ['-o', 'PreferredAuthentications=publickey']
                 args += ['{}@{}'.format(client_user, job.client.hostname)]
-                args += ['\"', 'mkdir', env['PRIVATE_DATA_DIR'], '\"', '&&']
+                args += ['\"', 'mkdir', '-p', env['PRIVATE_DATA_DIR'], '\"', '&&']
                 args += ['scp', '-qo', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
+                args += ['-o', 'PreferredAuthentications=publickey']
                 args += [path, path_env, '{}@{}:{}/'.format(client_user, job.client.hostname, env['PRIVATE_DATA_DIR'])]
                 args += ['&&']
                 args += ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
+                args += ['-o', 'PreferredAuthentications=publickey']
                 args += ['{}@{}'.format(client_user, job.client.hostname)]
                 args += ['\". ', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
                 args += ['rm', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
@@ -1190,15 +1193,18 @@ class RunJob(BaseTask):
                 f.close()
                 os.chmod(path_prepare, stat.S_IEXEC | stat.S_IREAD)
                 args = ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
+                args += ['-o', 'PreferredAuthentications=publickey']
                 args += ['{}@{}'.format(client_user, hypervisor_hostname)]
-                args += ['\"', 'mkdir', env['PRIVATE_DATA_DIR'], '\"', '&&']
+                args += ['\"', 'mkdir', '-p', env['PRIVATE_DATA_DIR'], '\"', '&&']
                 args += ['scp', '-qo', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
+                args += ['-o', 'PreferredAuthentications=publickey']
                 args += [path_prepare,
                          path_env,
                          path_backup_script,
                          '{}@{}:{}/'.format(client_user, hypervisor_hostname, env['PRIVATE_DATA_DIR'])]
                 args += ['&&']
                 args += ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
+                args += ['-o', 'PreferredAuthentications=publickey']
                 args += ['{}@{}'.format(client_user, hypervisor_hostname)]
                 args += ['\". ', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
                 args += ['rm', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
@@ -1227,12 +1233,15 @@ class RunJob(BaseTask):
                 f.close()
                 repository_conn = job.policy.repository.path.split(':')[0]
                 args = ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
+                args += ['-o', 'PreferredAuthentications=publickey']
                 args += [repository_conn]
-                args += ['\"', 'mkdir', env['PRIVATE_DATA_DIR'], '\"', '&&']
+                args += ['\"', 'mkdir', '-p', env['PRIVATE_DATA_DIR'], '\"', '&&']
                 args += ['scp', '-qo', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
+                args += ['-o', 'PreferredAuthentications=publickey']
                 args += [path, path_env, '{}:{}/'.format(repository_conn, env['PRIVATE_DATA_DIR'])]
                 args += ['&&']
                 args += ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
+                args += ['-o', 'PreferredAuthentications=publickey']
                 args += [repository_conn]
                 args += ['\". ', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
                 args += ['rm', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
@@ -1291,12 +1300,15 @@ class RunJob(BaseTask):
                 f.close()
                 repository_conn = job.policy.repository.path.split(':')[0]
                 args = ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
+                args += ['-o', 'PreferredAuthentications=publickey']
                 args += [repository_conn]
-                args += ['\"', 'mkdir', env['PRIVATE_DATA_DIR'], '\"', '&&']
+                args += ['\"', 'mkdir', '-p', env['PRIVATE_DATA_DIR'], '\"', '&&']
                 args += ['scp', '-qo', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
+                args += ['-o', 'PreferredAuthentications=publickey']
                 args += [path, path_env, '{}:{}/'.format(repository_conn, env['PRIVATE_DATA_DIR'])]
                 args += ['&&']
                 args += ['ssh', '-Ao', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
+                args += ['-o', 'PreferredAuthentications=publickey']
                 args += [repository_conn]
                 args += ['\". ', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
                 args += ['rm', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
@@ -1329,12 +1341,15 @@ class RunJob(BaseTask):
                 f.write('export {}="{}"\n'.format(key, var))
             f.close()
             new_args = ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
+            new_args += ['-o', 'PreferredAuthentications=publickey']
             new_args += ['{}@{}'.format(client_user, client)]
-            new_args += ['\"', 'mkdir', env['PRIVATE_DATA_DIR'], '\"', '&&']
+            new_args += ['\"', 'mkdir', '-p', env['PRIVATE_DATA_DIR'], '\"', '&&']
             new_args += ['scp', '-qo', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
+            new_args += ['-o', 'PreferredAuthentications=publickey']
             new_args += [path_env, '{}@{}:{}/'.format(client_user, client, env['PRIVATE_DATA_DIR'])]
             new_args += ['&&']
             new_args += ['ssh', '-Ao', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
+            new_args += ['-o', 'PreferredAuthentications=publickey']
             new_args += ['{}@{}'.format(client_user, client)]
             new_args += ['\". ', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
             new_args += ['rm', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
@@ -1477,7 +1492,7 @@ class RunJob(BaseTask):
             client_user = clientUri.split('@')[0]
             if policy_type in ('rootfs', 'config', 'mail'):
                 sshFsDirectory = '/tmp/sshfs_{}_{}'.format(client_hostname, jobDateString)
-                pullCmd = ['mkdir', sshFsDirectory]
+                pullCmd = ['mkdir', '-p', sshFsDirectory]
                 pullCmd += ['&&', 'sshfs', 'root@{}:{}'.format(client_hostname, path[1::]), sshFsDirectory]
                 pullCmd += ['&&', 'cd', sshFsDirectory]
                 pullCmd += ['&&']+args
@@ -1550,6 +1565,7 @@ class RunJob(BaseTask):
         else:
             env['BORG_PASSPHRASE'] = job.policy.repository.repository_key
             env['BORG_REPO'] = job.policy.repository.path
+        env['BORG_RELOCATED_REPO_ACCESS_IS_OK'] = 'yes'
         env['BORG_RSH'] = 'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
         return env
 

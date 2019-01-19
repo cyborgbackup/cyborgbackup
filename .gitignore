@@ -1,7 +1,10 @@
 .env
+.vagrant
+*.deb
 deploy.sh
 src/secret.txt
 celerybeat.pid
+debian/cyborgbackup
 src/cyborgbackup/static
 src/cyborgbackup/templates/ui
 src/cyborgbackup/ui/src/bower_components

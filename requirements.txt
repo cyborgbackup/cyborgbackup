@@ -1,6 +1,6 @@
 amqp==2.2.2
 channels==1.1.8
-git+git://github.com/GaetanF/asgi_amqp.git@master#egg=asgi-amqp
+asgi-amqp>=1.1.3
 daphne==1.4.2
 decorator==4.2.1
 Django>=2.0.8

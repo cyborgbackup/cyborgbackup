@@ -1,0 +1,7 @@
+if [ -x "/etc/supervisor/conf.d/cyborgbackup.conf" ]; then
+    for i in uwsgi daphne celery celery-beat workers callback-receiver
+    do
+        supervisorctl stop cyborg-$i || exit $?
+    done
+    killall uwsgi
+fi

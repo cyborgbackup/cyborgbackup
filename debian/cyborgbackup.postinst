@@ -1,0 +1,60 @@
+#!/bin/sh
+
+if [ "$1" = "configure" ]; then
+  if [ -d /usr/doc -a ! -e /usr/doc/cyborgbackup -a -d /usr/share/doc/cyborgbackup ]; then
+    ln -sf ../share/doc/cyborgbackup /usr/doc/cyborgbackup
+  fi
+fi
+
+CYBORG_POSTGRES_PASSWORD=$(tr -cd '[:alnum:]' < /dev/urandom | fold -w50 | head -n1)
+CYBORG_RABBITMQ_PASSWORD=$(tr -cd '[:alnum:]' < /dev/urandom | fold -w50 | head -n1)
+
+if [ ! -f /opt/cyborgbackup/.env ]
+then
+    cat >> /opt/cyborgbackup/.env <<EOF
+export POSTGRES_USER="cyborgbackup"
+export POSTGRES_PASSWORD="$CYBORG_POSTGRES_PASSWORD"
+export RABBITMQ_DEFAULT_PASS="$CYBORG_RABBITMQ_PASSWORD"
+export RABBITMQ_HOST="localhost"
+EOF
+else
+    . /opt/cyborgbackup/.env
+    CYBORG_POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+    CYBORG_RABBITMQ_PASSWORD=$RABBITMQ_DEFAULT_PASS
+fi
+
+test -f /opt/cyborgbackup/.bashrc && cat /opt/cyborgbackup/.bashrc | grep -q 'venv' 2>&1 1>/dev/null
+if [ $? -ne 0 ]
+then
+    echo 'source $HOME/.env' >> /opt/cyborgbackup/.bashrc
+    echo 'test -z "$VIRTUAL_ENV" && test -d $HOME/venv/bin && source $HOME/venv/bin/activate' >> /opt/cyborgbackup/.bashrc
+fi
+
+chown -R cyborgbackup:cyborgbackup /opt/cyborgbackup
+
+if [ ! -d /opt/cyborgbackup/venv/ ]
+then
+    echo "Create Python3 CyBorgBackup Virtual Env"
+    su - cyborgbackup -c "python3 -m venv /opt/cyborgbackup/venv/" || exit $?
+fi
+
+su - postgres -c /usr/share/cyborgbackup/tools/scripts/makedb.sh || exit $?
+
+/usr/share/cyborgbackup/tools/scripts/initrabbitmq.sh || exit $?
+
+su - cyborgbackup -c /usr/share/cyborgbackup/tools/scripts/initcyborg.sh || exit $?
+
+if [ -f /etc/supervisor/conf.d/cyborgbackup.conf ]
+then
+  cp /usr/share/cyborgbackup/tools/config/cyborgbackup.conf /etc/supervisor/conf.d/
+  sed -e "s/###POSTGRES_PASSWORD###/$CYBORG_POSTGRES_PASSWORD/g" -i /etc/supervisor/conf.d/cyborgbackup.conf
+  sed -e "s/###RABBITMQ_PASSWORD###/$CYBORG_RABBITMQ_PASSWORD/g" -i /etc/supervisor/conf.d/cyborgbackup.conf
+  supervisorctl reload
+fi
+
+if [ -f /etc/nginx/sites-available/cyborg ]
+then
+  cp /usr/share/cyborgbackup/tools/config/nginx.vhosts /etc/nginx/sites-available/cyborg
+  rm /etc/nginx/sites-enabled/default
+  ln -s /etc/nginx/sites-available/cyborg /etc/nginx/sites-enabled/cyborg
+fi

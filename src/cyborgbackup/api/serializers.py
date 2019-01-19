@@ -55,7 +55,7 @@ DEFAULT_SUMMARY_FIELDS = ('id', 'name', 'created_by', 'modified_by')
 SUMMARIZABLE_FK_FIELDS = {
     'user': ('id', 'email', 'first_name', 'last_name'),
     'application': ('id', 'name', 'client_id'),
-    'job': DEFAULT_SUMMARY_FIELDS + ('status', 'failed', 'elapsed'),
+    'job': ('id', 'name', 'status', 'failed', 'elapsed'),
     'policy': ('id', 'name', 'policy_type'),
     'client': ('id', 'hostname'),
     'repository': ('id', 'name', 'path', 'enabled'),
@@ -240,7 +240,8 @@ class BaseSerializer(serializers.ModelSerializer, metaclass=BaseSerializerMetacl
             'image': 'Image',
             'client': 'Client',
             'schedule': 'Schedule',
-            'repository': 'Repository'
+            'repository': 'Repository',
+            'user': 'User'
         }
         choices = []
         for t in self.get_types():

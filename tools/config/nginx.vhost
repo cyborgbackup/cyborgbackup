@@ -17,9 +17,11 @@ server {
     server_name cyborgbackup.local;
     keepalive_timeout 65;
 
-    location /app { alias /opt/cyborgbackup/cyborgbackup/static; }
-    location /static { alias /opt/cyborgbackup/cyborgbackup/static; }
-    location /favicon.ico { alias /opt/cyborgbackup/cyborgbackup/static/favicon.ico; }
+    root /opt/cyborgbackup/cyborgbackup/static;
+
+    location / {
+        try_files $uri $uri/ @uwsgi;
+    }
 
     location /websocket {
         proxy_pass http://daphne_cyborgbackup;
@@ -33,7 +35,7 @@ server {
         proxy_set_header Connection $connection_upgrade;
     }
 
-    location / {
+    location @uwsgi {
         uwsgi_read_timeout 120s;
         uwsgi_pass uwsgi_cyborgbackup;
         include /etc/nginx/uwsgi_params;

@@ -1,0 +1,5 @@
+src/cyborgbackup /opt/cyborgbackup/
+src/manage.py /opt/cyborgbackup/
+tools /usr/share/cyborgbackup/
+docs /usr/share/cyborgbackup/
+requirements.txt /usr/share/cyborgbackup/

@@ -19,8 +19,6 @@ services:
   callback_receiver:
     image: milkywan/cyborgbackup:latest
     command: bash -c "python /cyborgbackup/manage.py run_callback_receiver -v 3"
-    volumes:
-      - ./src:/cyborgbackup
     env_file:
       - .env
     depends_on:
@@ -29,8 +27,6 @@ services:
   channel_workers:
     image: milkywan/cyborgbackup:latest
     command: bash -c 'python /cyborgbackup/manage.py runworker --only-channels websocket.*'
-    volumes:
-      - ./src:/cyborgbackup
     env_file:
       - .env
     depends_on:
@@ -39,8 +35,6 @@ services:
   web:
     image: milkywan/cyborgbackup:latest
     command: bash -c "python /cyborgbackup/manage.py migrate --noinput && python /cyborgbackup/manage.py runserver 0.0.0.0:8000"
-    volumes:
-      - ./src:/cyborgbackup
     env_file:
       - .env
     ports:
@@ -50,9 +44,7 @@ services:
       - rabbitmq
   celery:
     image: milkywan/cyborgbackup:latest
-    command: celery -A cyborgbackup worker -E
-    volumes:
-      - ./src:/cyborgbackup
+    command: celery -A cyborgbackup worker -E -c 1
     env_file:
       - .env
     depends_on:
@@ -61,8 +53,6 @@ services:
   celery_beat:
     image: milkywan/cyborgbackup:latest
     command: celery -A cyborgbackup beat
-    volumes:
-      - ./src:/cyborgbackup
     env_file:
       - .env
     depends_on:
