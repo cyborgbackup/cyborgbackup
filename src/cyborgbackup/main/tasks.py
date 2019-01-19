@@ -220,7 +220,7 @@ CyBorgBackup Backup Report
 {}
 Job output :
 {}
-""".format(elements['title'], elements['state'], header, elements['lines']))
+""".format(elements['title'], elements['state'], header, '\n'.join(elements['lines'])))
     header = """\
 <html>
   <head>
