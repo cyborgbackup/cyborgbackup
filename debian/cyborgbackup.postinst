@@ -42,9 +42,9 @@ su - postgres -c /usr/share/cyborgbackup/tools/scripts/makedb.sh || exit $?
 
 /usr/share/cyborgbackup/tools/scripts/initrabbitmq.sh || exit $?
 
-su - cyborgbackup -c /usr/share/cyborgbackup/tools/scripts/initcyborg.sh || exit $?
+su - cyborgbackup -c '/bin/bash /usr/share/cyborgbackup/tools/scripts/initcyborg.sh' || exit $?
 
-if [ -f /etc/supervisor/conf.d/cyborgbackup.conf ]
+if [ ! -f /etc/supervisor/conf.d/cyborgbackup.conf ]
 then
   cp /usr/share/cyborgbackup/tools/config/cyborgbackup.conf /etc/supervisor/conf.d/
   sed -e "s/###POSTGRES_PASSWORD###/$CYBORG_POSTGRES_PASSWORD/g" -i /etc/supervisor/conf.d/cyborgbackup.conf
@@ -52,9 +52,10 @@ then
   supervisorctl reload
 fi
 
-if [ -f /etc/nginx/sites-available/cyborg ]
+if [ ! -f /etc/nginx/sites-available/cyborg ]
 then
-  cp /usr/share/cyborgbackup/tools/config/nginx.vhosts /etc/nginx/sites-available/cyborg
+  cp /usr/share/cyborgbackup/tools/config/nginx.vhost /etc/nginx/sites-available/cyborg
   rm /etc/nginx/sites-enabled/default
   ln -s /etc/nginx/sites-available/cyborg /etc/nginx/sites-enabled/cyborg
+  nginx -t && nginx -s reload
 fi

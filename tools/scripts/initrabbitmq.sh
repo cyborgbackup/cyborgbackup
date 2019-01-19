@@ -2,7 +2,7 @@
 
 . /opt/cyborgbackup/.env
 
-rabbitmqctl list_vhosts | grep -q 'cyborgbackup' 2>&1 1>dev/null
+rabbitmqctl list_vhosts | grep -q 'cyborgbackup' 2>&1 1>/dev/null
 if [ $? -ne 0 ]; then
     echo "Create RabbitMQ CyBorgBackup vhost"
     rabbitmqctl add_vhost cyborgbackup
