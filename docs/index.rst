@@ -8,18 +8,14 @@ CyBorgBackup
 
 Release v\ |version|. (:ref:`Installation <install>`)
 
-.. image:: https://img.shields.io/pypi/l/cyborgbackup.svg
-    :target: https://pypi.org/project/requests/
-
-.. image:: https://img.shields.io/pypi/wheel/cyborgbackup.svg
-    :target: https://pypi.org/project/requests/
-
-.. image:: https://img.shields.io/pypi/pyversions/cyborgbackup.svg
-    :target: https://pypi.org/project/requests/
-
 .. image:: https://codecov.io/github/gaetanf/cyborgbackup/coverage.svg?branch=master
     :target: https://codecov.io/github/gaetanf/cyborgbackup
     :alt: codecov.io
+.. image:: https://travis-ci.org/GaetanF/cyborgbackup.svg?branch=master
+.. image:: https://readthedocs.org/projects/cyborgbackup/badge/?version=latest
+.. image:: https://api.codacy.com/project/badge/Grade/8bbd0881c4fa4e7e8ce46c43f475b6c9
+   :alt: Codacy Badge
+   :target: https://app.codacy.com/app/GaetanF/cyborgbackup?utm_source=github.com&utm_medium=referral&utm_content=GaetanF/cyborgbackup&utm_campaign=Badge_Grade_Dashboard
 
 
 **CyBorgBackup** is a Web and API Interface to manage Borg Backup solution on
