@@ -1,6 +1,10 @@
 CyBorgBackup
 ============
 
+.. image:: https://api.codacy.com/project/badge/Grade/8bbd0881c4fa4e7e8ce46c43f475b6c9
+   :alt: Codacy Badge
+   :target: https://app.codacy.com/app/GaetanF/cyborgbackup?utm_source=github.com&utm_medium=referral&utm_content=GaetanF/cyborgbackup&utm_campaign=Badge_Grade_Dashboard
+
 CyBorgBackup is a Web and API Interface to manage BorgBackup solution on multiple servers.
 
 It is implemented using Python, Django and AngularJS.
