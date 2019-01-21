@@ -658,8 +658,9 @@ def cyborgbackup_periodic_scheduler(self):
     for policy in policies:
         policy.save()  # To update next_run timestamp.
         try:
-            new_job = policy.create_job('scheduled')
+            new_job = policy.create_job()
             new_job.launch_type = 'scheduled'
+            new_job.save(update_fields=['launch_type'])
             can_start = new_job.signal_start()
         except Exception:
             logger.exception('Error spawning scheduled job.')
