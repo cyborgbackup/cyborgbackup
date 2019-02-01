@@ -9,7 +9,7 @@ RUN pip install -r /cyborgbackup/requirements.txt
 
 COPY ./src/ /cyborgbackup/
 
-CMD mkdir -p /cyborgbackup/var/run
+RUN mkdir -p /cyborgbackup/var/run
 
 WORKDIR /cyborgbackup/
 
