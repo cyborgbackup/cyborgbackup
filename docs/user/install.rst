@@ -24,6 +24,7 @@ To install CyBorgBackup under Docker, simply run this simple command in your ter
     POSTGRES_PASSWORD=cyborgbackup
     POSTGRES_USER=cyborgbackup
     POSTGRES_NAME=cyborgbackup
+    POSTGRES_HOST=postgres
     RABBITMQ_DEFAULT_USER=cyborgbackup
     RABBITMQ_DEFAULT_PASS=cyborgbackup
     RABBITMQ_DEFAULT_VHOST=cyborgbackup
