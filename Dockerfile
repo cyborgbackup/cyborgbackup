@@ -7,6 +7,10 @@ ENV DOCKER_CONTAINER 1
 COPY ./requirements.txt /cyborgbackup/requirements.txt
 RUN pip install -r /cyborgbackup/requirements.txt
 
+COPY ./src/ /cyborgbackup/
+
+CMD mkdir -p /cyborgbackup/var/run
+
 WORKDIR /cyborgbackup/
 
 EXPOSE 8000
