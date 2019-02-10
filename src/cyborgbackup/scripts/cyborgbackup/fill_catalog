@@ -58,6 +58,9 @@ if len(list_entries)>0:
   }
   headers = {'Authorization': 'Token {}'.format(token)}
   r = requests.post(url, headers=headers, json=post_data)
+  if r.status_code != 201:
+    print(r.text)
+    sys.exit(1)
 sys.exit(0)
 EOF
 export BORG_PASSPHRASE=$CYBORG_BORG_PASSPHRASE
