@@ -581,7 +581,7 @@ def cyborgbackup_notifier(self, type, *kwargs):
             job_pk = kwargs[0]
             job = Job.objects.get(pk=job_pk)
             if job.status == 'successful':
-                users = User.objects.filter(notify_backup_summary=True)
+                users = User.objects.filter(notify_backup_success=True)
             if job.status == 'failed':
                 users = User.objects.filter(notify_backup_failed=True)
             jobevents = JobEvent.objects.filter(job_id=job_pk).order_by('counter')
