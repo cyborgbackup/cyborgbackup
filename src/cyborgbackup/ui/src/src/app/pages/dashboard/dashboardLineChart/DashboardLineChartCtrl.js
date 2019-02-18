@@ -9,6 +9,19 @@
     var layoutColors = baConfig.colors;
     var graphColor = baConfig.theme.blur ? '#000000' : layoutColors.primary;
 
+    function formatFileSize(value) {
+      if (value >= 1099511627776)
+        return ((value / 1099511627776 * 100) / 100).toFixed(2) + "TB";
+      else if (value >= 1073741824)
+        return ((value / 1073741824 * 100) / 100).toFixed(2) + "GB";
+      else if (value >= 1048576)
+        return ((value / 1048576 * 100) / 100).toFixed(2) + "MB";
+      else if (value >= 1024)
+        return (value / 1024).toFixed(2) + "KB";
+      else
+        return value + "B";
+    }
+
     QuerySet.search(GetBasePath('stats')).then(function(data){
 
       var chart = AmCharts.makeChart('amchart', {
@@ -31,7 +44,10 @@
             minVerticalGap: 50,
             gridAlpha: 0,
             color: layoutColors.defaultText,
-            axisColor: layoutColors.defaultText
+            axisColor: layoutColors.defaultText,
+	    labelFunction: function(value) {
+               return formatFileSize(value);
+            }
           },{
             id: "stateAxis",
             position: "right",
@@ -53,7 +69,9 @@
             type: 'smoothedLine',
             valueField: 'size',
             valueAxis: 'sizeAxis',
-            balloonText: "original [[value]] bytes",
+            balloonFunction: function(item) {
+               return "Original " + formatFileSize(item.values.value);
+            },
             fillAlphas: 1,
             fillColorsField: 'lineColor'
           },
@@ -67,7 +85,9 @@
             type: 'smoothedLine',
             valueField: 'dedup',
             valueAxis: 'sizeAxis',
-            balloonText: "dedup [[value]] bytes",
+            balloonFunction: function(item) {
+               return "Deduplicated " + formatFileSize(item.values.value);
+            },
             fillAlphas: 1,
             fillColorsField: 'lineColor'
           },
