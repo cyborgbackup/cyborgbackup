@@ -25,11 +25,14 @@ import gzip
 import json
 import base64
 import requests
+from datetime import datetime
 
 token = os.environ.get('CYBORG_AGENT_TOKEN')
 job_id = os.environ.get('CYBORG_JOB_ID')
 url = os.environ.get('CYBORG_URL')
 archive_name = os.environ.get('CYBORG_JOB_ARCHIVE_NAME')
+
+hoursTimezone = round((round((datetime.now()-datetime.utcnow()).total_seconds())/1800)/2)
 
 list_entries=[]
 print("Get Entries from Borg")
@@ -43,7 +46,7 @@ for line in sys.stdin:
       'type': json_entry['type'],
       'size': json_entry['size'],
       'healthy': json_entry['healthy'],
-      'mtime': json_entry['mtime']
+      'mtime': '{}+0{}00'.format(json_entry['mtime'].replace('T', ' '), hoursTimezone)
     }
     list_entries.append(new_entry)
 
@@ -58,9 +61,8 @@ if len(list_entries)>0:
   }
   headers = {'Authorization': 'Token {}'.format(token)}
   r = requests.post(url, headers=headers, json=post_data)
-  if r.status_code != 201:
+  if r.status_code != 200:
     print(r.text)
-    sys.exit(1)
 sys.exit(0)
 EOF
 export BORG_PASSPHRASE=$CYBORG_BORG_PASSPHRASE

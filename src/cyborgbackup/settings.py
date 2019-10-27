@@ -66,10 +66,36 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'channels',
+    'django_elasticsearch_dsl',
+    'django_elasticsearch_dsl_drf',
+    'debug_toolbar',
+    'elastic_panel',
     'cyborgbackup.ui',
     'cyborgbackup.api',
     'cyborgbackup.main'
 ]
+
+DEBUG_TOOLBAR_CONFIG = {
+    'INTERCEPT_REDIRECTS': False,
+}
+
+DEBUG_TOOLBAR_PANELS = (
+    # Defaults
+    'debug_toolbar.panels.versions.VersionsPanel',
+    'debug_toolbar.panels.timer.TimerPanel',
+    'debug_toolbar.panels.settings.SettingsPanel',
+    'debug_toolbar.panels.headers.HeadersPanel',
+    'debug_toolbar.panels.request.RequestPanel',
+    'debug_toolbar.panels.sql.SQLPanel',
+    'debug_toolbar.panels.staticfiles.StaticFilesPanel',
+    'debug_toolbar.panels.templates.TemplatesPanel',
+    'debug_toolbar.panels.cache.CachePanel',
+    'debug_toolbar.panels.signals.SignalsPanel',
+    'debug_toolbar.panels.logging.LoggingPanel',
+    'debug_toolbar.panels.redirects.RedirectsPanel',
+    # Additional
+    'elastic_panel.panel.ElasticDebugPanel',
+)
 
 BROKER_URL = "amqp://{}:{}@{}/{}".format(os.environ.get("RABBITMQ_DEFAULT_USER", "cyborgbackup"),
                                          os.environ.get("RABBITMQ_DEFAULT_PASS", "cyborgbackup"),
@@ -96,6 +122,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'crum.CurrentRequestUserMiddleware',
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
 ]
 
 ROOT_URLCONF = 'cyborgbackup.urls'
@@ -220,6 +247,10 @@ LOGGING = {
             'handlers': ['console'],
             'level': 'DEBUG',
         },
+        'elasticsearch': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
     },
 }
 # LOGGING['handlers']['console']['()'] = 'cyborgbackup.main.utils.handlers.ColorHandler'
@@ -289,7 +320,7 @@ CELERY_BROKER_POOL_LIMIT = None
 CELERY_EVENT_QUEUE_TTL = 5
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TRACK_STARTED = True
-CELERYD_TASK_TIME_LIMIT = None
+CELERYD_TASK_TIME_LIMIT = 86400
 CELERYD_TASK_SOFT_TIME_LIMIT = None
 CELERYD_POOL_RESTARTS = True
 CELERY_RESULT_BACKEND = 'django-db'
@@ -313,7 +344,7 @@ CELERY_BEAT_MAX_LOOP_INTERVAL = 60
 CELERY_BEAT_SCHEDULE = {
     'cyborgbackup_notify_daily': {
         'task': 'cyborgbackup.main.tasks.cyborgbackup_notifier',
-        'schedule': crontab(minute='0', hour='*'),
+        'schedule': crontab(minute='55', hour='23'),
         'args': ('daily',)
     },
     'cyborgbackup_notify_weekly': {
@@ -336,6 +367,11 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': timedelta(seconds=10),
         'options': {'expires': 20}
     },
+    'cyborgbackup_get_archivename': {
+        'task': 'cyborgbackup.main.tasks.cyborgbackup_get_archive_name',
+        'schedule': timedelta(seconds=10),
+        'options': {'expires': 20}
+    },
     'cyborgbackup_prune_catalog': {
         'task': 'cyborgbackup.main.tasks.prune_catalog',
         'schedule': timedelta(seconds=30),
@@ -349,3 +385,8 @@ CELERY_BEAT_SCHEDULE = {
 }
 
 ACTIVITY_STREAM_ENABLED = False
+ELASTICSEARCH_DSL = {
+    'default': {
+        'hosts': 'localhost:9200'
+    },
+}

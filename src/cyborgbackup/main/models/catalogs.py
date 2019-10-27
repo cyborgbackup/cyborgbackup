@@ -4,6 +4,7 @@ import base64
 import json
 
 from django.db import models
+from elasticsearch import Elasticsearch
 
 from cyborgbackup.api.versioning import reverse
 from cyborgbackup.main.models.base import PrimordialModel
@@ -74,9 +75,22 @@ class Catalog(PrimordialModel):
         catalogs_entries_raw = gzip.decompress(base64.b64decode(catalog_data))
         catalog_entries = json.loads(catalogs_entries_raw.decode('utf-8'))
         created = []
+        es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
         for entry in catalog_entries:
             entry.update({'archive_name': archive_name, 'job_id': job})
             created.append(self.objects.create(**entry))
+            # es.index(index='catalog', doc_type='entry', body={
+            #     'path': entry['path'],
+            #     'job': entry['job_id'],
+            #     'archive_name': entry['archive_name'],
+            #     'mode': entry['mode'],
+            #     'owner': entry['user'],
+            #     'group': entry['group'],
+            #     'type': entry['type'],
+            #     'size': entry['size'],
+            #     'healthy': entry['healthy'],
+            #     'mtime': entry['mtime']
+            # });
         logger.info('Catalog data saved.', extra=dict(python_objects=dict(created=len(created))))
         return len(created)
 

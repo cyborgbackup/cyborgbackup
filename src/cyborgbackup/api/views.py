@@ -145,6 +145,7 @@ class ApiVersionRootView(APIView):
         data['policies'] = reverse('api:policy_list', request=request)
         data['catalogs'] = reverse('api:catalog_list', request=request)
         data['stats'] = reverse('api:stats', request=request)
+        data['escatalogs'] = reverse('api:escatalog_list', request=request)
         return Response(data)
 
 

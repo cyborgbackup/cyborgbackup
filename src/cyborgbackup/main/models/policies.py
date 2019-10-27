@@ -220,7 +220,7 @@ class Policy(PrimordialModel):
 
         jobs = []
         previous_job = None
-        for client in self.clients.all():
+        for client in self.clients.filter(enabled=True):
             job = copy_model_by_class(self, job_class, fields, kwargs)
             job.policy_id = self.pk
             job.client_id = client.pk

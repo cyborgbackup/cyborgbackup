@@ -316,6 +316,13 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
         default=False
     )
 
+    archive_name = models.CharField(
+        max_length=200,
+        null=True,
+        default=None,
+        blank=True,
+    )
+
     extra_vars_dict = VarsDictProperty('extra_vars', True)
 
     def get_absolute_url(self, request=None):

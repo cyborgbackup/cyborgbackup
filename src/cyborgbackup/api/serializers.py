@@ -615,7 +615,7 @@ class JobSerializer(BaseSerializer):
         model = Job
         fields = ('*', 'launch_type', 'status', 'policy',
                   'failed', 'started', 'finished', 'elapsed', 'job_args',
-                  'original_size', 'compressed_size', 'deduplicated_size',
+                  'original_size', 'compressed_size', 'deduplicated_size', 'archive_name',
                   'job_cwd', 'job_env', 'job_explanation', 'client', 'repository',
                   'dependent_jobs', 'result_traceback', 'event_processing_finished', 'job_type')
 
@@ -727,7 +727,7 @@ class JobRelaunchSerializer(BaseSerializer):
         return attrs
 
 
-class JobListSerializer(JobSerializer):
+class JobListSerializer(DynamicFieldsSerializerMixin, JobSerializer):
 
     class Meta:
         fields = ('*', '-job_args', '-job_cwd', '-job_env', '-result_traceback', '-event_processing_finished')

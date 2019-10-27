@@ -37,3 +37,7 @@ pyparsing
 pygments
 ansiconv
 tzcron
+elasticsearch==6.3.1
+elasticsearch-dsl==6.1.0
+django-elasticsearch-dsl
+django-elasticsearch-dsl-drf

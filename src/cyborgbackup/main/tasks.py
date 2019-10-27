@@ -71,7 +71,7 @@ def humanbytes(B):
     MB = float(KB ** 2) # 1,048,576
     GB = float(KB ** 3) # 1,073,741,824
     TB = float(KB ** 4) # 1,099,511,627,776
- 
+
     if B < KB:
         return '{0} {1}'.format(B,'Bytes' if 0 == B > 1 else 'Byte')
     elif KB <= B < MB:
@@ -118,8 +118,8 @@ def build_report(type):
     report = {
         'times': totalTimes,
         'backups': totalBackups,
-        'size': totalSize,
-        'deduplicated': totalDeduplicated,
+        'size': humanbytes(totalSize),
+        'deduplicated': humanbytes(totalDeduplicated),
         'lines': lines
     }
     return report
@@ -496,6 +496,29 @@ def compute_borg_size(self):
                         repo.deduplicated_size = parseSize(m.group(3))
                         repo.save()
                         break
+
+
+@shared_task(bind=True, base=LogErrorsTask)
+def cyborgbackup_get_archive_name(self):
+    logger.debug('Get Archive name from Job stdout')
+    jobs = Job.objects.filter(archive_name__isnull=True,
+                              status='successful',
+                              job_type='job').order_by('-finished')
+    if jobs.exists():
+        for job in jobs:
+            job_events = JobEvent.objects.filter(
+                job=job.pk,
+                stdout__contains="Archive name: {}".format(
+                    job.policy.policy_type
+                )
+            )
+            archive_name = None
+            if job_events.exists():
+                job_stdout = job_events.first().stdout
+                archive_name = job_stdout.split(':')[1].strip()
+            if archive_name:
+                job.archive_name = archive_name
+                job.save()
 
 
 @shared_task(bind=True, base=LogErrorsTask)
@@ -1166,7 +1189,6 @@ class RunJob(BaseTask):
                 f.close()
                 os.chmod(path, stat.S_IEXEC | stat.S_IREAD)
                 args = ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
-                args += ['-o', 'PreferredAuthentications=publickey']
                 args += ['{}@{}'.format(client_user, job.client.hostname)]
                 args += ['\"', 'mkdir', '-p', env['PRIVATE_DATA_DIR'], '\"', '&&']
                 args += ['scp', '-qo', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
@@ -1174,7 +1196,6 @@ class RunJob(BaseTask):
                 args += [path, path_env, '{}@{}:{}/'.format(client_user, job.client.hostname, env['PRIVATE_DATA_DIR'])]
                 args += ['&&']
                 args += ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
-                args += ['-o', 'PreferredAuthentications=publickey']
                 args += ['{}@{}'.format(client_user, job.client.hostname)]
                 args += ['\". ', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
                 args += ['rm', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
@@ -1212,18 +1233,15 @@ class RunJob(BaseTask):
                 f.close()
                 os.chmod(path_prepare, stat.S_IEXEC | stat.S_IREAD)
                 args = ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
-                args += ['-o', 'PreferredAuthentications=publickey']
                 args += ['{}@{}'.format(client_user, hypervisor_hostname)]
                 args += ['\"', 'mkdir', '-p', env['PRIVATE_DATA_DIR'], '\"', '&&']
                 args += ['scp', '-qo', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
-                args += ['-o', 'PreferredAuthentications=publickey']
                 args += [path_prepare,
                          path_env,
                          path_backup_script,
                          '{}@{}:{}/'.format(client_user, hypervisor_hostname, env['PRIVATE_DATA_DIR'])]
                 args += ['&&']
                 args += ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
-                args += ['-o', 'PreferredAuthentications=publickey']
                 args += ['{}@{}'.format(client_user, hypervisor_hostname)]
                 args += ['\". ', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
                 args += ['rm', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
@@ -1252,15 +1270,12 @@ class RunJob(BaseTask):
                 f.close()
                 repository_conn = job.policy.repository.path.split(':')[0]
                 args = ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
-                args += ['-o', 'PreferredAuthentications=publickey']
                 args += [repository_conn]
                 args += ['\"', 'mkdir', '-p', env['PRIVATE_DATA_DIR'], '\"', '&&']
                 args += ['scp', '-qo', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
-                args += ['-o', 'PreferredAuthentications=publickey']
                 args += [path, path_env, '{}:{}/'.format(repository_conn, env['PRIVATE_DATA_DIR'])]
                 args += ['&&']
                 args += ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
-                args += ['-o', 'PreferredAuthentications=publickey']
                 args += [repository_conn]
                 args += ['\". ', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
                 args += ['rm', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
@@ -1319,15 +1334,12 @@ class RunJob(BaseTask):
                 f.close()
                 repository_conn = job.policy.repository.path.split(':')[0]
                 args = ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
-                args += ['-o', 'PreferredAuthentications=publickey']
                 args += [repository_conn]
                 args += ['\"', 'mkdir', '-p', env['PRIVATE_DATA_DIR'], '\"', '&&']
                 args += ['scp', '-qo', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
-                args += ['-o', 'PreferredAuthentications=publickey']
                 args += [path, path_env, '{}:{}/'.format(repository_conn, env['PRIVATE_DATA_DIR'])]
                 args += ['&&']
                 args += ['ssh', '-Ao', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
-                args += ['-o', 'PreferredAuthentications=publickey']
                 args += [repository_conn]
                 args += ['\". ', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
                 args += ['rm', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
@@ -1360,15 +1372,12 @@ class RunJob(BaseTask):
                 f.write('export {}="{}"\n'.format(key, var))
             f.close()
             new_args = ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
-            new_args += ['-o', 'PreferredAuthentications=publickey']
             new_args += ['{}@{}'.format(client_user, client)]
             new_args += ['\"', 'mkdir', '-p', env['PRIVATE_DATA_DIR'], '\"', '&&']
             new_args += ['scp', '-qo', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
-            new_args += ['-o', 'PreferredAuthentications=publickey']
             new_args += [path_env, '{}@{}:{}/'.format(client_user, client, env['PRIVATE_DATA_DIR'])]
             new_args += ['&&']
             new_args += ['ssh', '-Ao', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
-            new_args += ['-o', 'PreferredAuthentications=publickey']
             new_args += ['{}@{}'.format(client_user, client)]
             new_args += ['\". ', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
             new_args += ['rm', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
@@ -1473,9 +1482,9 @@ class RunJob(BaseTask):
                     pgsql_json = json.loads(job.policy.extra_vars)
                     if 'database' in pgsql_json and pgsql_json['database']:
                         database_specify = True
-                        piped += 'pg_dump {}'.format(pgsql_json['database'])
+                        piped += 'sudo -u postgres pg_dump {}'.format(pgsql_json['database'])
                 if not database_specify:
-                    piped += 'pg_dumpall'
+                    piped += 'sudo -u postgres pg_dumpall'
             if policy_type == 'piped':
                 command_specify = False
                 if job.policy.extra_vars != '':
