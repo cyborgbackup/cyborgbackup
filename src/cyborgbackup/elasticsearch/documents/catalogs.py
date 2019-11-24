@@ -1,5 +1,5 @@
 from elasticsearch_dsl import analyzer
-from django_elasticsearch_dsl import DocType, Index, fields 
+from django_elasticsearch_dsl import Document, Index, fields
 
 from cyborgbackup.main.models.catalogs import Catalog as catalog_models
 
@@ -17,7 +17,7 @@ html_strip = analyzer(
 )
 
 @catalog_index.doc_type
-class CatalogDocument(DocType):
+class CatalogDocument(Document):
     """Catalog elasticsearch document"""
 
     id = fields.TextField(
@@ -66,6 +66,13 @@ class CatalogDocument(DocType):
     size = fields.IntegerField()
     healthy = fields.BooleanField()
 
+    class Index:
+        doc_type = 'entry'
+
     class Meta:
         model = catalog_models
         doc_type = 'entry'
+
+    class Django(object):
+
+        model = catalog_models

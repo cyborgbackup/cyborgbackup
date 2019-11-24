@@ -2,7 +2,7 @@
   <div class="row">
     <div class="col-md-8">
       <div ba-panel ba-panel-title="Catalog Archives" ba-panel-class="with-scroll tree-panel">
-        <div js-tree="basicConfig" ng-model="treeData" tree="basicTree" tree-events="activate_node:openode"></div>
+        <div id="treeCatalog" js-tree="basicConfig" ng-model="treeData" tree="basicTree" tree-events="ready:readyTree;activate_node:openode"></div>
       </div>
     </div>
     <div class="col-md-4">

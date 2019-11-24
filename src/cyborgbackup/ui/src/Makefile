@@ -26,7 +26,7 @@ clean-static:
 	mkdir -p ${CURDIR}/../../templates/ui/
 
 clean:
-	rm -Rf node_modules
+	#rm -Rf node_modules
 	rm -f package-lock.json
 
 clean-build:
@@ -39,8 +39,13 @@ build: gulp-release clean
 
 dev: gulp-dev clean
 
-ui-build-dev: clean-static
-	docker run --rm -it -v ${CURDIR}:/src node:latest /bin/bash -c 'cd /src; make dev'
+docker-make-dev:
+	docker run --rm -it -v ${CURDIR}:/src node:8.16.2 /bin/bash -c 'cd /src; make dev'
+
+docker-make-prod:
+	docker run -it -v ${CURDIR}:/src node:8.16.2 /bin/bash -c 'cd /src; make build'
+
+install-dev:
 	mkdir -p ${CURDIR}/../../static
 	cd ${CURDIR}/src/ && find . -iname '*.html' -print0 |  rsync -0 -v --files-from=- . ${CURDIR}/../../static/
 	cp -r ${CURDIR}/dev-release/* ${CURDIR}/../../static
@@ -50,11 +55,14 @@ ui-build-dev: clean-static
 	cp -r ${CURDIR}/../static/* ${CURDIR}/../../static/
 	$(MAKE) clean-build
 
-ui-build: clean-static
-	docker run -it -v ${CURDIR}:/src node:latest /bin/bash -c 'cd /src; make build'
+install-prod:
 	mkdir -p ${CURDIR}/../../static
 	cd ${CURDIR}/src/ && find . -iname '*.html' -print0 |  rsync -0 -v --files-from=- . ${CURDIR}/../../static/
 	cp -r ${CURDIR}/release/* ${CURDIR}/../../static
 	mv ${CURDIR}/../../static/index.html ${CURDIR}/../../templates/ui/
 	cp -r ${CURDIR}/../static/* ${CURDIR}/../../static/
 	$(MAKE) clean-build
+
+ui-build-dev: clean-static docker-make-dev install-dev
+
+ui-build: clean-static docker-make install-prod

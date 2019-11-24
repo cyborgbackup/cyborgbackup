@@ -387,6 +387,6 @@ CELERY_BEAT_SCHEDULE = {
 ACTIVITY_STREAM_ENABLED = False
 ELASTICSEARCH_DSL = {
     'default': {
-        'hosts': 'localhost:9200'
+        'hosts': 'elasticsearch:9200'
     },
 }

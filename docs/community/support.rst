@@ -15,4 +15,4 @@ File an Issue
 -------------
 
 If you notice some unexpected behaviour in CyBorgBackup,
-`file an issue on GitHub <https://github.com/gaetanf/cyborgbackup/issues>`_.
+`file an issue on GitHub <https://github.com/cyborgbackup/cyborgbackup/issues>`_.

@@ -42,6 +42,7 @@ var buildStyles = function () {
   var injectOptions = {
     transform: function (filePath) {
       filePath = filePath.replace(conf.paths.src + '/sass/', '');
+      console.log(filePath);
       return '@import "' + filePath + '";';
     },
     starttag: '// injector',

@@ -14,6 +14,7 @@ angular.module('CyBorgBackup', [
   'angular-duration-format',
   'angular-cron-gen',
   'angular-progress-button-styles',
+  'angular-md5',
   'CyBorgBackup.RestServices',
   'CyBorgBackup.utils',
   'CyBorgBackup.theme',
@@ -47,6 +48,11 @@ angular.module('CyBorgBackup', [
          if(isNaN(size)){ return '';}
          var i = Math.floor( Math.log(size) / Math.log(1024) );
          return ( size / Math.pow(1024, i) ).toFixed(2) * 1 + ' ' + ['B', 'kB', 'MB', 'GB', 'TB'][i];
+     };
+})
+.filter('md5', function(md5){
+     return function(value){
+         return md5.createHash(value);
      };
 })
 .filter('longDate', function() {

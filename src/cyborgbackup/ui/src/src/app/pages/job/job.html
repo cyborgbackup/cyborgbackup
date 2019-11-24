@@ -1,7 +1,21 @@
 <div class="widgets">
   <div class="horizontal-scroll">
+    <div class="form-group">
+        <ui-select multiple ng-model="jobStatusSelected.selected"
+                 ng-disabled="false"
+                 search-enabled="true"
+                 append-to-body="true"
+                 class="form-control ">
+        <ui-select-match placeholder="Job Status">
+          {{$item.label}}
+        </ui-select-match>
+        <ui-select-choices repeat="jobStatusSelected in listJobStatus | filter: $select.search">
+          {{jobStatusSelected.label}}
+        </ui-select-choices>
+      </ui-select>
+    </div>
     <div ba-panel>
-      <table class="table jobList" st-pipe="pipeCall" st-table="smartTableData">
+      <table id="jobTable" class="table jobList" st-pipe="pipeCall" st-table="smartTableData">
         <thead>
           <tr>
             <th class="smartColumn">&nbsp;</th>

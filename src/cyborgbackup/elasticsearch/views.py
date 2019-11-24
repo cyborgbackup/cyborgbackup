@@ -2,6 +2,7 @@ from django_elasticsearch_dsl_drf.constants import (
     LOOKUP_FILTER_RANGE,
     LOOKUP_FILTER_REGEXP,
     LOOKUP_FILTER_TERM,
+    LOOKUP_FILTER_WILDCARD,
     LOOKUP_QUERY_IN,
     LOOKUP_QUERY_GT,
     LOOKUP_QUERY_GTE,
@@ -18,6 +19,7 @@ from django_elasticsearch_dsl_drf.viewsets import DocumentViewSet
 
 from cyborgbackup.elasticsearch.documents.catalogs import CatalogDocument
 from cyborgbackup.elasticsearch.serializers import ESCatalogDocumentSerializer
+
 
 class ESCatalogViewSet(DocumentViewSet):
     document = CatalogDocument
@@ -46,7 +48,14 @@ class ESCatalogViewSet(DocumentViewSet):
                 LOOKUP_FILTER_TERM
             ]
         },
-        'archive_name': 'archive_name.keyword',
+        'archive_name': {
+            'field': 'archive_name.keyword',
+            'lookups': [
+                LOOKUP_FILTER_WILDCARD,
+                LOOKUP_FILTER_REGEXP,
+                LOOKUP_FILTER_TERM
+            ]
+        },
         'owner': 'owner.keyword',
         'group': 'group.keyword',
         'mtime': 'mtime.keyword',

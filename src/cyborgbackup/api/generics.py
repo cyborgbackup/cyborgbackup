@@ -88,7 +88,7 @@ def get_view_name(cls, suffix=None):
             name = cls.view_name
     if name:
         return ('%s %s' % (name, suffix)) if suffix else name
-    return views.get_view_name(cls, suffix=None)
+    return views.get_view_name(cls)
 
 
 def get_view_description(cls, request, html=False):

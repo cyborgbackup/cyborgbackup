@@ -19,7 +19,7 @@ $ docker-compose up
 
 To install CyBorgBackup under Docker, simply run this simple command in your terminal of choice::
 
-    $ wget https://raw.githubusercontent.com/GaetanF/cyborgbackup/master/docker-compose.yml
+    $ wget https://raw.githubusercontent.com/cyborgbackup/cyborgbackup/master/docker-compose.yml
     $ cat > .env <<EOF
     POSTGRES_PASSWORD=cyborgbackup
     POSTGRES_USER=cyborgbackup
@@ -42,15 +42,15 @@ Get the Source Code
 -------------------
 
 CyBorgBackup is developed on GitHub, where the code is
-`always available <https://github.com/gaetanf/cyborgbackup>`_.
+`always available <https://github.com/cyborgbackup/cyborgbackup>`_.
 
 You can either clone the public repository::
 
-    $ git clone https://github.com/gaetanf/cyborgbackup.git
+    $ git clone https://github.com/cyborgbackup/cyborgbackup.git
 
-Or, download the `tarball <https://github.com/gaetanf/cyborgbackup/tarball/master>`_::
+Or, download the `tarball <https://github.com/cyborgbackup/cyborgbackup/tarball/master>`_::
 
-    $ curl -OL https://github.com/gaetanf/cyborgbackup/tarball/master
+    $ curl -OL https://github.com/cyborgbackup/cyborgbackup/tarball/master
     # optionally, zipball is also available (for Windows users).
 
 Depending of your system, CyBorgBackup need the following dependencies :

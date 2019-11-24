@@ -8,8 +8,8 @@ CyBorgBackup
 
 Release v\ |version|. (:ref:`Installation <install>`)
 
-.. image:: https://codecov.io/github/gaetanf/cyborgbackup/coverage.svg?branch=master
-    :target: https://codecov.io/github/gaetanf/cyborgbackup
+.. image:: https://codecov.io/github/cyborgbackup/cyborgbackup/coverage.svg?branch=master
+    :target: https://codecov.io/github/cyborgbackup/cyborgbackup
     :alt: codecov.io
 .. image:: https://travis-ci.org/GaetanF/cyborgbackup.svg?branch=master
 .. image:: https://readthedocs.org/projects/cyborgbackup/badge/?version=latest

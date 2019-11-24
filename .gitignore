@@ -1,6 +1,7 @@
 .env
 .vagrant
 *.deb
+.idea
 deploy.sh
 src/secret.txt
 celerybeat.pid
@@ -12,6 +13,7 @@ src/cyborgbackup/ui/src/.tmp
 src/cyborgbackup/ui/src/node_modules
 src/cyborgbackup/ui/src/dev-release
 src/cyborgbackup/ui/src/release
+src/cyborgbackup/ui/src/package-lock.json
 **/__pycache__
 **/_build
 **/.coverage
