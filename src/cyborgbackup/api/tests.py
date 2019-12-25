@@ -97,7 +97,7 @@ class CyborgbackupApiTest(APITestCase):
         self.client.login(username=self.user_login, password=self.user_pass)
         response = self.client.get(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['count'], 13)
+        self.assertEqual(response.data['count'], 12)
 
     def test_api_v1_access_clients(self):
         url = reverse('api:client_list', kwargs={'version': 'v1'})
