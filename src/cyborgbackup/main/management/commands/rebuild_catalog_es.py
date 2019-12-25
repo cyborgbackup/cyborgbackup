@@ -179,7 +179,7 @@ class Command(BaseCommand):
 
                 for line in lines:
                     archive_name = line.split(' ')[0]  #
-                    for archtype in ('rootfs', 'vm', 'mysql', 'postgresql', 'config', 'piped', 'mail'):
+                    for archtype in ('rootfs', 'vm', 'mysql', 'postgresql', 'config', 'piped', 'mail', 'folders'):
                         if '{}-'.format(archtype) in archive_name:
                             repoArchives.append(archive_name)
 

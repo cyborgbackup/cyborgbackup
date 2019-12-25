@@ -57,6 +57,7 @@ class Policy(PrimordialModel):
         ('piped', 'Piped Backup'),          # Backup using pipe program
         ('config', 'Only /etc'),            # Backup only /etc
         ('mail', 'Only mail directory'),    # Backup only mail directory
+        ('folders', 'Specified folders')    # Backup only specified folders
     ]
 
     objects = PolicyManager()

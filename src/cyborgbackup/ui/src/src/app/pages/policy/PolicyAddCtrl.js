@@ -68,6 +68,8 @@
     $scope.onSelectCallback = function (item, model){
       if(model == 'mysql' || model == 'postgresql'){
         $scope.policy.extra_vars = '{\n"user":"",\n"password": ""\n}';
+      }else if(model == 'folders'){
+        $scope.policy.extra_vars = '{\n"folders":[""]\n}';
       }else if(model == 'piped'){
         $scope.policy.extra_vars = '{\n"command":""\n}';
       }else{

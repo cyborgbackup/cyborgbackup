@@ -1397,9 +1397,14 @@ class RunJob(BaseTask):
 # piped         Backup using pipe program
 # config        Backup only /etc
 # mail          Backup only mail directory
+# folders       Backup only specified directories
 ########
 # rootfs
 #   push => ssh root@client "borg create borg@backupHost:/backup::archive /"
+#   pull => ssh borg@backupHost "sshfs root@client:/ /tmp/sshfs_XXX
+#            && cd /tmp/sshfs_XXX && borg create /backup::archive . && fusermount -u /tmp/sshfs"
+# folders
+#   push => ssh root@client "borg create borg@backupHost:/backup::archive /folder1 /folder2"
 #   pull => ssh borg@backupHost "sshfs root@client:/ /tmp/sshfs_XXX
 #            && cd /tmp/sshfs_XXX && borg create /backup::archive . && fusermount -u /tmp/sshfs"
 # config
@@ -1455,6 +1460,9 @@ class RunJob(BaseTask):
                             '/tmp']
         if policy_type == 'config':
             path = '/etc'
+        if policy_type == 'folders':
+            obj_folders = json.loads(job.policy.extra_vars)
+            path = ' '.join(obj_folders['folders'])
         if policy_type == 'mail':
             path = '/var/lib/mail /var/mail'
         if policy_type in ('mysql', 'postgresql', 'piped'):
@@ -1518,7 +1526,7 @@ class RunJob(BaseTask):
             (clientUri, repository_path) = job.policy.repository.path.split(':')
             client = clientUri.split('@')[1]
             client_user = clientUri.split('@')[0]
-            if policy_type in ('rootfs', 'config', 'mail'):
+            if policy_type in ('rootfs', 'config', 'mail', 'folders'):
                 sshFsDirectory = '/tmp/sshfs_{}_{}'.format(client_hostname, jobDateString)
                 pullCmd = ['mkdir', '-p', sshFsDirectory]
                 pullCmd += ['&&', 'sshfs', 'root@{}:{}'.format(client_hostname, path[1::]), sshFsDirectory]
