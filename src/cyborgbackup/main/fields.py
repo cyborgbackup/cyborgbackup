@@ -364,7 +364,7 @@ def format_ssh_private_key(value):
 class CredentialInputField(JSONSchemaField):
     """
     Used to validate JSON for
-    `awx.main.models.credential:Credential().inputs`.
+    `cyborgbackup.main.models.credential:Credential().inputs`.
 
     Input data for credentials is represented as a dictionary e.g.,
     {'api_token': 'abc123', 'api_secret': 'SECRET'}
@@ -517,7 +517,7 @@ class CredentialInputField(JSONSchemaField):
 class CredentialTypeInputField(JSONSchemaField):
     """
     Used to validate JSON for
-    `awx.main.models.credential:CredentialType().inputs`.
+    `cyborgbackup.main.models.credential:CredentialType().inputs`.
     """
 
     def schema(self, model_instance):

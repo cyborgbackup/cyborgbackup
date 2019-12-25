@@ -1,5 +1,5 @@
 [run]
-source = awx
+source = cyborgbackup
 branch = True
 omit =
     cyborgbackup/main/migrations/*
