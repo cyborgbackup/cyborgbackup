@@ -12,7 +12,7 @@ django-pglocks==1.0.2
 django-polymorphic==2.0.2
 django-qsstats-magic==1.0.0
 django-rest-swagger==2.1.2
-djangorestframework==3.8.2
+djangorestframework==3.9.1
 celery==4.2.1
 redis==2.10.6
 paramiko>=2.4.2
