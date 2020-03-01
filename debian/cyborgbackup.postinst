@@ -23,6 +23,16 @@ else
     CYBORG_RABBITMQ_PASSWORD=$RABBITMQ_DEFAULT_PASS
 fi
 
+if [ ! -f /etc/default/cyborgbackup ]
+then
+  cat >> /etc/default/cyborgbackup <<EOF
+POSTGRES_USER="cyborgbackup"
+POSTGRES_PASSWORD="$CYBORG_POSTGRES_PASSWORD"
+RABBITMQ_DEFAULT_PASS="$CYBORG_RABBITMQ_PASSWORD"
+RABBITMQ_HOST="localhost"
+EOF
+fi
+
 test -f /opt/cyborgbackup/.bashrc && cat /opt/cyborgbackup/.bashrc | grep -q 'venv' 2>&1 1>/dev/null
 if [ $? -ne 0 ]
 then
@@ -44,13 +54,13 @@ su - postgres -c /usr/share/cyborgbackup/tools/scripts/makedb.sh || exit $?
 
 su - cyborgbackup -c 'source $HOME/venv/bin/activate && /usr/share/cyborgbackup/tools/scripts/initcyborg.sh' || exit $?
 
-if [ ! -f /etc/supervisor/conf.d/cyborgbackup.conf ]
-then
-  cp /usr/share/cyborgbackup/tools/config/cyborgbackup.conf /etc/supervisor/conf.d/
-  sed -e "s/###POSTGRES_PASSWORD###/$CYBORG_POSTGRES_PASSWORD/g" -i /etc/supervisor/conf.d/cyborgbackup.conf
-  sed -e "s/###RABBITMQ_PASSWORD###/$CYBORG_RABBITMQ_PASSWORD/g" -i /etc/supervisor/conf.d/cyborgbackup.conf
-  supervisorctl reload
-fi
+#if [ ! -f /etc/supervisor/conf.d/cyborgbackup.conf ]
+#then
+#  cp /usr/share/cyborgbackup/tools/config/cyborgbackup.conf /etc/supervisor/conf.d/
+#  sed -e "s/###POSTGRES_PASSWORD###/$CYBORG_POSTGRES_PASSWORD/g" -i /etc/supervisor/conf.d/cyborgbackup.conf
+#  sed -e "s/###RABBITMQ_PASSWORD###/$CYBORG_RABBITMQ_PASSWORD/g" -i /etc/supervisor/conf.d/cyborgbackup.conf
+#  supervisorctl reload
+#fi
 
 if [ ! -f /etc/nginx/sites-available/cyborg ]
 then

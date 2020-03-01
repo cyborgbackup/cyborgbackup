@@ -1,0 +1,15 @@
+[Unit]
+Description=CyBorgBackup Celery Service
+PartOf=cyborgbackup.service
+After=cyborgbackup.service
+
+[Service]
+Type=simple
+EnvironmentFile=-/etc/default/cyborgbackup
+WorkingDirectory=/opt/cyborgbackup
+User=cyborgbackup
+Group=cyborgbackup
+ExecStart=/opt/cyborgbackup/venv/bin/celery -A cyborgbackup worker -E -c 1
+
+[Install]
+WantedBy=multi-user.target

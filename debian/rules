@@ -19,13 +19,41 @@
 
 # main packaging script based on dh7 syntax
 %:
-	dh $@
+	dh $@ --with-systemd
 
 # debmake generated override targets
 # This is example for Cmake (See http://bugs.debian.org/641051 )
 #override_dh_auto_configure:
 #	dh_auto_configure -- \
 #	-DCMAKE_LIBRARY_PATH=$(DEB_HOST_MULTIARCH)
+
+override_dh_installinit:
+	dh_installinit --name=cyborgbackup
+	dh_installinit --name=cyborgbackup-callback-receiver
+	dh_installinit --name=cyborgbackup-celery
+	dh_installinit --name=cyborgbackup-celery-beat
+	dh_installinit --name=cyborgbackup-daphne
+	dh_installinit --name=cyborgbackup-uwsgi
+	dh_installinit --name=cyborgbackup-workers
+
+
+override_dh_systemd_enable:
+	dh_systemd_enable --name=cyborgbackup
+	dh_systemd_enable --name=cyborgbackup-callback-receiver
+	dh_systemd_enable --name=cyborgbackup-celery
+	dh_systemd_enable --name=cyborgbackup-celery-beat
+	dh_systemd_enable --name=cyborgbackup-daphne
+	dh_systemd_enable --name=cyborgbackup-uwsgi
+	dh_systemd_enable --name=cyborgbackup-workers
+
+override_dh_systemd_start:
+	dh_systemd_start --name=cyborgbackup
+	dh_systemd_start --name=cyborgbackup-callback-receiver
+	dh_systemd_start --name=cyborgbackup-celery
+	dh_systemd_start --name=cyborgbackup-celery-beat
+	dh_systemd_start --name=cyborgbackup-daphne
+	dh_systemd_start --name=cyborgbackup-uwsgi
+	dh_systemd_start --name=cyborgbackup-workers
 
 
 override_dh_usrlocal:

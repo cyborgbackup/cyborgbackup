@@ -1,3 +1,14 @@
+cyborgbackup (0.4) unstable; urgency=low
+
+  * Switch Catalog to ElasticSearch database
+  * Add filter on Job page
+  * Improve human readable size
+  * Rebuild UI
+  * Update requirements.txt
+  * Add multiple directory policy type
+
+ -- Gaëtan Ferez <gaetan@ferez.fr>  Sun, 1 Mar 2020 18:50:00 +0000
+
 cyborgbackup (0.3) unstable; urgency=low
 
   * Initial Release.

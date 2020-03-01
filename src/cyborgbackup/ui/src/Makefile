@@ -65,4 +65,4 @@ install-prod:
 
 ui-build-dev: clean-static docker-make-dev install-dev
 
-ui-build: clean-static docker-make install-prod
+ui-build: clean-static docker-make-prod install-prod

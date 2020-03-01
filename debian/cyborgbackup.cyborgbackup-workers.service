@@ -1,0 +1,15 @@
+[Unit]
+Description=CyBorgBackup Workers Service
+PartOf=cyborgbackup.service
+After=cyborgbackup.service
+
+[Service]
+EnvironmentFile=-/etc/default/cyborgbackup
+Environment=PATH=/opt/cyborgbackup/venv/bin:$PATH
+WorkingDirectory=/opt/cyborgbackup
+User=cyborgbackup
+Group=cyborgbackup
+ExecStart=/opt/cyborgbackup/manage.py runworker --only-channels websocket.*
+
+[Install]
+WantedBy=multi-user.target

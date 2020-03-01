@@ -6,6 +6,7 @@ set -e
 echo "Install Python3 requirements"
 pip3 install --upgrade wheel
 pip3 install -r /usr/share/cyborgbackup/requirements.txt
+mkdir -p /opt/cyborgbackup/var/run
 
 python3 $HOME/manage.py migrate
 if [ -z "$CYBORG_READY" ]; then

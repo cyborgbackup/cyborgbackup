@@ -1,0 +1,23 @@
+[Unit]
+Description=CyBorgBackup uWSGI Service
+PartOf=cyborgbackup.service
+After=cyborgbackup.service
+
+[Service]
+EnvironmentFile=-/etc/default/cyborgbackup
+WorkingDirectory=/opt/cyborgbackup
+User=cyborgbackup
+Group=cyborgbackup
+ExecStart=/opt/cyborgbackup/venv/bin/uwsgi --socket 127.0.0.1:8150 \
+    --module=cyborgbackup.wsgi:application \
+    --vacuum --processes=5 --harakiri=120 \
+    --no-orphans --max-requests=1000 \
+    -b 32768
+Restart=always
+KillSignal=SIGQUIT
+Type=notify
+StandardError=syslog
+NotifyAccess=all
+
+[Install]
+WantedBy=multi-user.target

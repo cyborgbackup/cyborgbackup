@@ -43,3 +43,9 @@ The script must return data on stdout. Data received will be directly send to bo
         return '''#!/bin/bash
     echo "Hello World"
     '''
+
+Example Proxmox Script
+----------------------
+
+You will find bellow an example script used to backup Proxmox VirtualMachine from her hypervisor ::
+

@@ -8,6 +8,15 @@ case "$1" in
       if ! getent passwd cyborgbackup > /dev:null ; then
          useradd -m -d /opt/cyborgbackup -s /bin/bash cyborgbackup
       fi
+      if test -f /etc/supervisor/conf.d/cyborgbackup.conf ; then
+         supervisorctl stop cyborg-celery
+         supervisorctl stop cyborg-celery-beat
+         supervisorctl stop cyborg-callback-receiver
+         supervisorctl stop cyborg-daphne
+         supervisorctl stop cyborg-workers
+         supervisorctl stop cyborg-uwsgi
+         rm /etc/supervisor/conf.d/cyborgbackup.conf
+      fi
 
       ;;
 esac
