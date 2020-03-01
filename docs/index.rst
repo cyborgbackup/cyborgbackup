@@ -47,6 +47,7 @@ Underground
 CyBorgBackup using the following tools ::
 
 - PostgreSQL database
+- ElasticSearch
 - RabbitMQ messaging system
 - Django framework
 - Django REST Framework

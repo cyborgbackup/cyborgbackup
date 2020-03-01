@@ -142,3 +142,11 @@ mail
 ~~~~
 
 The mail policy type will backup only the /var/mail or /var/lib/mail folder of the server.
+
+folders
+~~~~~~~
+
+The folders policy type will backup specified folder of the server.
+You need to specify extra vars with piped command::
+
+    {"folders":["folder1","folder2"]}

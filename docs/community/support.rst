@@ -16,3 +16,11 @@ File an Issue
 
 If you notice some unexpected behaviour in CyBorgBackup,
 `file an issue on GitHub <https://github.com/cyborgbackup/cyborgbackup/issues>`_.
+
+Mailing Lists
+-------------
+
+Current Mailing Lists :
+
+- Developers : developers@lists.cyborgbackup.dev
+- Users : users@lists.cyborgbackup.dev

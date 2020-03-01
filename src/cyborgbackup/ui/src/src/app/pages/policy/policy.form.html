@@ -90,7 +90,7 @@
               </ui-select>
             </div>
 
-            <div class="form-group" ng-show="policy.policy_type == 'mysql' || policy.policy_type == 'postgresql' || policy.policy_type == 'piped' || (policy.policy_type == 'vm' && moduleExtraVars)">
+            <div class="form-group" ng-show="policy.policy_type == 'mysql' || policy.policy_type == 'postgresql' || policy.policy_type == 'folders' || policy.policy_type == 'piped' || (policy.policy_type == 'vm' && moduleExtraVars)">
               <label for="extra_vars">Extra-Vars</label>
               <textarea name="extra_vars" id="extra_vars" ng-model="policy.extra_vars" class="form-control"></textarea>
             </div>
