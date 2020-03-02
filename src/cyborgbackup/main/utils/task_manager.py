@@ -444,7 +444,7 @@ class TaskManager():
             if node in active_queues:
                 active_tasks = active_queues[node]
             else:
-                if instance is None:
+                if node is None:
                     logger.error("Execution node Instance {} not found in database. "
                                  "The node is currently executing jobs {}".format(
                                      node, [j.log_format for j in node_jobs]))

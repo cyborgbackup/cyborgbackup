@@ -49,7 +49,7 @@ class SmartFilter(object):
             search_kwargs = self._expand_search(k, v)
             if search_kwargs:
                 kwargs.update(search_kwargs)
-                q = reduce(lambda x, y: x | y, [django.db.models.Q(**{u'%s__contains' % _k: _v}) for _k, _v in kwargs.items()])
+                q = reduce(lambda x, y: x | y, [django.db.models.Q(**{u'%s__contains' % _k: _v}) for _k, _v in kwargs.items()])  # noqa
                 self.result = Host.objects.filter(q)
             else:
                 kwargs[k] = v

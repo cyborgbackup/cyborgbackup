@@ -1,13 +1,7 @@
 from django_elasticsearch_dsl_drf.constants import (
-    LOOKUP_FILTER_RANGE,
     LOOKUP_FILTER_REGEXP,
     LOOKUP_FILTER_TERM,
-    LOOKUP_FILTER_WILDCARD,
-    LOOKUP_QUERY_IN,
-    LOOKUP_QUERY_GT,
-    LOOKUP_QUERY_GTE,
-    LOOKUP_QUERY_LT,
-    LOOKUP_QUERY_LTE,
+    LOOKUP_FILTER_WILDCARD
 )
 from django_elasticsearch_dsl_drf.filter_backends import (
     FilteringFilterBackend,
@@ -72,5 +66,3 @@ class ESCatalogViewSet(DocumentViewSet):
 
     # Specify default ordering
     ordering = ('archive_name', 'path')
-
-

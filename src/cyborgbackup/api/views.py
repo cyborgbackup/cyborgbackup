@@ -452,7 +452,7 @@ class JobRelaunch(RetrieveAPIView):
     def update_raw_data(self, data):
         data = super(JobRelaunch, self).update_raw_data(data)
         try:
-            obj = self.get_object()
+            self.get_object()
         except PermissionDenied:
             return data
         return data

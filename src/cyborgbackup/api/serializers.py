@@ -347,10 +347,11 @@ class BaseSerializer(serializers.ModelSerializer, metaclass=BaseSerializerMetacl
                     )
                 if obj.id in self.context['capability_map']:
                     capabilities_cache = self.context['capability_map'][obj.id]
-            return get_user_capabilities(
-                view.request.user, obj, method_list=self.show_capabilities, parent_obj=parent_obj,
-                capabilities_cache=capabilities_cache
-            )
+            return {parent_obj, capabilities_cache}
+            # return get_user_capabilities(
+            #     view.request.user, obj, method_list=self.show_capabilities, parent_obj=parent_obj,
+            #     capabilities_cache=capabilities_cache
+            # )
         else:
             # Contextual information to produce user_capabilities doesn't exist
             return {}
@@ -405,7 +406,8 @@ class BaseSerializer(serializers.ModelSerializer, metaclass=BaseSerializerMetacl
             field_kwargs['default'] = field_kwargs['initial'] = model_field.get_default()
 
         # Enforce minimum value of 0 for PositiveIntegerFields.
-        if isinstance(model_field, (models.PositiveIntegerField, models.PositiveSmallIntegerField)) and 'choices' not in field_kwargs:
+        if isinstance(model_field, (models.PositiveIntegerField, models.PositiveSmallIntegerField)) \
+                and 'choices' not in field_kwargs:
             field_kwargs['min_value'] = 0
 
         # Use custom boolean field that allows null and empty string as False values.

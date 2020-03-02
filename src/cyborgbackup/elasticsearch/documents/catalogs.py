@@ -16,6 +16,7 @@ html_strip = analyzer(
     char_filter=["html_strip"]
 )
 
+
 @catalog_index.doc_type
 class CatalogDocument(Document):
     """Catalog elasticsearch document"""

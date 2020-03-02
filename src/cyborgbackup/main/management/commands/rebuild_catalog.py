@@ -1,6 +1,5 @@
 import os
 import re
-import sys
 import json
 import stat
 import tempfile
@@ -12,11 +11,16 @@ from django.conf import settings
 from distutils.version import LooseVersion as Version
 from django.core.management.base import BaseCommand
 from cyborgbackup.main.models import Job, Repository, Catalog
-from django.contrib.auth import get_user_model
 from cyborgbackup.main.expect import run
 from cyborgbackup.main.models.settings import Setting
 from cyborgbackup.main.utils.common import get_ssh_version
 from cyborgbackup.main.utils.encryption import decrypt_field
+
+OPENSSH_KEY_ERROR = u'''\
+It looks like you're trying to use a private key in OpenSSH format, which \
+isn't supported by the installed version of OpenSSH on this instance. \
+Try upgrading OpenSSH or providing your private key in an different format. \
+'''
 
 
 class Command(BaseCommand):
@@ -181,7 +185,7 @@ class Command(BaseCommand):
                         if '{}-'.format(type) in archive_name:
                             repoArchives.append(archive_name)
 
-            entries = Job.objects.filter(job_type='job',status='successful')
+            entries = Job.objects.filter(job_type='job', status='successful')
             if entries.exists():
                 for entry in entries:
                     if entry.archive_name != '' and entry.archive_name not in repoArchives:
@@ -196,17 +200,26 @@ class Command(BaseCommand):
                                           job_type='job').order_by('-finished')
                 if jobs.exists():
                     for job in jobs:
-                        if job.archive_name and job.archive_name != '' and job.archive_name == 'rootfs-dave.milkywan.cloud-2019-02-22_02-00':
-                            lines = self.launch_command(["borg", "list", "--json-lines", "::{}".format(job.archive_name)], repo, repo.repository_key, repo.path, **kwargs)
-                            elements = len(lines)
+                        if job.archive_name \
+                                and job.archive_name != '' \
+                                and job.archive_name == 'rootfs-dave.milkywan.cloud-2019-02-22_02-00':
+                            lines = self.launch_command(["borg",
+                                                         "list",
+                                                         "--json-lines",
+                                                         "::{}".format(job.archive_name)],
+                                                        repo,
+                                                        repo.repository_key,
+                                                        repo.path,
+                                                        **kwargs)
+                            # elements = len(lines)
                             hoursTimezone = round((round((datetime.now()-datetime.utcnow()).total_seconds())/1800)/2)
                             with transaction.atomic():
                                 for line in lines:
                                     try:
                                         data = json.loads(line)
                                         entries = Catalog.objects.filter(archive_name=job.archive_name,
-                                                                        path=data['path'],
-                                                                        size=data['size'])
+                                                                         path=data['path'],
+                                                                         size=data['size'])
                                         if not entries.exists():
                                             entry = Catalog()
                                             entry.path = data['path']
@@ -218,7 +231,8 @@ class Command(BaseCommand):
                                             entry.type = data['type']
                                             entry.size = data['size']
                                             entry.healthy = data['healthy']
-                                            entry.mtime = '{}+0{}00'.format(data['mtime'].replace('T', ' '), hoursTimezone)
+                                            entry.mtime = '{}+0{}00'.format(data['mtime'].replace('T', ' '),
+                                                                            hoursTimezone)
                                             entry.save()
                                     except Exception as e:
                                         print(e)

@@ -1,5 +1,4 @@
 from .celery import app as celery_app
-from pkg_resources import get_distribution
 import warnings
 import os
 import sys

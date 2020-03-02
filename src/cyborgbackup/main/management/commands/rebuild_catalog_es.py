@@ -1,18 +1,15 @@
 import os
 import re
-import sys
 import json
 import stat
 import tempfile
 from datetime import datetime
 from io import StringIO
-from django.db import transaction
 from collections import OrderedDict
 from django.conf import settings
 from distutils.version import LooseVersion as Version
 from django.core.management.base import BaseCommand
-from cyborgbackup.main.models import Job, Repository, Catalog
-from django.contrib.auth import get_user_model
+from cyborgbackup.main.models import Job, Repository
 from cyborgbackup.main.expect import run
 from cyborgbackup.main.models.settings import Setting
 from cyborgbackup.main.utils.common import get_ssh_version
@@ -20,6 +17,12 @@ from cyborgbackup.main.utils.encryption import decrypt_field
 from elasticsearch import Elasticsearch
 
 es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
+OPENSSH_KEY_ERROR = u'''\
+It looks like you're trying to use a private key in OpenSSH format, which \
+isn't supported by the installed version of OpenSSH on this instance. \
+Try upgrading OpenSSH or providing your private key in an different format. \
+'''
+
 
 class Command(BaseCommand):
     """Rebuild Catalog
@@ -183,14 +186,14 @@ class Command(BaseCommand):
                         if '{}-'.format(archtype) in archive_name:
                             repoArchives.append(archive_name)
 
-            entries = Job.objects.filter(job_type='job',status='successful')
+            entries = Job.objects.filter(job_type='job', status='successful')
             if entries.exists():
                 for entry in entries:
                     if entry.archive_name != '' and entry.archive_name not in repoArchives:
                         print('Delete {} from catalog'.format(entry.archive_name))
-                        #Catalog.objects.filter(archive_name=entry.archive_name).delete()
-                        #entry.archive_name = ''
-                        #entry.save()
+                        # Catalog.objects.filter(archive_name=entry.archive_name).delete()
+                        # entry.archive_name = ''
+                        # entry.save()
 
             for repo in repos:
                 jobs = Job.objects.filter(policy__repository_id=repo.pk,
@@ -206,8 +209,18 @@ class Command(BaseCommand):
                             }]}}}
                             res = es.search(index="catalog", body=search_object)
                             if res['hits']['total'] == 0:
-                                lines = self.launch_command(["borg", "list", "--json-lines", "::{}".format(job.archive_name)], repo, repo.repository_key, repo.path, **kwargs)
-                                hoursTimezone = round((round((datetime.now()-datetime.utcnow()).total_seconds())/1800)/2)
+                                lines = self.launch_command(["borg",
+                                                             "list",
+                                                             "--json-lines",
+                                                             "::{}".format(job.archive_name)],
+                                                            repo,
+                                                            repo.repository_key,
+                                                            repo.path,
+                                                            **kwargs)
+                                hoursTimezone = round(
+                                    (round(
+                                        (datetime.now()-datetime.utcnow()).total_seconds())/1800)
+                                    / 2)
                                 for line in lines:
                                     data = None
                                     try:
@@ -219,7 +232,7 @@ class Command(BaseCommand):
                                              'term': {
                                                  'path.keyword': data['path']
                                              }
-                                        },{
+                                        }, {
                                              'term': {
                                                  'archive_name.keyword': job.archive_name,
                                              }
@@ -238,5 +251,6 @@ class Command(BaseCommand):
                                                 'type': data['type'],
                                                 'size': data['size'],
                                                 'healthy': data['healthy'],
-                                                'mtime': '{}+0{}00'.format(data['mtime'].replace('T', ' '), hoursTimezone)
-                                            });
+                                                'mtime': '{}+0{}00'.format(data['mtime'].replace('T', ' '),
+                                                                           hoursTimezone)
+                                            })

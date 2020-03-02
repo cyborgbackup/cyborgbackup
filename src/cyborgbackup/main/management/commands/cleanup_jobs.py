@@ -1,12 +1,7 @@
-# Python
-import datetime
-import logging
-
 
 # Django
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 from django.db import transaction
-from django.utils.timezone import now
 
 # CyBorgBackup
 from cyborgbackup.main.models import Job, Repository
@@ -27,7 +22,6 @@ class Command(BaseCommand):
                             default=True,
                             help='Remove jobs')
 
-
     def cleanup_jobs(self):
         # Sanity check: Is there already a running job on the System?
         jobs = Job.objects.filter(status="running")
@@ -39,7 +33,7 @@ class Command(BaseCommand):
         repoArchives = []
         if repos.exists():
             for repo in repos:
-                lines = self.launch_command(["borg", "list", "::"], repo, repo.repository_key, repo.path, **kwargs)
+                lines = self.launch_command(["borg", "list", "::"], repo, repo.repository_key, repo.path)
 
                 for line in lines:
                     archive_name = line.split(' ')[0]  #
