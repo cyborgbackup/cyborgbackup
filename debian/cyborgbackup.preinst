@@ -5,7 +5,7 @@ set -e
 
 case "$1" in 
   install|upgrade|configure)
-      if ! getent passwd cyborgbackup > /dev:null ; then
+      if ! getent passwd cyborgbackup > /dev/null ; then
          useradd -m -d /opt/cyborgbackup -s /bin/bash cyborgbackup
       fi
       if test -f /etc/supervisor/conf.d/cyborgbackup.conf ; then
