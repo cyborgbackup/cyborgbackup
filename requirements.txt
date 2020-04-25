@@ -45,5 +45,5 @@ django-elasticsearch-dsl-drf>=0.20.6
 django-debug-toolbar==1.11
 django-debug-toolbar-force==0.1.4
 django-elasticsearch-debug-toolbar==1.2.0
-djangorestframework-simplejwt==4.4.0
+djangorestframework-simplejwt==4.3.0
 django-cors-headers==3.2.1
