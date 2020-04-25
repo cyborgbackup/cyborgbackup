@@ -33,12 +33,11 @@ urllib3>=1.23
 uWSGI==2.0.17
 sphinxcontrib-httpdomain
 setuptools_scm
-flower
-jsonschema
-pyparsing
-pygments
-ansiconv
-tzcron
+jsonschema==3.2.0
+pyparsing==2.4.7
+pygments==2.6.1
+ansiconv==1.0.0
+tzcron==1.0.0
 elasticsearch==6.3.1
 elasticsearch-dsl>=6.0.0,<7.0.0
 django-elasticsearch-dsl==6.4.2
@@ -46,4 +45,5 @@ django-elasticsearch-dsl-drf>=0.20.6
 django-debug-toolbar==1.11
 django-debug-toolbar-force==0.1.4
 django-elasticsearch-debug-toolbar==1.2.0
-djangorestframework-simplejwt
+djangorestframework-simplejwt==4.4.0
+django-cors-headers==3.2.1
