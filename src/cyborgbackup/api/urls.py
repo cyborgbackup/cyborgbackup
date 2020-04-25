@@ -1,4 +1,5 @@
 from django.conf.urls import include, url
+from rest_framework_simplejwt import views as jwt_views
 
 from cyborgbackup.api.swagger import SwaggerSchemaView
 
@@ -35,7 +36,9 @@ from cyborgbackup.api.views import (
     ApiV1PingView,
     ApiV1ConfigView,
     AuthView,
-    UserMeList
+    UserMeList,
+    CyborgTokenObtainPairView,
+    RestoreLaunch
 )
 
 from cyborgbackup.elasticsearch.views import ESCatalogViewSet
@@ -103,6 +106,10 @@ setting_urls = [
     url(r'^(?P<pk>[0-9]+)/$', SettingDetail.as_view(), name='setting_detail'),
 ]
 
+restore_urls = [
+    url(r'^$', RestoreLaunch.as_view(), name='restore_launch'),
+]
+
 app_name = 'api'
 
 v1_urls = [
@@ -119,6 +126,7 @@ v1_urls = [
     url(r'^schedules/', include(schedule_urls)),
     url(r'^repositories/', include(repository_urls)),
     url(r'^policies/', include(policy_urls)),
+    url(r'^restore/', include(restore_urls)),
     url(r'^catalogs/', include(catalog_urls)),
     url(r'^stats/', include(stats_urls)),
     url(r'^escatalogs/', ESCatalogViewSet.as_view({'get': 'list'}), name='escatalog_list')
@@ -127,6 +135,9 @@ v1_urls = [
 urlpatterns = [
     url(r'^$', ApiRootView.as_view(), name='api_root_view'),
     url(r'^(?P<version>(v1))/', include(v1_urls)),
+    url(r'^token/obtain/$', CyborgTokenObtainPairView.as_view(), name='token_create'),  # override sjwt stock token
+    url(r'^token/refresh/$', jwt_views.TokenRefreshView.as_view(), name='token_refresh'),
+    url(r'^password_reset/', include('django_rest_passwordreset.urls', namespace='password_reset')),
     url(r'^login/$', LoggedLoginView.as_view(
         template_name='rest_framework/login.html',
         extra_context={'inside_login_context': True}

@@ -17,7 +17,7 @@ services:
       - "5672:5672"
       - "15672:15672"
   callback_receiver:
-    image: cyborgbackup:latest
+    image: cyborgbackup/cyborgbackup:latest
     command: bash -c "python /cyborgbackup/manage.py run_callback_receiver -v 3"
     volumes:
       - ./src:/cyborgbackup
@@ -28,7 +28,7 @@ services:
       - elasticsearch
       - rabbitmq
   channel_workers:
-    image: cyborgbackup:latest
+    image: cyborgbackup/cyborgbackup:latest
     command: bash -c 'python /cyborgbackup/manage.py runworker --only-channels websocket.*'
     volumes:
       - ./src:/cyborgbackup
@@ -39,7 +39,7 @@ services:
       - elasticsearch
       - rabbitmq
   web:
-    image: cyborgbackup:latest
+    image: cyborgbackup/cyborgbackup:latest
     #command: bash -c "python /cyborgbackup/manage.py migrate --noinput && python /cyborgbackup/manage.py runserver 0.0.0.0:8000"
     command: bash -c "python /cyborgbackup/manage.py runserver 0.0.0.0:8000"
     volumes:
@@ -53,7 +53,7 @@ services:
       - elasticsearch
       - rabbitmq
   celery:
-    image: cyborgbackup:latest
+    image: cyborgbackup/cyborgbackup:latest
     command: celery -A cyborgbackup worker -l debug -E
     volumes:
       - ./src:/cyborgbackup
@@ -64,7 +64,7 @@ services:
       - elasticsearch
       - rabbitmq
   celery_beat:
-    image: cyborgbackup:latest
+    image: cyborgbackup/cyborgbackup:latest
     command: celery -A cyborgbackup beat -l debug
     volumes:
       - ./src:/cyborgbackup
@@ -75,7 +75,7 @@ services:
       - elasticsearch
       - rabbitmq
   flower:
-    image: cyborgbackup:latest
+    image: cyborgbackup/cyborgbackup:latest
     command: celery flower -A cyborgbackup --address=0.0.0.0 --port=8001
     volumes:
       - ./src:/cyborgbackup
@@ -103,6 +103,11 @@ services:
       - 9200:9200
     environment:
       - discovery.type=single-node
+  gulpwatch:
+    image: node:8.16.2
+    command: bash -c "cd /src/cyborgbackup/ui/src && make watch"
+    volumes:
+      - ./src:/src
 
 volumes:
   postgres_data:

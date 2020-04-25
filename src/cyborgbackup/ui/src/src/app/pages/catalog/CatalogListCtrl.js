@@ -151,6 +151,7 @@
         QuerySet.search('/api/v1/jobs/?fields=archive_name&not__archive_name=&archive_name__isnull=False&order=-archive_name&page_size=10000').then(function(data){
             var archives = data.data.results;
             var entries_tree = [];
+            console.log('here');
             _.forEach(archives, function(archiveElement){
                 var archiveNamesSplit = archiveElement['archive_name'].split('-');
                 var archiveType = archiveNamesSplit[0];
@@ -171,7 +172,7 @@
                 var tmpId = entry['id'];
                 found = false;
                 entries_tree.forEach(v => {
-                  if( v['text'] == archiveHost && v['type'] == 'host' && v['parentId'] == tmpId) {
+                  if( v['text'] == archiveHost && v['type'] == 'host' && v['parent'] == tmpId) {
                     found = true;
                     entry = v;
                   }
@@ -183,7 +184,7 @@
                 tmpId = entry['id'];
                 found = false;
                 entries_tree.forEach(v => {
-                  if( v['text'] == archiveDate && v['type'] == 'date' && v['parentId'] == tmpId) {
+                  if( v['text'] == archiveDate && v['type'] == 'date' && v['parent'] == tmpId) {
                     found = true;
                     entry = v;
                   }

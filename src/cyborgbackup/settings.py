@@ -16,6 +16,7 @@ from datetime import timedelta
 from celery.schedules import crontab
 from kombu import Queue, Exchange
 from kombu.common import Broadcast
+from corsheaders.defaults import default_headers
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -63,11 +64,13 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django_celery_results',
+    'corsheaders',
     'rest_framework',
     'rest_framework.authtoken',
     'channels',
     'django_elasticsearch_dsl',
     'django_elasticsearch_dsl_drf',
+    'django_rest_passwordreset',
     'debug_toolbar',
     'elastic_panel',
     'cyborgbackup.ui',
@@ -116,6 +119,7 @@ CHANNEL_LAYERS = {
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -126,6 +130,12 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'cyborgbackup.urls'
+
+CORS_ORIGIN_ALLOW_ALL = True
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    'access-control-allow-methods',
+    'access-control-allow-origin'
+]
 
 TEMPLATES = [
     {
@@ -174,10 +184,11 @@ REST_FRAMEWORK = {
         'cyborgbackup.api.authentication.SessionAuthentication',
         'cyborgbackup.api.authentication.LoggedBasicAuthentication',
         'rest_framework.authentication.TokenAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication'
     ),
     'DEFAULT_PERMISSION_CLASSES': (
         'cyborgbackup.api.permissions.ModelAccessPermission',
-        'rest_framework.permissions.IsAuthenticated',
+        'cyborgbackup.api.permissions.AllowOptionsAuthentication',
     ),
     'DEFAULT_FILTER_BACKENDS': (
         'cyborgbackup.api.filters.TypeFilterBackend',
@@ -280,6 +291,21 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=14),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': False,
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
+    'VERIFYING_KEY': None,
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+    'TOKEN_TYPE_CLAIM': 'token_type',
+}
 
 
 # Internationalization

@@ -137,10 +137,11 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
     ]
 
     JOB_TYPE_CHOICES = [
-        ('provision', 'Provision VM'),
-        ('dns', 'Update DNS'),
-        ('monit_observium', 'Monitoring Observium'),
-        ('monit_status', 'Monitoring Status')
+        ('job', 'Default Backup Job'),
+        ('check', 'Prepare Client or Repository'),
+        ('catalog', 'Catalog Job'),
+        ('prune', 'Prune Job'),
+        ('restore', 'Restore Job'),
     ]
 
     VERBOSITY_CHOICES = [

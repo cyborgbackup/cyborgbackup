@@ -1,0 +1,39 @@
+<div class="widgets">
+  <div class="row">
+    <div ba-panel ba-panel-class="with-scroll" ba-panel-title="Repository Information">
+        <form name="$ctrl.repositoryForm">
+            <div class="form-group">
+                <label for="name">Name </label>
+                <input name="name" id="name" ng-model="repository.name" type="text" class="form-control" placeholder="Name" required/>
+                <span ng-show="repositoryForm.name.$dirty && repositoryForm.name.$invalid" class="help-inline">Name Required</span>
+            </div>
+            <div class="form-group">
+                <label for="path">Path </label>
+                <input name="path" id="path" ng-model="repository.path" type="text" class="form-control" placeholder="Path" required/>
+                <span ng-show="repositoryForm.path.$dirty && repositoryForm.path.$invalid" class="help-inline">Path Required</span>
+            </div>
+            <div class="form-group">
+                <label for="repository_key">Repository Key </label>
+                <input name="repository_key" id="repository_key" ng-model="repository.repository_key" type="text" class="form-control" placeholder="Repository Key" required/>
+                <span ng-show="repositoryForm.repository_key.$dirty && repositoryForm.repository_key.$invalid" class="help-inline">Repository Key Required</span>
+            </div>
+            <div class="form-group">
+                <p>Enabled</p>
+                <ba-switcher switcher-style="primary" switcher-value="repository.enabled"></ba-switcher>
+            </div>
+            <div class="row">
+              <div class="col-sm-2">
+                <div class="button-wrapper">
+                  <button ng-click="formCancel()" class="btn btn-danger">Cancel</a>
+                </div>
+              </div>
+              <div class="col-sm-2">
+                <div class="button-wrapper">
+                  <button ng-click="formSave()" ng-disabled="repositoryForm.$invalid" class="btn btn-primary">Save</button>
+                </div>
+              </div>
+            </div>
+        </form>
+    </div>
+  </div>
+</div>

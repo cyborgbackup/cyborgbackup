@@ -5,7 +5,7 @@
   "authors": [
     "gaetanf"
   ],
-  "description": "CyBorgBacku UI Admin Interface",
+  "description": "CyBorgBackup UI Admin Interface",
   "license": "MIT",
   "ignore": [
     "**/.*",

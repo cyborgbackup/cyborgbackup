@@ -50,6 +50,12 @@ class Client(PrimordialModel):
         editable=False
     )
 
+    bandwidth_limit = models.PositiveIntegerField(
+        null=True,
+        default=None,
+        blank=True
+    )
+
     def get_absolute_url(self, request=None):
         return reverse('api:client_detail', kwargs={'pk': self.pk}, request=request)
 

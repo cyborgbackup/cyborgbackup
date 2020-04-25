@@ -4,6 +4,7 @@ from django.db import models
 
 from cyborgbackup.api.versioning import reverse
 from cyborgbackup.main.models.base import PrimordialModel
+from cyborgbackup.main.models.policies import Policy
 
 analytics_logger = logging.getLogger('cyborgbackup.models.schedule')
 
@@ -40,3 +41,15 @@ class Schedule(PrimordialModel):
     @classmethod
     def get_cache_id_key(self, key):
         return '{}_ID'.format(key)
+
+    def updated_related_policies(self):
+        refPolicies = Policy.objects.filter(schedule__pk=self.pk)
+        if refPolicies.exists():
+            for pol in refPolicies:
+                pol.save()
+
+    def save(self, *args, **kwargs):
+        self.updated_related_policies()
+        # If update_fields has been specified, add our field names to it,
+        # if it hasn't been specified, then we're just doing a normal save.
+        super(Schedule, self).save(*args, **kwargs)

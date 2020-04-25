@@ -82,7 +82,7 @@ class Policy(PrimordialModel):
         editable=True,
     )
 
-    clients = models.ManyToManyField("client", blank=False)
+    clients = models.ManyToManyField("client", blank=True)
 
     policy_type = models.CharField(
         max_length=20,
@@ -144,6 +144,18 @@ class Policy(PrimordialModel):
         default=None,
         editable=False,
         help_text=_("The next time that the scheduled action will run.")
+    )
+
+    posthook = models.CharField(
+        max_length=128,
+        default='',
+        blank=True
+    )
+
+    prehook = models.CharField(
+        max_length=128,
+        default='',
+        blank=True
     )
 
     def get_absolute_url(self, request=None):

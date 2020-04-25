@@ -1,0 +1,55 @@
+<div class="widgets">
+  <div class="row">
+    <div ba-panel ba-panel-class="with-scroll" ba-panel-title="User Information">
+        <form name="$ctrl.userForm">
+            <div class="form-group">
+                <label for="email">Email </label>
+                <input name="email" id="email" ng-model="user.email" type="text" class="form-control" placeholder="Email" required/>
+                <span ng-show="userForm.email.$dirty && userForm.email.$invalid" class="help-inline">Email Required</span>
+            </div>
+
+            <div class="form-group">
+                <label for="first_name">First Name </label>
+                <input name="first_name" id="first_name" ng-model="user.first_name" type="text" class="form-control" placeholder="First Name"/>
+                <span ng-show="userForm.first_name.$dirty && userForm.first_name.$invalid" class="help-inline">First Name Required</span>
+            </div>
+
+            <div class="form-group">
+                <label for="last_name">Last Name </label>
+                <input name="last_name" id="last_name" ng-model="user.last_name" type="text" class="form-control" placeholder="Last Name"/>
+                <span ng-show="userForm.last_name.$dirty && userForm.last_name.$invalid" class="help-inline">Last Name Required</span>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password </label>
+                <input name="password" id="password" ng-model="user.password" type="password" class="form-control" placeholder="password" required/>
+                <span ng-show="userForm.password.$dirty && userForm.password.$invalid" class="help-inline">Password Required</span>
+            </div>
+
+            <div class="form-group">
+                <label for="confirm">Confirm </label>
+                <input name="confirm" id="confirm" ng-model="user.confirm" type="password" class="form-control" placeholder="Password Confirmation" required/>
+                <span ng-show="userForm.confirm.$dirty && userForm.confirm.$invalid" class="help-inline">Password Confirmation Required</span>
+            </div>
+
+            <div class="form-group">
+                <p>Super Admin</p>
+                <ba-switcher switcher-style="primary" switcher-value="user.is_superuser"></ba-switcher>
+            </div>
+
+            <div class="row">
+              <div class="col-sm-2">
+                <div class="button-wrapper">
+                  <button ng-click="formCancel()" class="btn btn-danger">Cancel</a>
+                </div>
+              </div>
+              <div class="col-sm-2">
+                <div class="button-wrapper">
+                  <button ng-click="formSave()" ng-disabled="userForm.$invalid && userform.password.value != userform.confirm.value" class="btn btn-primary">Save</button>
+                </div>
+              </div>
+            </div>
+        </form>
+    </div>
+  </div>
+</div>

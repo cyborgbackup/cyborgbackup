@@ -16,6 +16,7 @@ server {
     
     server_name cyborgbackup.local;
     keepalive_timeout 65;
+    client_max_body_size 10M;
 
     root /opt/cyborgbackup/cyborgbackup/static;
 

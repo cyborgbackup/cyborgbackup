@@ -39,6 +39,9 @@ build: gulp-release clean
 
 dev: gulp-dev clean
 
+watch: gulp-dev
+	gulp watch
+
 docker-make-dev:
 	docker run --rm -it -v ${CURDIR}:/src node:8.16.2 /bin/bash -c 'cd /src; make dev'
 

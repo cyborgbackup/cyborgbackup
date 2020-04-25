@@ -4,6 +4,7 @@ import logging
 # Django REST Framework
 from rest_framework.exceptions import MethodNotAllowed, PermissionDenied
 from rest_framework import permissions
+from rest_framework.permissions import IsAuthenticated
 
 # CyBorgBackup
 from cyborgbackup.main.models import * # noqa
@@ -34,7 +35,8 @@ class ModelAccessPermission(permissions.BasePermission):
     '''
 
     def check_options_permissions(self, request, view, obj=None):
-        return self.check_get_permissions(request, view, obj)
+        # return self.check_get_permissions(request, view, obj)
+        return True
 
     def check_head_permissions(self, request, view, obj=None):
         return self.check_get_permissions(request, view, obj)
@@ -105,6 +107,9 @@ class ModelAccessPermission(permissions.BasePermission):
         method based on the request method.
         '''
 
+        if request.method.upper() == 'OPTIONS':
+            return True
+
         # Don't allow anonymous users. 401, not 403, hence no raised exception.
         if not request.user or request.user.is_anonymous:
             return False
@@ -160,3 +165,10 @@ class IsSuperUser(permissions.BasePermission):
 
     def has_permission(self, request, view):
         return request.user and request.user.is_superuser
+
+
+class AllowOptionsAuthentication(IsAuthenticated):
+    def has_permission(self, request, view):
+        if request.method == 'OPTIONS':
+            return True
+        return request.user and request.user.is_authenticated

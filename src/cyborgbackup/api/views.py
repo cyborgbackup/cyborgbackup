@@ -30,6 +30,8 @@ from rest_framework.views import exception_handler
 from rest_framework import status, renderers
 
 # CyBorgBackup
+from rest_framework_simplejwt.views import TokenObtainPairView
+
 from cyborgbackup.api.generics import (APIView, GenericAPIView, ListAPIView,
                                        ListCreateAPIView, SubListAPIView, RetrieveAPIView,
                                        RetrieveUpdateAPIView, RetrieveUpdateDestroyAPIView,
@@ -56,7 +58,8 @@ from cyborgbackup.api.serializers import (EmptySerializer, UserSerializer,
                                           ScheduleListSerializer, RepositorySerializer, RepositoryListSerializer,
                                           PolicySerializer, PolicyLaunchSerializer,
                                           PolicyCalendarSerializer, PolicyVMModuleSerializer,
-                                          CatalogSerializer, CatalogListSerializer, StatsSerializer)
+                                          CatalogSerializer, CatalogListSerializer, StatsSerializer,
+                                          CyborgTokenObtainPairSerializer, RestoreLaunchSerializer)
 from cyborgbackup.main.constants import ACTIVE_STATES
 from cyborgbackup.api.permissions import UserPermission
 
@@ -143,6 +146,7 @@ class ApiVersionRootView(APIView):
         data['schedules'] = reverse('api:schedule_list', request=request)
         data['repositories'] = reverse('api:repository_list', request=request)
         data['policies'] = reverse('api:policy_list', request=request)
+        data['restore'] = reverse('api:restore_launch', request=request)
         data['catalogs'] = reverse('api:catalog_list', request=request)
         data['stats'] = reverse('api:stats', request=request)
         data['escatalogs'] = reverse('api:escatalog_list', request=request)
@@ -567,6 +571,25 @@ class ClientDetail(RetrieveUpdateDestroyAPIView):
     model = Client
     serializer_class = ClientSerializer
 
+    def patch(self, request, *args, **kwargs):
+        obj = self.get_object()
+        logger.debug(request.data)
+
+        serializer = self.serializer_class(data=request.data, context={'client': obj})
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        policies = Policy.objects.all()
+        if policies.exists() and 'policies' in request.data.keys():
+            for pol in policies:
+                if pol.id in request.data['policies'] and len([x for x in pol.clients.all() if x.id == obj.id]) == 0:
+                    logger.debug('Add client to policy {}'.format(pol.name))
+                    pol.clients
+                if len([x for x in pol.clients.all() if x.id == obj.id]) > 0 and pol.id not in request.data['policies']:
+                    logger.debug('Remove client from policy {}'.format(pol.name))
+
+        return super(ClientDetail, self).patch(request, *args, **kwargs)
+
 
 class ScheduleList(ListCreateAPIView):
 
@@ -707,6 +730,40 @@ class PolicyLaunch(RetrieveAPIView):
         return sanitized_data
 
 
+class RestoreLaunch(RetrieveAPIView):
+
+    model = Job
+    serializer_class = RestoreLaunchSerializer
+
+    def post(self, request, *args, **kwargs):
+        obj = self.get_object()
+
+        serializer = self.serializer_class(data=request.data, context={'job': obj})
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        for client in obj.clients.all():
+            jobs = Job.objects.filter(client=client.pk)
+            if jobs.exists():
+                for job in jobs:
+                    if job.status in ['waiting', 'pending', 'running']:
+                        return Response({'detail': 'Backup job already running for theses clients.'},
+                                        status=status.HTTP_400_BAD_REQUEST)
+
+        new_job = obj.create_job(**serializer.validated_data)
+        result = new_job.signal_start()
+
+        if not result:
+            data = OrderedDict()
+            new_job.delete()
+            return Response(data, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            data = OrderedDict()
+            data['job'] = new_job.id
+            data.update(JobSerializer(new_job, context=self.get_serializer_context()).to_representation(new_job))
+            return Response(data, status=status.HTTP_201_CREATED)
+
+
 class CatalogList(ListCreateAPIView):
 
     model = Catalog
@@ -752,3 +809,7 @@ class Stats(ListAPIView):
                         if job.status == 'failed':
                             stat['failed'] += 1
         return Response(data)
+
+
+class CyborgTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CyborgTokenObtainPairSerializer

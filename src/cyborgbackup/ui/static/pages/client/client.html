@@ -1,0 +1,59 @@
+<div class="widgets">
+  <div class="horizontal-scroll">
+    <div class="form-group">
+      <label>Rows on page
+        <select class="form-control selectpicker show-tick" title="Rows on page" selectpicker
+                ng-model="tablePageSize" ng-options="i for i in [5,10,15,20,25]">
+        </select>
+      </label>
+      <div class="button-wrapper">
+          <button type="button" ng-click="addItem()" class="btn btn-sm btn-success" style="display: flex; margin-left: 20px;">
+          <i class="glyphicon glyphicon-plus"></i>&nbsp; Add Client
+        </button>
+      </div>
+    </div>
+    <div ba-panel>
+      <table class="table" st-pipe="pipeCall" st-table="smartTableData">
+        <thead>
+        <tr class="sortable ">
+          <th class="table-id" st-sort="id" st-sort-default="true">#</th>
+          <th st-sort="hostname">Hostname</th>
+          <th st-sort="version">version</th>
+          <th st-sort="ip">ip</th>
+          <th st-sort="enabled">Enable</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat="item in clients">
+          <td class="table-id">{{item.id}}</td>
+          <td>{{item.hostname}}</td>
+          <td>{{item.version}}</td>
+          <td>{{item.ip}}</td>
+          <td>
+              <button type="button" class="btn btn-sm" ng-class="{'btn-primary': item.enabled, 'btn-danger': !item.enabled}" ng-click="switchState(item)">
+                <i class="glyphicon" ng-class="{'glyphicon-ban-circle': !item.enabled, 'glyphicon-ok': item.enabled}"></i>
+              </button>
+          </td>
+          <td>
+            <button type="button" ng-click="editItem(item)" class="btn btn-sm btn-info">
+              <i class="glyphicon glyphicon-search">
+              </i>
+            </button>
+              <button type="button" ng-click="removeItem(item)" class="btn btn-sm btn-danger">
+                <i class="glyphicon glyphicon-remove-circle">
+                </i>
+              </button>
+          </td>
+        </tr>
+        </tbody>
+        <tfoot>
+        <tr>
+          <td colspan="6" class="text-center">
+            <div st-pagination="" st-items-by-page="25" st-displayed-pages="5"></div>
+          </td>
+        </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</div>

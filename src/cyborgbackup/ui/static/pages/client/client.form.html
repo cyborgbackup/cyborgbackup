@@ -1,0 +1,29 @@
+<div class="widgets">
+  <div class="row">
+    <div ba-panel ba-panel-class="with-scroll" ba-panel-title="Client Information">
+        <form name="$ctrl.clientForm">
+            <div class="form-group">
+                <label for="hostname">Hostname </label>
+                <input name="hostname" id="hostname" ng-model="client.hostname" type="text" class="form-control" placeholder="Hostname" required/>
+                <span ng-show="clientForm.hostname.$dirty && clientForm.hostname.$invalid" class="help-inline">Hostname Required</span>
+            </div>
+            <div class="form-group">
+                <p>Enabled</p>
+                <ba-switcher switcher-style="primary" switcher-value="client.enabled"></ba-switcher>
+            </div>
+            <div class="row">
+              <div class="col-sm-2">
+                <div class="button-wrapper">
+                  <button ng-click="formCancel()" class="btn btn-danger">Cancel</a>
+                </div>
+              </div>
+              <div class="col-sm-2">
+                <div class="button-wrapper">
+                  <button ng-click="formSave()" ng-disabled="clientForm.$invalid" class="btn btn-primary">Save</button>
+                </div>
+              </div>
+            </div>
+        </form>
+    </div>
+  </div>
+</div>

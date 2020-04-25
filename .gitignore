@@ -17,3 +17,4 @@ src/cyborgbackup/ui/src/package-lock.json
 **/__pycache__
 **/_build
 **/.coverage
+venv

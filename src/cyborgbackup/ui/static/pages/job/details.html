@@ -1,0 +1,230 @@
+
+<div class="widgets">
+  <div class="tab-pane" id="job-results">
+    <div ng-cloak
+        id="htmlTemplate"
+        class="JobResults"
+        ng-class="{'fullscreen': stdoutFullScreen}">
+        <div ui-view></div>
+
+        <!-- LEFT PANE -->
+        <div class="JobResults-leftSide panel"
+            ng-class="{'JobResults-stdoutActionButton--active': stdoutFullScreen}">
+            <div class="JobResults-detailsPanel Panel"
+                ng-show="!stdoutFullScreen">
+
+                <!-- LEFT PANE HEADER -->
+                <div class="JobResults-panelHeader">
+                    <div class="JobResults-panelHeaderText">Details</div>
+
+                    <!-- LEFT PANE HEADER ACTIONS -->
+                    <div class="JobResults-panelHeaderButtonActions">
+
+                        <!-- RELAUNCH ACTION -->
+                        <div class="at-Relaunch"
+                            data-placement="top">
+
+                            <button class="at-Relaunch--button"
+                                    ng-click="relaunchJob()"
+                                    ng-disabled="job_status == 'running' ||
+                                        job_status=='pending' ">
+                                    <i class="fa fa-rocket"></i>
+                            </button>
+                        </div>
+
+                        <!-- CANCEL/DELETE ACTION -->
+                        <div class="at-Relaunch"
+                            data-placement="top">
+
+                            <!-- CANCEL ACTION -->
+                            <button class="List-actionButton
+                                    List-actionButton--delete"
+
+                                ng-click="cancelJob()"
+                                ng-show="job_status == 'running' ||
+                                    job_status=='pending' ">
+                                <i class="fa fa-minus-circle"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LEFT PANE DETAILS GROUP -->
+                <div>
+
+                    <!-- STATUS DETAIL -->
+                    <div class="JobResults-resultRow">
+                        <label class="JobResults-resultRowLabel">Status</label>
+                         <div class="JobResults-resultRowText">
+                             <i	class="JobResults-statusResultIcon
+                                     fa
+                                     icon-job-{{ job_status }}">
+                             </i> {{ status_label }}
+                         </div>
+                     </div>
+
+                     <hr/>
+
+                    <!-- LAUNCH MODE -->
+                    <div class="JobResults-resultRow"
+                        ng-show="job.launch_type">
+                        <label class="JobResults-resultRowLabel">Launch Mode</label>
+                        <div class="JobResults-resultRowText">
+                            {{ job.launch_type }}
+                        </div>
+                    </div>
+
+                    <!-- JOB TYPE DETAIL -->
+                    <div class="JobResults-resultRow"
+                        ng-show="job.job_type">
+                        <label class="JobResults-resultRowLabel">Job Type</label>
+                        <div class="JobResults-resultRowText">
+                            {{ job.job_type }}
+                        </div>
+                    </div>
+
+                    <!-- POLICY NAME -->
+                    <div class="JobResults-resultRow"
+                        ng-show="job.summary_fields.policy">
+                        <label class="JobResults-resultRowLabel">Policy Name</label>
+                        <div class="JobResults-resultRowText">
+                            {{ job.summary_fields.policy.name }}
+                        </div>
+                    </div>
+
+                    <!-- POLICY TYPE -->
+                    <div class="JobResults-resultRow"
+                        ng-show="job.summary_fields.policy">
+                        <label class="JobResults-resultRowLabel">Policy Type</label>
+                        <div class="JobResults-resultRowText">
+                            {{ job.summary_fields.policy.policy_type }}
+                        </div>
+                    </div>
+
+                    <!-- SCHEDULE NAME -->
+                    <div class="JobResults-resultRow"
+                        ng-show="job.summary_fields.schedule">
+                        <label class="JobResults-resultRowLabel">Schedule</label>
+                        <div class="JobResults-resultRowText">
+                            {{ job.summary_fields.schedule.name }}
+                        </div>
+                    </div>
+
+                    <!-- REPOSITORY NAME -->
+                    <div class="JobResults-resultRow"
+                        ng-show="job.summary_fields.repository">
+                        <label class="JobResults-resultRowLabel">Repository</label>
+                        <div class="JobResults-resultRowText">
+                            {{ job.summary_fields.repository.name }}
+                        </div>
+                    </div>
+
+                    <hr/>
+
+                    <!-- START TIME DETAIL -->
+                    <div class="JobResults-resultRow"
+                        ng-show="job.started">
+                        <label class="JobResults-resultRowLabel">Started</label>
+                        <div class="JobResults-resultRowText">
+                            {{ job.started | longDate }}
+                        </div>
+                    </div>
+
+                    <!-- FINISHED TIME DETAIL -->
+                    <div class="JobResults-resultRow"
+                        ng-show="job.started">
+                        <label class="JobResults-resultRowLabel">Finished</label>
+                        <div class="JobResults-resultRowText">
+                            {{ (job.finished |
+                                longDate) || "Not Finished" }}
+                        </div>
+                    </div>
+
+                    <!-- EXPLANATION DETAIL -->
+                     <div class="JobResults-resultRow"
+                         ng-show="job.job_explanation">
+                         <label class="JobResults-resultRowLabel">Explanation</label>
+                        <div class="JobResults-resultRowText" >
+                            {{ task_detail }}
+                        </div>
+                     </div>
+
+                    <!-- RESULTS TRACEBACK DETAIL -->
+                    <div class="JobResults-resultRow"
+                        ng-show="job.result_traceback">
+                        <label class="JobResults-resultRowLabel">Results Traceback</label>
+                        <div class="JobResults-resultRowText">
+                            {{ job.result_traceback | limitTo:explanationLimit}}
+                            <span ng-show="explanationLimit && job.result_traceback.length > explanationLimit">
+                                <span>... </span>
+                                <span class="JobResults-seeMoreLess" ng-click="explanationLimit=undefined">Show More</span>
+                            </span>
+                            <span ng-show="explanationLimit === undefined" class="JobResults-seeMoreLess" ng-click="explanationLimit=150">Show Less</span>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+
+        <!-- RIGHT PANE -->
+        <div class="JobResults-rightSide panel">
+            <div class="Panel JobResults-panelRight">
+
+                <!-- RIGHT PANE HEADER -->
+                <div class="StandardOut-panelHeader JobResults-panelRightTitle">
+                    <div class="StandardOut-panelHeaderText JobResults-panelRightTitleText">
+                        <i class="JobResults-statusResultIcon
+                            fa icon-job-{{ job_status }}"
+                            ng-show="stdoutFullScreen"
+                            data-tip-watch="status_tooltip"
+                            data-original-title>
+                        </i>
+                        {{ job.name }}
+                    </div>
+                    <div class="JobResults-badgeAndActionRow">
+                        <!-- HEADER COUNTS -->
+                        <div class="JobResults-badgeRow">
+                            <!-- ELAPSED TIME -->
+                            <div class="JobResults-badgeTitle">Elapsed</div>
+                            <span class="badge List-titleBadge">
+                                {{ job.elapsed * 1000 | duration: "hh:mm:ss" }}
+                            </span>
+                        </div>
+
+                        <!-- HEADER ACTIONS -->
+                        <div class="StandardOut-panelHeaderActions">
+
+                            <!-- FULL-SCREEN TOGGLE ACTION -->
+                            <button class="StandardOut-actionButton"
+                                data-tip-watch="toggleStdoutFullscreenTooltip"
+                                data-placement="top"
+                                ng-class="{'StandardOut-actionButton--active': stdoutFullScreen}"
+                                ng-click="toggleStdoutFullscreen()">
+                                <i class="fa fa-arrows-alt"></i>
+                            </button>
+
+                            <!-- DOWNLOAD ACTION -->
+                            <a ng-show="job.status === 'failed' ||
+                                job.status === 'successful' ||
+                                job.status === 'canceled'"
+                                href="/api/v1/jobs/{{ job.id }}/stdout/?format=txt_download">
+                                <button class="StandardOut-actionButton"
+                                    aw-tool-tip="{{ standardOutTooltip }}"
+                                    data-tip-watch="standardOutTooltip"
+                                    data-placement="top">
+                                    <i class="fa fa-download"></i>
+                                </button>
+                            </a>
+
+                        </div>
+                    </div>
+                </div>
+                <job-results-standard-out></job-results-standard-out>
+            </div>
+
+        </div>
+    </div>
+  </div>
+</div>

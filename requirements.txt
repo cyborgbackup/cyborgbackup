@@ -13,6 +13,7 @@ django-polymorphic==2.0.2
 django-qsstats-magic==1.0.0
 django-rest-swagger==2.1.2
 djangorestframework==3.9.1
+django-rest-passwordreset==1.1.0
 kombu==4.2.2.post1
 celery==4.2.1
 redis==2.10.6
@@ -40,10 +41,9 @@ ansiconv
 tzcron
 elasticsearch==6.3.1
 elasticsearch-dsl>=6.0.0,<7.0.0
-#django-elasticsearch-dsl==0.5.1
 django-elasticsearch-dsl==6.4.2
-#django-elasticsearch-dsl-drf==0.17.4
-git+git://github.com/GaetanF/django-elasticsearch-dsl-drf@master#egg=django-elasticsearch-dsl-drf
+django-elasticsearch-dsl-drf>=0.20.6
 django-debug-toolbar==1.11
 django-debug-toolbar-force==0.1.4
 django-elasticsearch-debug-toolbar==1.2.0
+djangorestframework-simplejwt

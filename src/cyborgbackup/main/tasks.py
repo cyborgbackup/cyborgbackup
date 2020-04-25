@@ -1155,10 +1155,6 @@ class RunJob(BaseTask):
         Build command line argument list for running the task,
         optionally using ssh-agent for public/private key authentication.
         '''
-        # creds = None
-
-        # if creds:
-        #    ssh_username = kwargs.get('username', creds.username)
         env = self.build_env(job, **kwargs)
         if job.job_type == 'check':
             agentUsers = User.objects.filter(is_agent=True)
@@ -1366,6 +1362,10 @@ class RunJob(BaseTask):
                     args += ['--keep-monthly={}'.format(job.policy.keep_monthly)]
                 if job.policy.keep_yearly and job.policy.keep_yearly > 0:
                     args += ['--keep-monthly={}'.format(job.policy.keep_yearly)]
+        elif job.job_type == 'restore':
+            if job.client_id:
+                prefix = '{}-{}-'.format(job.policy.policy_type, job.client.hostname)
+                args = ['borg', 'extract', '-v', '--list']
         else:
             (client, client_user, args) = self.build_borg_cmd(job)
             handle_env, path_env = tempfile.mkstemp()
@@ -1420,6 +1420,7 @@ class RunJob(BaseTask):
 # mysql
 #   pull => ssh root@client "mysqldump | borg create borg@backupHost:/backup::archive -"
 #   push => ssh borg@backupHost "ssh root@client "mysqldump" | borg create /backup::archive -"
+#
 # pgsql
 #   pull => ssh root@client "pg_dumpall|pg_dump | borg create borg@backupHost:/backup::archive -"
 #   push => ssh borg@backupHost "ssh root@client "pg_dumpall|pg_dump" | borg create /backup::archive -"

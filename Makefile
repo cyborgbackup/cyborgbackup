@@ -121,9 +121,12 @@ cyborgbackup-ui:
 	$(MAKE) -C $(UI_DIR)
 
 cyborgbackup-docker-build:
-	docker build -t cyborgbackup:latest .
+	docker build -t cyborgbackup/cyborgbackup:latest .
 
 docker-compose-up: initenv
 	docker-compose up -d
+
+docker-compose-dev:
+	docker-compose -f tools/docker-compose-dev/docker-compose.yml --project-directory . up
 
 docker: cyborgbackup-ui cyborgbackup-docker-build

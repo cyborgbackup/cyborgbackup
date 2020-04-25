@@ -21,6 +21,8 @@ from rest_framework import validators
 from polymorphic.models import PolymorphicModel
 
 # cyborgbackup
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+
 from cyborgbackup.main.constants import ANSI_SGR_PATTERN
 from cyborgbackup.main.models.events import JobEvent
 from cyborgbackup.main.models.clients import Client
@@ -57,7 +59,7 @@ SUMMARIZABLE_FK_FIELDS = {
     'application': ('id', 'name', 'client_id'),
     'job': ('id', 'name', 'status', 'failed', 'elapsed'),
     'policy': ('id', 'name', 'policy_type'),
-    'client': ('id', 'hostname'),
+    'client': ('id', 'hostname', 'bandwidth_limit'),
     'repository': ('id', 'name', 'path', 'enabled'),
     'schedule': ('id', 'name', 'crontab', 'enabled')
 }
@@ -871,8 +873,18 @@ class ClientSerializer(BaseSerializer):
 
     class Meta:
         model = Client
-        fields = ('*', '-name', '-description', 'hostname', 'ip',
+        fields = ('*', '-name', '-description', 'hostname', 'ip', 'bandwidth_limit',
                   'version', 'ready', 'hypervisor_ready', 'hypervisor_name', 'enabled', 'uuid')
+
+    def get_summary_fields(self, obj):
+        summary_dict = super(ClientSerializer, self).get_summary_fields(obj)
+        relPolicies = Policy.objects.filter(clients__id=obj.pk)
+        if relPolicies.exists():
+            summary_dict['policies'] = []
+            for pol in relPolicies:
+                summary_dict['policies'].append({'id': pol.id, 'name': pol.name})
+
+        return summary_dict
 
 
 class ClientListSerializer(ClientSerializer):
@@ -965,7 +977,8 @@ class PolicySerializer(BaseSerializer):
         fields = ('*', 'id', 'uuid', 'url', 'name', 'extra_vars',
                   'clients', 'repository', 'schedule', 'policy_type', 'keep_hourly',
                   'keep_yearly', 'keep_daily', 'keep_weekly', 'keep_monthly',
-                  'vmprovider', 'next_run', 'mode_pull', 'enabled', 'created', 'modified')
+                  'vmprovider', 'next_run', 'mode_pull', 'enabled', 'created', 'modified',
+                  'prehook', 'posthook')
 
     def get_related(self, obj):
         res = super(PolicySerializer, self).get_related(obj)
@@ -1032,6 +1045,26 @@ class PolicyVMModuleSerializer(EmptySerializer):
     modules = serializers.SerializerMethodField()
 
 
+class RestoreLaunchSerializer(BaseSerializer):
+    defaults = serializers.SerializerMethodField()
+    extra_vars = serializers.JSONField(required=False, write_only=True)
+    verbosity = serializers.IntegerField(required=False, initial=0, min_value=0, max_value=4, write_only=True)
+
+    class Meta:
+        model = Job
+        fields = ('defaults', 'extra_vars', 'verbosity')
+
+    def get_defaults(self, obj):
+        defaults_dict = {'verbosity': 0, 'extra_vars': obj.extra_vars}
+        return defaults_dict
+
+    def get_job_template_data(self, obj):
+        return dict(name=obj.name, id=obj.id, description=obj.description)
+
+    def validate_extra_vars(self, value):
+        return vars_validate_or_raise(value)
+
+
 class CatalogSerializer(BaseSerializer):
 
     class Meta:
@@ -1060,3 +1093,15 @@ class CatalogListSerializer(DynamicFieldsSerializerMixin, CatalogSerializer):
 
 class StatsSerializer(EmptySerializer):
     stats = serializers.ListField(serializers.SerializerMethodField())
+
+
+class CyborgTokenObtainPairSerializer(TokenObtainPairSerializer):
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+        # Add custom claims
+        token['email'] = user.email
+        token['first_name'] = user.first_name
+        token['last_name'] = user.last_name
+
+        return token

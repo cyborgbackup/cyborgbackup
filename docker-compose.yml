@@ -5,14 +5,21 @@ services:
     image: postgres:latest
     volumes:
       - postgres_data:/var/lib/postgresql/data/
+    labels:
+      - "traefik.enable=false"
     env_file:
       - .env
     ports:
       - "5432:5432"
   rabbitmq:
-    image: "rabbitmq"
+    image: rabbitmq:management
     env_file:
       - .env
+    labels:
+      - "traefik.http.routers.cyborg-rabbitmq.rule=Host(`cyborg-rabbitmq.docker0.ferez.fr`)"
+      - "traefik.http.routers.cyborg-rabbitmq.entrypoints=https"
+      - "traefik.http.routers.cyborg-rabbitmq.tls.certresolver=letsencrypt"
+      - "traefik.http.services.cyborg-rabbitmq.loadbalancer.server.port=15672"
     ports:
       - "5672:5672"
       - "15672:15672"
@@ -21,6 +28,8 @@ services:
     command: bash -c "python /cyborgbackup/manage.py run_callback_receiver -v 3"
     env_file:
       - .env
+    labels:
+      - "traefik.enable=false"
     depends_on:
       - postgres
       - rabbitmq
@@ -29,12 +38,18 @@ services:
     command: bash -c 'python /cyborgbackup/manage.py runworker --only-channels websocket.*'
     env_file:
       - .env
+    labels:
+      - "traefik.enable=false"
     depends_on:
       - postgres
       - rabbitmq
   web:
     image: cyborgbackup/cyborgbackup:latest
     command: bash -c "python /cyborgbackup/manage.py migrate --noinput && python /cyborgbackup/manage.py runserver 0.0.0.0:8000"
+    labels:
+      - "traefik.http.routers.cyborg.rule=Host(`cyborg.docker0.ferez.fr`)"
+      - "traefik.http.routers.cyborg.entrypoints=https"
+      - "traefik.http.routers.cyborg.tls.certresolver=letsencrypt"
     env_file:
       - .env
     ports:
@@ -47,6 +62,8 @@ services:
     command: celery -A cyborgbackup worker -E -c 1
     env_file:
       - .env
+    labels:
+      - "traefik.enable=false"
     depends_on:
       - postgres
       - rabbitmq
@@ -55,9 +72,26 @@ services:
     command: celery -A cyborgbackup beat
     env_file:
       - .env
+    labels:
+      - "traefik.enable=false"
     depends_on:
       - postgres
       - rabbitmq
+  elasticsearch:
+    image: elasticsearch:6.8.4
+    restart: always
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+    ports:
+      - 9200:9200
+    environment:
+      - discovery.type=single-node
+  gulpwatch:
+    image: node:8.16.2
+    command: bash -c "cd /src/cyborgbackup/ui/src && make watch"
+    volumes:
+      - ./src:/src
 
 volumes:
   postgres_data:
+  esdata:
