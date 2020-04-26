@@ -67,6 +67,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework',
     'rest_framework.authtoken',
+    'rest_framework_swagger',
     'channels',
     'django_elasticsearch_dsl',
     'django_elasticsearch_dsl_drf',

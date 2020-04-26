@@ -83,10 +83,11 @@ class SwaggerSchemaView(APIView):
                         schema._data.setdefault(topic, Object())
                         schema._data[topic]._data[path] = node
 
-                    if isinstance(action, Object):
-                        for link in action.links.values():
-                            if link.deprecated:
-                                _deprecated.append(link.url)
+                    # if isinstance(action, Object):
+                    #     for link in action.links.values():
+                    #         if link.deprecated:
+                    #             _deprecated.append(link.url)
+
             elif isinstance(node, Link):
                 topic = getattr(node, 'topic', None)
                 if topic:
