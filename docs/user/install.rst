@@ -69,3 +69,12 @@ To use CyBorgBackup container with Docker, launch the following command::
 
     $ make docker
     $ make docker-compose-up
+
+
+Connect to the interface
+------------------------
+
+Account default is :
+
+- admin@cyborg.local
+- admin
