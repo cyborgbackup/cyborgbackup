@@ -575,7 +575,7 @@ class ClientDetail(RetrieveUpdateDestroyAPIView):
         obj = self.get_object()
         logger.debug(request.data)
 
-        serializer = self.serializer_class(data=request.data, context={'client': obj})
+        serializer = self.serializer_class(obj, data=request.data, partial=True)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
