@@ -17,6 +17,7 @@ from celery.schedules import crontab
 from kombu import Queue, Exchange
 from kombu.common import Broadcast
 from corsheaders.defaults import default_headers
+from cyborgbackup.main.utils.common import get_ssh_version
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -417,3 +418,5 @@ ELASTICSEARCH_DSL = {
         'hosts': 'elasticsearch:9200'
     },
 }
+
+SSH_VERSION = get_ssh_version()

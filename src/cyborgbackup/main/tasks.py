@@ -889,7 +889,7 @@ class BaseTask(LogErrorsTask):
         private_data = self.build_private_data(instance, **kwargs)
         private_data_files = {'credentials': {}}
         if private_data is not None:
-            ssh_ver = get_ssh_version()
+            ssh_ver = settings.SSH_VERSION
             ssh_too_old = True if ssh_ver == "unknown" else Version(ssh_ver) < Version("6.0")
             openssh_keys_supported = ssh_ver != "unknown" and Version(ssh_ver) >= Version("6.5")
             for sets, data in private_data.get('credentials', {}).items():
