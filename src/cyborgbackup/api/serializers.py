@@ -1047,15 +1047,19 @@ class PolicyVMModuleSerializer(EmptySerializer):
 
 class RestoreLaunchSerializer(BaseSerializer):
     defaults = serializers.SerializerMethodField()
-    extra_vars = serializers.JSONField(required=False, write_only=True)
+    archive_name = serializers.CharField(required=True, write_only=True)
+    destination = serializers.CharField(required=True, write_only=True)
+    dest_folder = serializers.CharField(required=True, write_only=True)
+    dry_run = serializers.BooleanField(required=False, initial=False, write_only=True)
+    item = serializers.CharField(required=False, write_only=True)
     verbosity = serializers.IntegerField(required=False, initial=0, min_value=0, max_value=4, write_only=True)
 
     class Meta:
         model = Job
-        fields = ('defaults', 'extra_vars', 'verbosity')
+        fields = ('defaults', 'archive_name', 'destination', 'dest_folder', 'dry_run', 'item', 'verbosity')
 
     def get_defaults(self, obj):
-        defaults_dict = {'verbosity': 0, 'extra_vars': obj.extra_vars}
+        defaults_dict = {'verbosity': 0, 'archive_name': '', 'destination': '', 'dest_folder': '', 'dry_run': False, 'item': ''}
         return defaults_dict
 
     def get_job_template_data(self, obj):

@@ -31,6 +31,7 @@ from django.conf import settings
 from django.db import transaction, DatabaseError
 from django.utils.timezone import now
 # from django.contrib.auth.models import User
+from django.core import management
 from django.core.cache import cache
 from django.core.exceptions import ObjectDoesNotExist
 from django_pglocks import advisory_lock as django_pglocks_advisory_lock
@@ -501,29 +502,6 @@ def compute_borg_size(self):
 
 
 @shared_task(bind=True, base=LogErrorsTask)
-def cyborgbackup_get_archive_name(self):
-    logger.debug('Get Archive name from Job stdout')
-    jobs = Job.objects.filter(archive_name__isnull=True,
-                              status='successful',
-                              job_type='job').order_by('-finished')
-    if jobs.exists():
-        for job in jobs:
-            job_events = JobEvent.objects.filter(
-                job=job.pk,
-                stdout__contains="Archive name: {}".format(
-                    job.policy.policy_type
-                )
-            )
-            archive_name = None
-            if job_events.exists():
-                job_stdout = job_events.first().stdout
-                archive_name = job_stdout.split(':')[1].strip()
-            if archive_name:
-                job.archive_name = archive_name
-                job.save()
-
-
-@shared_task(bind=True, base=LogErrorsTask)
 def cyborgbackup_notifier(self, type, *kwargs):
     logger.debug('CyBorgBackup Notifier')
     users = None
@@ -639,17 +617,13 @@ def cyborgbackup_notifier(self, type, *kwargs):
 @shared_task(bind=True, base=LogErrorsTask)
 def prune_catalog(self):
     logger.debug('Prune deleted archive in Catalog')
-    jobs = Job.objects.filter(status='successful', job_type='prune', pruned=False).order_by('-finished')
-    if jobs.exists():
-        for job in jobs:
-            events = JobEvent.objects.filter(job_id=job.pk).order_by('-counter')
-            for event in events:
-                prg = re.compile(r"Pruning\sarchive:\s([^\s]*)\s.*")
-                m = prg.match(event.stdout)
-                if m:
-                    Catalog.objects.filter(archive_name=m.group(1)).delete()
-            job.pruned = True
-            job.save()
+    if not Job.objects.filter(status='running').exists():
+        try:
+            """Cleanup Jobs by using Django management command."""
+            management.call_command("cleanup_jobs", verbosity=0)
+            return "success"
+        except Exception as e:
+            print(e)
 
 
 @shared_task(bind=True, base=LogErrorsTask)
@@ -889,14 +863,6 @@ class BaseTask(LogErrorsTask):
         private_data = self.build_private_data(instance, **kwargs)
         private_data_files = {'credentials': {}}
         if private_data is not None:
-            ssh_ver = settings.SSH_VERSION
-            ssh_too_old = True if ssh_ver == "unknown" else Version(ssh_ver) < Version("6.0")
-            openssh_keys_supported = ssh_ver != "unknown" and Version(ssh_ver) >= Version("6.5")
-            for sets, data in private_data.get('credentials', {}).items():
-                # Bail out now if a private key was provided in OpenSSH format
-                # and we're running an earlier version (<6.5).
-                if 'OPENSSH PRIVATE KEY' in data and not openssh_keys_supported:
-                    raise RuntimeError(OPENSSH_KEY_ERROR)
             listpaths = []
             for sets, data in private_data.get('credentials', {}).items():
                 # OpenSSH formatted keys must have a trailing newline to be
@@ -905,7 +871,7 @@ class BaseTask(LogErrorsTask):
                     data += '\n'
                 # For credentials used with ssh-add, write to a named pipe which
                 # will be read then closed, instead of leaving the SSH key on disk.
-                if sets and not ssh_too_old:
+                if sets:
                     name = 'credential_{}'.format(sets.key)
                     path = os.path.join(kwargs['private_data_dir'], name)
                     run.open_fifo_write(path, data)
@@ -1363,9 +1329,13 @@ class RunJob(BaseTask):
                 if job.policy.keep_yearly and job.policy.keep_yearly > 0:
                     args += ['--keep-monthly={}'.format(job.policy.keep_yearly)]
         elif job.job_type == 'restore':
+            logger.debug(job.extra_vars)
+            logger.debug(job.extra_vars_dict)
             if job.client_id:
-                prefix = '{}-{}-'.format(job.policy.policy_type, job.client.hostname)
-                args = ['borg', 'extract', '-v', '--list']
+                args = ['mkdir', '-p', job.extra_vars_dict['dest_folder'], '&&', 'cd', job.extra_vars_dict['dest_folder'],
+                        '&&', 'borg', 'extract', '-v', '--list', '{}::{}'.format(job.policy.repository.path, job.archive_name),
+                        job.extra_vars_dict['item'], '-n' if job.extra_vars_dict['dry_run'] else '']
+                logger.debug(' '.join(args))
         else:
             (client, client_user, args) = self.build_borg_cmd(job)
             handle_env, path_env = tempfile.mkstemp()

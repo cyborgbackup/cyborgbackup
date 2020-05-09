@@ -208,7 +208,7 @@ class Command(BaseCommand):
                               }
                             }]}}}
                             res = es.search(index="catalog", body=search_object)
-                            if res['hits']['total'] == 0:
+                            if res['hits']['total']['value'] == 0:
                                 lines = self.launch_command(["borg",
                                                              "list",
                                                              "--json-lines",
@@ -238,10 +238,10 @@ class Command(BaseCommand):
                                              }
                                         }]}}}
                                         res = es.search(index="catalog", body=search_object)
-                                        if res['hits']['total'] == 0:
+                                        if res['hits']['total']['value'] == 0:
                                             print("Insert {} {}".format(job.archive_name, data['path']))
                                             data = json.loads(line)
-                                            es.index(index='catalog', doc_type='entry', body={
+                                            es.index(index='catalog', doc_type='_doc', body={
                                                 'path': data['path'],
                                                 'job': job.pk,
                                                 'archive_name': job.archive_name,

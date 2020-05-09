@@ -290,3 +290,23 @@ class Policy(PrimordialModel):
         jobs[0].status = 'new'
         jobs[0].save()
         return jobs[0]
+
+    def create_restore_job(self, source_job, **kwargs):
+        job_class = self._get_job_class()
+        fields = ('extra_vars', )
+        unallowed_fields = set(kwargs.keys()) - set(fields)
+        if unallowed_fields:
+            logger.warn('Fields {} are not allowed as overrides.'.format(unallowed_fields))
+            map(kwargs.pop, unallowed_fields)
+
+        job = copy_model_by_class(self, job_class, fields, kwargs)
+        job.launch_type = 'manual'
+        job.job_type = 'restore'
+        job.policy_id = self.pk
+        job.client_id = source_job.client.pk
+        job.archive_name = source_job.archive_name
+        job.status = 'waiting'
+        job.name = "Restore Job {} {}".format(self.name, source_job.client.hostname)
+        job.description = "Restore Job for Policy {} of client {}".format(self.name, source_job.client.hostname)
+        job.save()
+        return job

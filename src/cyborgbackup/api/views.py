@@ -730,28 +730,44 @@ class PolicyLaunch(RetrieveAPIView):
         return sanitized_data
 
 
-class RestoreLaunch(RetrieveAPIView):
+class RestoreLaunch(ListCreateAPIView):
 
     model = Job
     serializer_class = RestoreLaunchSerializer
 
-    def post(self, request, *args, **kwargs):
-        obj = self.get_object()
+    def list(self, request, *args, **kwargs):
+        data = []
+        return Response(data)
 
-        serializer = self.serializer_class(data=request.data, context={'job': obj})
+    def create(self, request, *args, **kwargs):
+        result = None
+        serializer = self.serializer_class(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        for client in obj.clients.all():
-            jobs = Job.objects.filter(client=client.pk)
-            if jobs.exists():
-                for job in jobs:
-                    if job.status in ['waiting', 'pending', 'running']:
-                        return Response({'detail': 'Backup job already running for theses clients.'},
+        obj = serializer.validated_data
+        jobs = Job.objects.filter(archive_name=obj['archive_name'])
+        if jobs.exists():
+            job = jobs[0]
+            client = job.client
+
+            jobs_client = Job.objects.filter(client=client.pk)
+            if jobs_client.exists():
+                for job_client in jobs_client:
+                    if job_client.status in ['waiting', 'pending', 'running']:
+                        return Response({'detail': 'Backup job already running for this client.'},
                                         status=status.HTTP_400_BAD_REQUEST)
 
-        new_job = obj.create_job(**serializer.validated_data)
-        result = new_job.signal_start()
+            extra_vars = {
+                'item': serializer.validated_data['item'],
+                'dest': serializer.validated_data['destination'],
+                'dry_run': serializer.validated_data['dry_run'],
+                'dest_folder': serializer.validated_data['dest_folder']
+            }
+
+            new_job = job.policy.create_restore_job(source_job=job, extra_vars=extra_vars)
+
+            result = new_job.signal_start()
 
         if not result:
             data = OrderedDict()

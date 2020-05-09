@@ -70,7 +70,7 @@ class DependencyGraph(object):
         map(lambda j: self.add_job(j), jobs)
 
 
-class TaskManager():
+class TaskManager:
 
     def __init__(self):
         self.graph = dict()

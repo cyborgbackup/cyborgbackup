@@ -101,3 +101,6 @@ class Catalog(PrimordialModel):
     @classmethod
     def get_cache_id_key(self, key):
         return '{}_ID'.format(key)
+
+    def __str__(self):
+        return 'catalog'

@@ -17,7 +17,6 @@ from celery.schedules import crontab
 from kombu import Queue, Exchange
 from kombu.common import Broadcast
 from corsheaders.defaults import default_headers
-from cyborgbackup.main.utils.common import get_ssh_version
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -75,6 +74,7 @@ INSTALLED_APPS = [
     'django_rest_passwordreset',
     'debug_toolbar',
     'elastic_panel',
+    'cyborgbackup.elasticsearch',
     'cyborgbackup.ui',
     'cyborgbackup.api',
     'cyborgbackup.main'
@@ -136,8 +136,10 @@ ROOT_URLCONF = 'cyborgbackup.urls'
 CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_HEADERS = list(default_headers) + [
     'access-control-allow-methods',
-    'access-control-allow-origin'
+    'access-control-allow-origin',
+    'cookies'
 ]
+
 
 TEMPLATES = [
     {
@@ -395,14 +397,9 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': timedelta(seconds=10),
         'options': {'expires': 20}
     },
-    'cyborgbackup_get_archivename': {
-        'task': 'cyborgbackup.main.tasks.cyborgbackup_get_archive_name',
-        'schedule': timedelta(seconds=10),
-        'options': {'expires': 20}
-    },
     'cyborgbackup_prune_catalog': {
         'task': 'cyborgbackup.main.tasks.prune_catalog',
-        'schedule': timedelta(seconds=30),
+        'schedule': crontab(minute='30'),
         'options': {'expires': 20}
     },
     'task_manager': {
@@ -415,8 +412,6 @@ CELERY_BEAT_SCHEDULE = {
 ACTIVITY_STREAM_ENABLED = False
 ELASTICSEARCH_DSL = {
     'default': {
-        'hosts': 'elasticsearch:9200'
+        'hosts': '{}'.format(os.environ.get("ELASTICSEARCH_HOST", "localhost:9200"))
     },
 }
-
-SSH_VERSION = get_ssh_version()
