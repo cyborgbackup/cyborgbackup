@@ -31,6 +31,7 @@ from cyborgbackup.main.utils.common import (get_object_or_400, camelcase_to_unde
                                             getattrd, get_all_field_names, get_search_fields)
 from cyborgbackup.api.versioning import URLPathVersioning, get_request_version
 from cyborgbackup.api.metadata import SublistAttachDetatchMetadata
+from cyborgbackup.api.mixins import LoggingViewSetMixin
 
 __all__ = ['APIView', 'GenericAPIView', 'ListAPIView', 'SimpleListAPIView',
            'ListCreateAPIView', 'SubListAPIView', 'SubListCreateAPIView',
@@ -260,7 +261,7 @@ class APIView(views.APIView):
         return super(APIView, self).dispatch(request, *args, **kwargs)
 
 
-class GenericAPIView(generics.GenericAPIView, APIView):
+class GenericAPIView(LoggingViewSetMixin, generics.GenericAPIView, APIView):
     # Base class for all model-based views.
 
     # Subclasses should define:

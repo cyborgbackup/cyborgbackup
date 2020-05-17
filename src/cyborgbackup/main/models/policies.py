@@ -57,7 +57,8 @@ class Policy(PrimordialModel):
         ('piped', 'Piped Backup'),          # Backup using pipe program
         ('config', 'Only /etc'),            # Backup only /etc
         ('mail', 'Only mail directory'),    # Backup only mail directory
-        ('folders', 'Specified folders')    # Backup only specified folders
+        ('folders', 'Specified folders'),   # Backup only specified folders
+        ('proxmox', 'Proxmox')              # Backup only specified folders
     ]
 
     objects = PolicyManager()
@@ -287,9 +288,12 @@ class Policy(PrimordialModel):
                 previous_job = job
 
             jobs.append(job)
-        jobs[0].status = 'new'
-        jobs[0].save()
-        return jobs[0]
+        if len(jobs) > 0:
+            jobs[0].status = 'new'
+            jobs[0].save()
+            return jobs[0]
+        else:
+            return None
 
     def create_restore_job(self, source_job, **kwargs):
         job_class = self._get_job_class()

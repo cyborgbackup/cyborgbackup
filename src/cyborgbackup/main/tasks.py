@@ -1036,6 +1036,10 @@ class BaseTask(LogErrorsTask):
                     logger.exception('%s Exception occurred while running task', instance.log_format)
         finally:
             try:
+                shutil.rmtree(kwargs['private_data_dir'])
+            except Exception:
+                logger.exception('Error flushing Private Data dir')
+            try:
                 stdout_handle.flush()
                 stdout_handle.close()
                 event_ct = getattr(stdout_handle, '_event_ct', 0)
@@ -1164,7 +1168,7 @@ class RunJob(BaseTask):
                 args += ['\". ', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
                 args += ['rm', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
                 args += [os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path)),
-                         '; exicode=$?;',
+                         '; exitcode=$?;',
                          'rm',
                          '-rf',
                          env['PRIVATE_DATA_DIR'],
@@ -1210,7 +1214,7 @@ class RunJob(BaseTask):
                 args += ['\". ', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
                 args += ['rm', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
                 args += [os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_prepare)),
-                         '; exicode=$?;',
+                         '; exitcode=$?;',
                          'rm',
                          '-rf',
                          env['PRIVATE_DATA_DIR'],
@@ -1244,7 +1248,7 @@ class RunJob(BaseTask):
                 args += ['\". ', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
                 args += ['rm', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
                 args += [os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path)),
-                         '; exicode=$?;',
+                         '; exitcode=$?;',
                          'rm',
                          '-rf',
                          env['PRIVATE_DATA_DIR'],
@@ -1308,7 +1312,7 @@ class RunJob(BaseTask):
                 args += ['\". ', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
                 args += ['rm', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
                 args += [os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path)),
-                         '; exicode=$?;',
+                         '; exitcode=$?;',
                          'rm',
                          '-rf',
                          env['PRIVATE_DATA_DIR'],
@@ -1353,7 +1357,7 @@ class RunJob(BaseTask):
             new_args += ['{}@{}'.format(client_user, client)]
             new_args += ['\". ', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
             new_args += ['rm', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
-            new_args += [' '.join(args), '; exicode=$?;', 'rm', '-rf', env['PRIVATE_DATA_DIR'], '; exit $exitcode\"']
+            new_args += [' '.join(args), '; exitcode=$?;', 'rm', '-rf', env['PRIVATE_DATA_DIR'], '; exit $exitcode\"']
             args = new_args
         return args
 
@@ -1445,25 +1449,42 @@ class RunJob(BaseTask):
                 database_specify = False
                 if job.policy.extra_vars != '':
                     mysql_json = json.loads(job.policy.extra_vars)
-                    if 'user' in mysql_json and mysql_json['user']:
-                        piped += " -u{}".format(mysql_json['user'])
-                    if 'password' in mysql_json and mysql_json['password']:
-                        piped += " -p{}".format(mysql_json['password'])
-                    if 'databases' in mysql_json and mysql_json['databases']:
-                        database_specify = True
-                        if isinstance(mysql_json['databases'], list):
-                            piped += " --databases {}".format(' '.join(mysql_json['databases']))
-                        else:
-                            piped += " {}".format(mysql_json['databases'])
+                    if 'extended_mysql' in mysql_json and str(job.client.pk) in mysql_json['extended_mysql'].keys():
+                        vars = mysql_json['extended_mysql'][str(job.client.pk)]
+                        if 'user' in vars['credential'] and vars['credential']['user']:
+                            piped += " -u{}".format(vars['credential']['user'])
+                        if 'password' in vars['credential'] and vars['credential']['password']:
+                            piped += " -p{}".format(vars['credential']['password'])
+                        if 'databases' in vars and vars['databases']:
+                            database_specify = True
+                            piped += " --databases {}".format(' '.join(vars['databases']))
+                    else:
+                        if 'user' in mysql_json and mysql_json['user']:
+                            piped += " -u{}".format(mysql_json['user'])
+                        if 'password' in mysql_json and mysql_json['password']:
+                            piped += " -p{}".format(mysql_json['password'])
+                        if 'databases' in mysql_json and mysql_json['databases']:
+                            database_specify = True
+                            if isinstance(mysql_json['databases'], list):
+                                piped += " --databases {}".format(' '.join(mysql_json['databases']))
+                            else:
+                                piped += " {}".format(mysql_json['databases'])
+
                 if not database_specify:
                     piped += " --all-databases"
             if policy_type == 'postgresql':
                 database_specify = False
                 if job.policy.extra_vars != '':
                     pgsql_json = json.loads(job.policy.extra_vars)
-                    if 'database' in pgsql_json and pgsql_json['database']:
-                        database_specify = True
-                        piped += 'sudo -u postgres pg_dump {}'.format(pgsql_json['database'])
+                    if 'extended_postgresql' in pgsql_json and str(job.client.pk) in pgsql_json['extended_postgresql'].keys():
+                        vars = pgsql_json['extended_postgresql'][str(job.client.pk)]
+                        if 'databases' in vars and vars['databases']:
+                            database_specify = True
+                            piped += " --databases {}".format(' '.join(vars['databases']))
+                    else:
+                        if 'database' in pgsql_json and pgsql_json['database']:
+                            database_specify = True
+                            piped += 'sudo -u postgres pg_dump {}'.format(pgsql_json['database'])
                 if not database_specify:
                     piped += 'sudo -u postgres pg_dumpall'
             if policy_type == 'piped':
@@ -1484,6 +1505,16 @@ class RunJob(BaseTask):
             client_hostname = client
             piped_list = ['/var/cache/cyborgbackup/borg_backup_vm']
             piped = ' '.join(piped_list)
+            if not job.policy.mode_pull:
+                args = [piped, '|']+args
+        if policy_type == 'proxmox':
+            path = '-'
+            proxmox_json = json.loads(job.policy.extra_vars)
+            piped = 'vzdump --mode snapshot --stdout true '
+            if 'extended_proxmox' in proxmox_json.keys() and str(job.client.pk) in proxmox_json['extended_proxmox'].keys():
+                piped += ' '.join(str(x) for x in proxmox_json['extended_proxmox'][str(job.client.pk)])
+            else:
+                piped += '--all'
             if not job.policy.mode_pull:
                 args = [piped, '|']+args
         args += ['{}::{}-{}-{}'.format(repositoryPath, policy_type, archive_client_name, jobDateString)]

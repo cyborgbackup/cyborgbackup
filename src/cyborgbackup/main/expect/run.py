@@ -126,7 +126,7 @@ def run_pexpect(args, cwd, env, logfile,
 
     job_start = time.time()
     while child.isalive():
-        result_id = child.expect(password_patterns, timeout=pexpect_timeout, searchwindowsize=150)
+        result_id = child.expect(password_patterns, timeout=pexpect_timeout, searchwindowsize=200)
         password = password_values[result_id]
         if password is not None:
             child.sendline(password)

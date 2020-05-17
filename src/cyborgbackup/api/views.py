@@ -48,6 +48,7 @@ from cyborgbackup.main.models.users import User
 from cyborgbackup.main.models.settings import Setting
 from cyborgbackup.main.utils.common import get_module_provider, camelcase_to_underscore, get_cyborgbackup_version
 from cyborgbackup.main.utils.callbacks import CallbackQueueDispatcher
+from cyborgbackup.main.modules import Querier
 from cyborgbackup.api.renderers import (BrowsableAPIRenderer, PlainTextRenderer,
                                         DownloadTextRenderer, AnsiDownloadRenderer, AnsiTextRenderer)
 from cyborgbackup.api.serializers import (EmptySerializer, UserSerializer,
@@ -56,7 +57,7 @@ from cyborgbackup.api.serializers import (EmptySerializer, UserSerializer,
                                           SettingSerializer, SettingListSerializer,
                                           ClientSerializer, ClientListSerializer, ScheduleSerializer,
                                           ScheduleListSerializer, RepositorySerializer, RepositoryListSerializer,
-                                          PolicySerializer, PolicyLaunchSerializer,
+                                          PolicySerializer, PolicyLaunchSerializer, PolicyModuleSerializer,
                                           PolicyCalendarSerializer, PolicyVMModuleSerializer,
                                           CatalogSerializer, CatalogListSerializer, StatsSerializer,
                                           CyborgTokenObtainPairSerializer, RestoreLaunchSerializer)
@@ -645,6 +646,34 @@ class PolicyVMModule(ListAPIView):
     def list(self, request, *args, **kwargs):
         data = get_module_provider()
         return Response(data)
+
+
+class PolicyModule(ListCreateAPIView):
+
+    model = Policy
+    serializer_class = PolicyModuleSerializer
+
+    def callModule(self, request, args, kwargs):
+        module = kwargs['module']
+        client_id = kwargs['client']
+        data = {}
+        if module == 'vm':
+            data = get_module_provider()
+        else:
+            client = Client.objects.get(pk=client_id)
+            if client:
+                q = Querier()
+                params = {**request.query_params.dict(), **request.data}
+                data = q.querier(module, client, params)
+                if data == -1:
+                    return Response({}, status=status.HTTP_204_NO_CONTENT)
+        return Response(data)
+
+    def list(self, request, *args, **kwargs):
+        return self.callModule(request, args, kwargs)
+
+    def post(self, request, *args, **kwargs):
+        return self.callModule(request, args, kwargs)
 
 
 class PolicyCalendar(ListAPIView):

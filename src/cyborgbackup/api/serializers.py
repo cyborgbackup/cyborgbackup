@@ -1045,6 +1045,10 @@ class PolicyVMModuleSerializer(EmptySerializer):
     modules = serializers.SerializerMethodField()
 
 
+class PolicyModuleSerializer(EmptySerializer):
+    modules = serializers.SerializerMethodField()
+
+
 class RestoreLaunchSerializer(BaseSerializer):
     defaults = serializers.SerializerMethodField()
     archive_name = serializers.CharField(required=True, write_only=True)

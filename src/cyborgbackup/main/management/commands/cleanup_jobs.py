@@ -1,6 +1,7 @@
 import os
 import re
 import stat
+import shutil
 import tempfile
 from io import StringIO
 from collections import OrderedDict
@@ -180,6 +181,7 @@ class Command(BaseCommand):
         )
 
         lines = stdout_handle.getvalue().splitlines()
+        shutil.rmtree(kwargs['private_data_dir'])
         return lines
 
     def cleanup_jobs(self):

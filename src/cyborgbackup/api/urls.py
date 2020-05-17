@@ -18,6 +18,7 @@ from cyborgbackup.api.views import (
     PolicyDetail,
     PolicyLaunch,
     PolicyCalendar,
+    PolicyModule,
     PolicyVMModule,
     Stats,
     JobEventList,
@@ -80,6 +81,7 @@ policy_urls = [
     url(r'^(?P<pk>[0-9]+)/launch/$', PolicyLaunch.as_view(), name='policy_launch'),
     url(r'^(?P<pk>[0-9]+)/calendar/$', PolicyCalendar.as_view(), name='policy_calendar'),
     url(r'^vmmodule/$', PolicyVMModule.as_view(), name='policy_vmmodule'),
+    url(r'^module/(?P<module>[\w-]+)/(?P<client>[0-9]+)/$', PolicyModule.as_view(), name='policy_module'),
 ]
 
 stats_urls = [
