@@ -18,29 +18,10 @@ A debian package have been build with CyBorgBackup latest release and can be dow
 *Note* : Elactic search is not provided from Debian repositorie, you need to follow first 
 `elasticsearch documentation <https://www.elastic.co/guide/en/elasticsearch/reference/7.6/deb.html>`_.
 
-$ docker-compose up
+Docker
 -------------------
 
-To install CyBorgBackup under Docker, simply run this simple command in your terminal of choice::
-
-    $ wget https://raw.githubusercontent.com/cyborgbackup/cyborgbackup/master/docker-compose.yml
-    $ cat > .env <<EOF
-    POSTGRES_PASSWORD=cyborgbackup
-    POSTGRES_USER=cyborgbackup
-    POSTGRES_NAME=cyborgbackup
-    POSTGRES_HOST=postgres
-    RABBITMQ_DEFAULT_USER=cyborgbackup
-    RABBITMQ_DEFAULT_PASS=cyborgbackup
-    RABBITMQ_DEFAULT_VHOST=cyborgbackup
-    EOF
-    $ docker-compose up
-    $ docker-compose exec web /bin/bash
-    web$ python3 /cyborgbackup/manage.py loaddata settings
-    web$ echo "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.create_superuser('admin@cyborg.local', 'admin')" | python3 /cyborgbackup/manage.py shell
-    web$ exit
-
-
-If you don't have `docker-compose <https://docs.docker.com/compose/>`_ or `docker <https://www.docker.com/>`_ installed  head over to the website for installation instructions.
+Currently no ready-to-use docker images are available. Images will become available in the near future.
 
 Get the Source Code
 -------------------
