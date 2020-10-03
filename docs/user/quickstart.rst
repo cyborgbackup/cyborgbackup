@@ -44,7 +44,7 @@ are filled by the preparation script.
 
 A policy is the element who made the relation between each element. A policy
 have a schedule, a repository, a type, and some clients. We can also define
-the retention policy of each client backup.
+the retention policy of each client backup. They can also launch post ou pre hook.
 
 A job is the backup job based on a policy and a client. When you launch a backup
 job, the system create as many jobs as there are client defined in the policy.
@@ -144,6 +144,15 @@ mail
 The mail policy type will backup only the /var/mail or /var/lib/mail folder of the server.
 
 folders
+~~~~~~~
+
+The folders policy type will backup specified folder of the server.
+You need to specify extra vars with piped command::
+
+    {"folders":["folder1","folder2"]}
+
+
+proxmox
 ~~~~~~~
 
 The folders policy type will backup specified folder of the server.

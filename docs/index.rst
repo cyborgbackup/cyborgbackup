@@ -55,6 +55,10 @@ CyBorgBackup using the following tools ::
 - AngularJS framework
 - BorgBackup
 
+CyBorgBackup have been separated in two project ::
+
+- CyBorgBackup => The main API system
+- CyBorgBackup-UI => The Web Interface who can manage multiple CyBorgBackup servers
 
 The User Guide
 --------------

@@ -26,6 +26,12 @@ Features
 - Logs system
 - REST API
 
+MailingLists
+============
+
+Users => <users@lists.cyborgbackup.dev>
+
+Developers => <developers@lists.cyborgbackup.dev>
 
 .. |build| image:: https://travis-ci.org/cyborgbackup/cyborgbackup.svg?branch=master
 .. |readthedocs| image:: https://readthedocs.org/projects/cyborgbackup/badge/?version=latest

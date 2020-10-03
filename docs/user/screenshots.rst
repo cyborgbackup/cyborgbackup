@@ -16,3 +16,4 @@ CyBorgBackup ScreenShots
 .. image:: ../images/screen_13.png
 .. image:: ../images/screen_14.png
 .. image:: ../images/screen_15.png
+.. image:: ../images/screen_16.png

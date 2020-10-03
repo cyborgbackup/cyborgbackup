@@ -15,6 +15,11 @@ A debian package have been build with CyBorgBackup latest release and can be dow
     # wget https://api.github.com/repos/cyborgbackup/cyborgbackup/releases/latest -O - |grep -oP '"browser_download_url": "\K(.*)(?=")' |wget -i -
     # dpkg -i cyborgbackup_X.X.X_all.deb
 
+To add UI system :
+
+    # wget https://api.github.com/repos/cyborgbackup/cyborgbackup-ui/releases/latest -O - |grep -oP '"browser_download_url": "\K(.*)(?=")' |wget -i -
+    # dpkg -i cyborgbackup-ui_X.X.X_all.deb
+
 *Note* : Elactic search is not provided from Debian repositorie, you need to follow first
 `elasticsearch documentation <https://www.elastic.co/guide/en/elasticsearch/reference/7.6/deb.html>`_.
 
@@ -24,7 +29,7 @@ $ docker-compose up
 
 To install CyBorgBackup under Docker, simply run this simple command in your terminal of choice::
 
-    $ wget https://raw.githubusercontent.com/cyborgbackup/cyborgbackup/master/docker-compose.yml
+    $ wget https://raw.githubusercontent.com/cyborgbackup/cyborgbackup/master/docker-compose.full.yml
     $ cat > .env <<EOF
     POSTGRES_PASSWORD=cyborgbackup
     POSTGRES_USER=cyborgbackup
@@ -41,6 +46,7 @@ To install CyBorgBackup under Docker, simply run this simple command in your ter
     web$ exit
 
 
+You can now connect to interface using : http://localhost:8000
 If you don't have `docker-compose <https://docs.docker.com/compose/>`_ or `docker <https://www.docker.com/>`_ installed  head over to the website for installation instructions.
 
 Get the Source Code
@@ -58,6 +64,12 @@ Or, download the `tarball <https://github.com/cyborgbackup/cyborgbackup/tarball/
     $ curl -OL https://github.com/cyborgbackup/cyborgbackup/tarball/master
     # optionally, zipball is also available (for Windows users).
 
+The UI interface can be found on Github, the the code is `always available <https://github.com/cyborgbackup/cyborgbackup-ui>`_.
+And the public repository can be found at the following address::
+
+    $ git clone https://github.com/cyborgbackup/cyborgbackup-ui.git
+
+
 Depending of your system, CyBorgBackup need the following dependencies :
 
 - python3
@@ -68,7 +80,7 @@ Depending of your system, CyBorgBackup need the following dependencies :
 
 To use CyBorgBackup container with Docker, launch the following command::
 
-    $ make docker
+    $ make cyborgbackup-docker-build
     $ make docker-compose-up
 
 
