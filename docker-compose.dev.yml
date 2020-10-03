@@ -103,11 +103,6 @@ services:
       - 9200:9200
     environment:
       - discovery.type=single-node
-  gulpwatch:
-    image: node:8.16.2
-    command: bash -c "cd /src/cyborgbackup/ui/src && make watch"
-    volumes:
-      - ./src:/src
 
 volumes:
   postgres_data:
