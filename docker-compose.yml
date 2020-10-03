@@ -60,7 +60,6 @@ services:
       - rabbitmq
   elasticsearch:
     image: elasticsearch:6.8.4
-    restart: always
     volumes:
       - esdata:/usr/share/elasticsearch/data
     ports:
