@@ -24,11 +24,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v1
-      - name: npm install, build, and test
-        run: |
-          apt update
-          apt install -y make
-          make deb
+      - name: launch build package
+        run: make package
       - name: Build Debian package
         uses: dawidd6/action-debian-package@v1
         with:
