@@ -31,6 +31,8 @@ jobs:
           sudo make -f debian/rules binary
           sudo make -f debian/rules clean
           mkdir debian_output
+          ls -al
+          find .
           cp *.deb ./debian_output/
       - name: Build Debian package
         uses: dawidd6/action-debian-package@v1
