@@ -25,7 +25,13 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - name: launch build package
-        run: make package
+        run: |
+          sudo apt update
+          sudo apt install -y make  build-essential debhelper
+          make -f debian/rules binary
+          make -f debian/rules clean
+          mkdir debian_output
+          cp /*.deb ./debian_output/
       - name: Build Debian package
         uses: dawidd6/action-debian-package@v1
         with:
