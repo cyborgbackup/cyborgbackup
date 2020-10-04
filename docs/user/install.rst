@@ -11,7 +11,7 @@ Debian Package
 
 A debian package have been build with CyBorgBackup latest release and can be downloaded from Releases github page::
 
-    # apt install git postgresql-all elasticsearch rabbitmq-server python3-pip python3-virtualenv python3-setuptools python3-venv systemd nginx
+    # apt install git postgresql-all elasticsearch rabbitmq-server python3-pip python3-virtualenv python3-setuptools python3-venv systemd nginx git
     # wget https://api.github.com/repos/cyborgbackup/cyborgbackup/releases/latest -O - |grep -oP '"browser_download_url": "\K(.*)(?=")' |wget -i -
     # dpkg -i cyborgbackup_X.X.X_all.deb
 
