@@ -29,7 +29,7 @@ $ docker-compose up
 
 To install CyBorgBackup under Docker, simply run this simple command in your terminal of choice::
 
-    $ wget https://raw.githubusercontent.com/cyborgbackup/cyborgbackup/master/docker-compose.full.yml
+    $ wget https://raw.githubusercontent.com/cyborgbackup/cyborgbackup/master/docker-compose.full.yml -O docker-compose.yml
     $ cat > .env <<EOF
     POSTGRES_PASSWORD=cyborgbackup
     POSTGRES_USER=cyborgbackup

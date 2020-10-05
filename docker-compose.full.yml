@@ -69,7 +69,7 @@ services:
   ui:
     image: cyborgbackup/cyborgbackup-ui:latest
     depends_on:
-      - web
+      - api
 
 volumes:
   postgres_data:
