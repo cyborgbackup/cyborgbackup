@@ -69,6 +69,10 @@ And the public repository can be found at the following address::
 
     $ git clone https://github.com/cyborgbackup/cyborgbackup-ui.git
 
+To build the UI docker image run the following::
+    
+    $ docker build --no-cache --pull -t cyborgbackup/cyborgbackup-ui:latest .
+
 
 Depending of your system, CyBorgBackup need the following dependencies :
 
