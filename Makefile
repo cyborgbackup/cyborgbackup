@@ -19,8 +19,6 @@ RELEASE_VERSION=$(shell git describe --long --first-parent | sed 's@\([0-9.]\{1,
 COMPOSE_TAG ?= $(GIT_BRANCH)
 COMPOSE_HOST ?= $(shell hostname)
 
-UI_DIR = src/cyborgbackup/ui/src
-
 VENV_BASE ?= ./venv
 SCL_PREFIX ?=
 CELERY_SCHEDULE_FILE ?= /var/lib/cyborgbackup/beat.db
@@ -105,9 +103,6 @@ initenv:
 	echo "RABBITMQ_DEFAULT_PASS=cyborgbackup" >> .env
 	echo "RABBITMQ_DEFAULT_VHOST=cyborgbackup" >> .env
 
-ui-build:
-	$(MAKE) -C $(UI_DIR) node-build
-
 deb:
 	apt update && apt install -y build-essential debhelper
 	make -f debian/rules binary
@@ -116,9 +111,6 @@ deb:
 
 package:
 	docker run --rm -it -v ${CURDIR}:/src debian:latest /bin/bash -c 'cd /src && apt update && apt install -y make && make deb'
-
-cyborgbackup-ui:
-	$(MAKE) -C $(UI_DIR)
 
 cyborgbackup-docker-build:
 	docker build -t cyborgbackup/cyborgbackup:latest .
@@ -129,4 +121,4 @@ docker-compose-up: initenv
 docker-compose-dev:
 	docker-compose -f tools/docker-compose-dev/docker-compose.yml --project-directory . up
 
-docker: cyborgbackup-ui cyborgbackup-docker-build
+docker: cyborgbackup-docker-build
