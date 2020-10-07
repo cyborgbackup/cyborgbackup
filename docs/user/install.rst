@@ -3,31 +3,30 @@
 Installation of CyBorgBackup
 ============================
 
-This part of the documentation covers the installation of CyBorgBackup.
-The first step to using any software package is getting it properly installed.
+The following covers three different installation methods of CyBorgBackup.
 
 Debian Package
 --------------
 
-A debian package have been build with CyBorgBackup latest release and can be downloaded from Releases github page::
+The latest release of CyBorgBackup is available as a Debian package and can be downloaded from github releases page::
 
     # apt install git postgresql-all elasticsearch rabbitmq-server python3-pip python3-virtualenv python3-setuptools python3-venv systemd nginx git
     # wget https://api.github.com/repos/cyborgbackup/cyborgbackup/releases/latest -O - |grep -oP '"browser_download_url": "\K(.*)(?=")' |wget -i -
     # dpkg -i cyborgbackup_X.X.X_all.deb
 
-To add UI system :
+To add UI system::
 
     # wget https://api.github.com/repos/cyborgbackup/cyborgbackup-ui/releases/latest -O - |grep -oP '"browser_download_url": "\K(.*)(?=")' |wget -i -
     # dpkg -i cyborgbackup-ui_X.X.X_all.deb
 
-*Note* : Elactic search is not provided from Debian repositorie, you need to follow first
+*Note* : Elactic search is not provided by the Debian repository, you need to follow
 `elasticsearch documentation <https://www.elastic.co/guide/en/elasticsearch/reference/7.6/deb.html>`_.
 
 
-$ docker-compose up
--------------------
+Docker Install
+--------------
 
-To install CyBorgBackup under Docker, simply run this simple command in your terminal of choice::
+To install CyBorgBackup under Docker, run this command in your terminal of choice::
 
     $ wget https://raw.githubusercontent.com/cyborgbackup/cyborgbackup/master/docker-compose.full.yml -O docker-compose.yml
     $ cat > .env <<EOF
@@ -46,11 +45,10 @@ To install CyBorgBackup under Docker, simply run this simple command in your ter
     web$ exit
 
 
-You can now connect to interface using : http://localhost:8000
-If you don't have `docker-compose <https://docs.docker.com/compose/>`_ or `docker <https://www.docker.com/>`_ installed  head over to the website for installation instructions.
+If you don't have `docker-compose <https://docs.docker.com/compose/>`_ or `docker <https://www.docker.com/>`_ installed, head over to the website for installation instructions.
 
-Get the Source Code
--------------------
+Install from Source Code
+------------------------
 
 CyBorgBackup is developed on GitHub, where the code is
 `always available <https://github.com/cyborgbackup/cyborgbackup>`_.
@@ -74,7 +72,7 @@ To build the UI docker image run the following::
     $ docker build --no-cache --pull -t cyborgbackup/cyborgbackup-ui:latest .
 
 
-Depending of your system, CyBorgBackup need the following dependencies :
+Depending of your system, CyBorgBackup needs the following dependencies :
 
 - python3
 - python3-pip
@@ -82,16 +80,16 @@ Depending of your system, CyBorgBackup need the following dependencies :
 - rabbitmq-server
 - nginx
 
-To use CyBorgBackup container with Docker, launch the following command::
+To use the CyBorgBackup container with Docker, launch the following command::
 
     $ make cyborgbackup-docker-build
     $ make docker-compose-up
 
 
-Connect to the interface
-------------------------
-
-Default account is :
+Connecting to the interface
+---------------------------
+| You can connect to the CyBorgBackup interface at : http://localhost:8000
+| Default account is :
 
 - Login : admin@cyborg.local
 - Password : admin
