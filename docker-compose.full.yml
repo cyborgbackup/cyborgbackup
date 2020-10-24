@@ -67,9 +67,11 @@ services:
     environment:
       - discovery.type=single-node
   ui:
-    image: cyborgbackup/cyborgbackup-ui:latest
+    image: cyborgbackup/cyborgbackup-ui:develop
     depends_on:
       - api
+    ports:
+      - "8088:80"
 
 volumes:
   postgres_data:
