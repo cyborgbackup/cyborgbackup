@@ -24,6 +24,10 @@ server {
         try_files $uri $uri @uwsgi;
     }
 
+    location /static {
+        alias /opt/cyborgbackup/cyborgbackup/static;
+    }
+
     location /websocket {
         proxy_pass http://daphne_cyborgbackup;
         proxy_http_version 1.1;
