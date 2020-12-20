@@ -1289,6 +1289,8 @@ class RunJob(BaseTask):
                     archive_name = job_stdout.split(':')[1].strip()
                 if not archive_name:
                     raise Exception("Latest backup haven't archive name in the report")
+                master_job.archive_name = archive_name
+                master_job.save()
                 base_script = os.path.join(settings.SCRIPTS_DIR, 'cyborgbackup', 'fill_catalog')
                 with open(base_script) as fs:
                     script = fs.read()
