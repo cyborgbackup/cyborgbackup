@@ -27,6 +27,7 @@ python-daemon==2.1.2
 python-dateutil==2.7.2
 pytz==2018.3
 PyYAML>=3.12
+PyJWT>=1.7.1,<2.0.0
 requests>=2.20.0
 simplejson==3.13.2
 uritemplate==3.0.0
