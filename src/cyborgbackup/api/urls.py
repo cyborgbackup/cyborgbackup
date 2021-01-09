@@ -14,6 +14,7 @@ from cyborgbackup.api.views import (
     RepositoryDetail,
     CatalogList,
     CatalogDetail,
+    MongoCatacalog,
     PolicyList,
     PolicyDetail,
     PolicyLaunch,
@@ -41,8 +42,6 @@ from cyborgbackup.api.views import (
     CyborgTokenObtainPairView,
     RestoreLaunch
 )
-
-from cyborgbackup.elasticsearch.views import ESCatalogViewSet
 
 from cyborgbackup.api.generics import (
     LoggedLoginView,
@@ -131,7 +130,7 @@ v1_urls = [
     url(r'^restore/', include(restore_urls)),
     url(r'^catalogs/', include(catalog_urls)),
     url(r'^stats/', include(stats_urls)),
-    url(r'^escatalogs/', ESCatalogViewSet.as_view({'get': 'list'}), name='escatalog_list')
+    url(r'^escatalogs/', MongoCatacalog.as_view(), name='escatalog_list')
 ]
 
 urlpatterns = [

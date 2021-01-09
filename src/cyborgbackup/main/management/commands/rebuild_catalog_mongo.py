@@ -3,6 +3,7 @@ import re
 import json
 import stat
 import tempfile
+import pymongo
 from datetime import datetime
 from io import StringIO
 from collections import OrderedDict
@@ -14,9 +15,8 @@ from cyborgbackup.main.expect import run
 from cyborgbackup.main.models.settings import Setting
 from cyborgbackup.main.utils.common import get_ssh_version
 from cyborgbackup.main.utils.encryption import decrypt_field
-from elasticsearch import Elasticsearch
 
-es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
+db = pymongo.MongoClient().local
 OPENSSH_KEY_ERROR = u'''\
 It looks like you're trying to use a private key in OpenSSH format, which \
 isn't supported by the installed version of OpenSSH on this instance. \
@@ -202,55 +202,38 @@ class Command(BaseCommand):
                 if jobs.exists():
                     for job in jobs:
                         if job.archive_name and job.archive_name != '':
-                            search_object = {'query': {"bool": {"must": [{
-                              'term': {
-                                'archive_name.keyword': job.archive_name,
-                              }
-                            }]}}}
-                            res = es.search(index="catalog", body=search_object)
-                            if res['hits']['total']['value'] == 0:
-                                lines = self.launch_command(["borg",
-                                                             "list",
-                                                             "--json-lines",
-                                                             "::{}".format(job.archive_name)],
-                                                            repo,
-                                                            repo.repository_key,
-                                                            repo.path,
-                                                            **kwargs)
-                                hoursTimezone = round(
-                                    (round(
-                                        (datetime.now()-datetime.utcnow()).total_seconds())/1800)
-                                    / 2)
-                                for line in lines:
-                                    data = None
-                                    try:
-                                        data = json.loads(line)
-                                    except Exception:
-                                        pass
-                                    if data:
-                                        search_object = {'query': {"bool": {"must": [{
-                                             'term': {
-                                                 'path.keyword': data['path']
-                                             }
-                                        }, {
-                                             'term': {
-                                                 'archive_name.keyword': job.archive_name,
-                                             }
-                                        }]}}}
-                                        res = es.search(index="catalog", body=search_object)
-                                        if res['hits']['total']['value'] == 0:
-                                            print("Insert {} {}".format(job.archive_name, data['path']))
-                                            data = json.loads(line)
-                                            es.index(index='catalog', doc_type='_doc', body={
-                                                'path': data['path'],
-                                                'job': job.pk,
-                                                'archive_name': job.archive_name,
-                                                'mode': data['mode'],
-                                                'owner': data['user'],
-                                                'group': data['group'],
-                                                'type': data['type'],
-                                                'size': data['size'],
-                                                'healthy': data['healthy'],
-                                                'mtime': '{}+0{}00'.format(data['mtime'].replace('T', ' '),
-                                                                           hoursTimezone)
-                                            })
+                            lines = self.launch_command(["borg",
+                                                         "list",
+                                                         "--json-lines",
+                                                         "::{}".format(job.archive_name)],
+                                                        repo,
+                                                        repo.repository_key,
+                                                        repo.path,
+                                                        **kwargs)
+                            hoursTimezone = round(
+                                (round(
+                                    (datetime.now()-datetime.utcnow()).total_seconds())/1800)
+                                / 2)
+
+                            list_entries = []
+                            for line in lines:
+                                json_entry = json.loads(line)
+                                cnt = db.catalog.count({'archive_name': job.archive_name, 'path': json_entry['path']})
+                                if cnt == 0:
+                                    new_entry = {
+                                        'archive_name': job.archive_name,
+                                        'job_id': job.pk,
+                                        'mode': json_entry['mode'],
+                                        'path': json_entry['path'],
+                                        'owner': json_entry['user'],
+                                        'group': json_entry['group'],
+                                        'type': json_entry['type'],
+                                        'size': json_entry['size'],
+                                        'healthy': json_entry['healthy'],
+                                        'mtime': '{}+0{}00'.format(json_entry['mtime'].replace('T', ' '), hoursTimezone)
+                                    }
+                                    list_entries.append(new_entry)
+
+                            if len(list_entries) > 0:
+                                print('Insert {} entries from {} archive'.format(len(list_entries), job.archive_name))
+                                db.catalog.insert_many(list_entries)

@@ -69,12 +69,8 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'rest_framework_swagger',
     'channels',
-    'django_elasticsearch_dsl',
-    'django_elasticsearch_dsl_drf',
     'django_rest_passwordreset',
     'debug_toolbar',
-    'elastic_panel',
-    'cyborgbackup.elasticsearch',
     'cyborgbackup.ui',
     'cyborgbackup.api',
     'cyborgbackup.main'
@@ -262,10 +258,6 @@ LOGGING = {
             'handlers': ['console'],
             'level': 'DEBUG',
         },
-        'elasticsearch': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
-        },
     },
 }
 # LOGGING['handlers']['console']['()'] = 'cyborgbackup.main.utils.handlers.ColorHandler'
@@ -410,8 +402,3 @@ CELERY_BEAT_SCHEDULE = {
 }
 
 ACTIVITY_STREAM_ENABLED = False
-ELASTICSEARCH_DSL = {
-    'default': {
-        'hosts': '{}'.format(os.environ.get("ELASTICSEARCH_HOST", "localhost:9200"))
-    },
-}

@@ -7,6 +7,7 @@ import datetime
 import logging
 import tzcron
 import pytz
+import pymongo
 from base64 import b64encode
 from collections import OrderedDict
 
@@ -828,6 +829,26 @@ class CatalogDetail(RetrieveUpdateDestroyAPIView):
 
     model = Catalog
     serializer_class = CatalogSerializer
+
+
+class MongoCatalog(ListAPIView):
+
+    model = Catalog
+    serializer_class = CatalogSerializer
+
+    def list(self, request, *args, **kwargs):
+        logger.debug(request.data)
+        data = []
+        archive_name = request.GET.get('archive_name', None)
+        path = request.GET.get('path__regexp', None)
+        db = pymongo.MongoClient().local
+        if path:
+            obj = db.catalog.find({'$and':[{'archive_name': archive_name}, {'path':{'$regex':'^{}$'.format(path)}}]}, { "_id": 0, "archive_name": 1, "path": 1, "type": 1, "size": 1, "healthy": 1, "mtime": 1, "owner": 1, "group": 1, "mode": 1})
+            data = list(obj)
+            return Response({'count': len(data), 'results': data})
+        else:
+            obj = db.catalog.count({'archive_name': archive_name})
+            return Response({'count': obj, 'results': []})
 
 
 class Stats(ListAPIView):

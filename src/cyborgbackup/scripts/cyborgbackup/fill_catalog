@@ -39,6 +39,8 @@ print("Get Entries from Borg")
 for line in sys.stdin:
     json_entry = json.loads(line)
     new_entry = {
+      'archive_name': archive_name,
+      'job_id': job_id,
       'mode': json_entry['mode'],
       'path': json_entry['path'],
       'owner': json_entry['user'],
@@ -67,4 +69,11 @@ sys.exit(0)
 EOF
 export BORG_PASSPHRASE=$CYBORG_BORG_PASSPHRASE
 export BORG_REPO=$CYBORG_BORG_REPOSITORY
-borg list --json-lines ::$CYBORG_JOB_ARCHIVE_NAME | python3 $temp_file && rm -f $temp_file
+mkdir -p /tmp/cyborg_catalog_cyborg_catalog_$CYBORG_JOB_ARCHIVE_NAME && cd /tmp/cyborg_catalog_cyborg_catalog_$CYBORG_JOB_ARCHIVE_NAME
+borg list --json-lines ::$CYBORG_JOB_ARCHIVE_NAME | split -l 20000 - cyborg_catalog_$CYBORG_JOB_ARCHIVE_NAME_
+for i in $(ls /tmp/cyborg_catalog_cyborg_catalog_$CYBORG_JOB_ARCHIVE_NAME/*);
+do
+  cat $i|python3 $temp_file && rm -f $i;
+done;
+rmdir /tmp/cyborg_catalog_cyborg_catalog_$CYBORG_JOB_ARCHIVE_NAME
+rm -f $temp_file
