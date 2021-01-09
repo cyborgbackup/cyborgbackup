@@ -1,7 +1,6 @@
 [Unit]
 Description=CyBorgBackup Daphne Service
 PartOf=cyborgbackup.service
-After=cyborgbackup.service
 
 [Service]
 Type=simple

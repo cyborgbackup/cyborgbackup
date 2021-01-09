@@ -1,5 +1,6 @@
 [Unit]
 Description=CyBorgBackup
+Requires=cyborgbackup-callback-receiver.service cyborgbackup-daphne.service cyborgbackup-uwsgi.service cyborgbackup-workers.service cyborgbackup-celery.service cyborgbackup-celery-beat.service
 After=network.target
 
 [Service]

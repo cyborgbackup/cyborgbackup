@@ -1,7 +1,6 @@
 [Unit]
 Description=CyBorgBackup Celery Beat Service
 PartOf=cyborgbackup.service
-After=cyborgbackup.service
 
 [Service]
 Type=simple
