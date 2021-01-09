@@ -11,14 +11,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v1
-      - name: Set env
-        run: echo ::set-env name=GITHUB_SHA_SHORT::$(echo $GITHUB_SHA | cut -c 1-6)
       - name: Login to DockerHub Registry
         run: echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
       - name: Build the tagged Docker image
-        run: docker build . --file Dockerfile --tag cyborgbackup/cyborgbackup:$GITHUB_SHA_SHORT
+        run: docker build . --file Dockerfile --tag cyborgbackup/cyborgbackup:$(echo $GITHUB_SHA | cut -c 1-6)
       - name: Tag Docker Image to Latest
-        run: docker tag cyborgbackup/cyborgbackup:$GITHUB_SHA_SHORT cyborgbackup/cyborgbackup:latest
+        run: docker tag cyborgbackup/cyborgbackup:$(echo $GITHUB_SHA | cut -c 1-6) cyborgbackup/cyborgbackup:latest
       - name: Push the tagged Docker image
         run: docker push cyborgbackup/cyborgbackup
 
