@@ -26,7 +26,7 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - name: Build Debian package
-        uses: dawidd6/action-debian-package@v1
+        uses: dawidd6/action-debian-package@v1.2.0
         with:
           artifacts_directory: debian_output
       - uses: actions/upload-artifact@v1
