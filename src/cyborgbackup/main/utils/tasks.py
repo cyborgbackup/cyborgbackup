@@ -1,12 +1,11 @@
 # Python
 import logging
+import pymongo
 
 from django.conf import settings
 
 # Celery
 from celery import Task, shared_task, current_app
-
-from elasticsearch import Elasticsearch
 
 # CyBorgBackup
 from cyborgbackup.main.utils.task_manager import TaskManager
@@ -22,9 +21,7 @@ class LogErrorsTask(Task):
 
 def catalog_is_running():
     try:
-        es_conf = settings.ELASTICSEARCH_DSL['default']['hosts'].split(':')
-        es = Elasticsearch([{'host': es_conf[0], 'port': int(es_conf[1])}], max_retries=0)
-        es.cluster.state()
+        pymongo.MongoClient(settings.MONGODB_URL).server_info()
         return True
     except Exception:
         return False

@@ -16,7 +16,7 @@ from cyborgbackup.main.models.settings import Setting
 from cyborgbackup.main.utils.common import get_ssh_version
 from cyborgbackup.main.utils.encryption import decrypt_field
 
-db = pymongo.MongoClient().local
+db = pymongo.MongoClient(settings.MONGODB_URL).local
 OPENSSH_KEY_ERROR = u'''\
 It looks like you're trying to use a private key in OpenSSH format, which \
 isn't supported by the installed version of OpenSSH on this instance. \

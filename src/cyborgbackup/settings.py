@@ -94,8 +94,6 @@ DEBUG_TOOLBAR_PANELS = (
     'debug_toolbar.panels.signals.SignalsPanel',
     'debug_toolbar.panels.logging.LoggingPanel',
     'debug_toolbar.panels.redirects.RedirectsPanel',
-    # Additional
-    'elastic_panel.panel.ElasticDebugPanel',
 )
 
 BROKER_URL = "amqp://{}:{}@{}/{}".format(os.environ.get("RABBITMQ_DEFAULT_USER", "cyborgbackup"),
@@ -107,6 +105,9 @@ BROKER_URL = "amqp://{}:{}@{}/{}".format(os.environ.get("RABBITMQ_DEFAULT_USER",
                                                  "cyborgbackup"),
                                              safe=''
                                          ))
+
+
+MONGODB_URL = "mongodb://{}/".format(os.environ.get("MONGODB_HOST", "127.0.0.1"))
 
 CHANNEL_LAYERS = {
     'default': {'BACKEND': 'asgi_amqp.AMQPChannelLayer',

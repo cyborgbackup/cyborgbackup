@@ -4,6 +4,7 @@ import base64
 import json
 
 from django.db import models
+from django.conf import settings
 import pymongo
 
 from cyborgbackup.api.versioning import reverse
@@ -75,7 +76,7 @@ class Catalog(PrimordialModel):
         catalogs_entries_raw = gzip.decompress(base64.b64decode(catalog_data))
         catalog_entries = json.loads(catalogs_entries_raw.decode('utf-8'))
 
-        db = pymongo.MongoClient().local
+        db = pymongo.MongoClient(settings.MONGODB_URL).local
         db.catalog.insert_many(catalog_entries)
         if 'archive_name_text_path_text' in db.catalog.index_information().keys():
             db.catalog.create_index({'archive_name': '$text', 'path': '$text'})
