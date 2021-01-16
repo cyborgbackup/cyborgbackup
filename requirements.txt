@@ -21,8 +21,8 @@ redis==2.10.6
 paramiko>=2.4.2
 pexpect==4.4.0
 psutil>=5.6.6
-psycopg2==2.7.4
-psycopg2-binary==2.7.4
+psycopg2>=2.7.4
+psycopg2-binary>=2.7.4
 python-daemon==2.1.2
 python-dateutil==2.7.2
 pymongo
