@@ -1,8 +1,8 @@
 from django.conf.urls import url
 from django.views.generic.base import TemplateView
 from django.contrib.staticfiles import views
+from django.http import HttpResponse
 from django.urls import re_path
-
 
 from cyborgbackup.main.utils.tasks import catalog_is_running, celery_worker_is_running
 from cyborgbackup.main.models import Job, Policy, Repository, Schedule, Client
@@ -26,9 +26,14 @@ class IndexView(TemplateView):
         return context
 
 
+def MetricsPrometheus(request):
+    return HttpResponse("You didn't say the magic word !")
+
+
 index = IndexView.as_view()
 
 urlpatterns = [
     url(r'^$', index, name='index'),
+    url(r'^metrics$', MetricsPrometheus),
     re_path(r'^(?P<path>.*)$', views.serve),
 ]
