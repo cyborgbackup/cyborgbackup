@@ -13,6 +13,7 @@ src/cyborgbackup/ui/src/node_modules
 src/cyborgbackup/ui/src/dev-release
 src/cyborgbackup/ui/src/release
 src/cyborgbackup/ui/src/package-lock.json
+src/var
 **/__pycache__
 **/_build
 **/.coverage
