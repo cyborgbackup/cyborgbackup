@@ -25,7 +25,7 @@ services:
       - .env
     depends_on:
       - postgres
-      - elasticsearch
+      - mongodb
       - rabbitmq
   channel_workers:
     image: cyborgbackup/cyborgbackup:latest
@@ -36,7 +36,7 @@ services:
       - .env
     depends_on:
       - postgres
-      - elasticsearch
+      - mongodb
       - rabbitmq
   web:
     image: cyborgbackup/cyborgbackup:latest
@@ -50,7 +50,7 @@ services:
       - "8000:8000"
     depends_on:
       - postgres
-      - elasticsearch
+      - mongodb
       - rabbitmq
   celery:
     image: cyborgbackup/cyborgbackup:latest
@@ -61,7 +61,7 @@ services:
       - .env
     depends_on:
       - postgres
-      - elasticsearch
+      - mongodb
       - rabbitmq
   celery_beat:
     image: cyborgbackup/cyborgbackup:latest
@@ -72,7 +72,7 @@ services:
       - .env
     depends_on:
       - postgres
-      - elasticsearch
+      - mongodb
       - rabbitmq
   flower:
     image: cyborgbackup/cyborgbackup:latest
@@ -93,15 +93,13 @@ services:
       - 8080:8080
     env_file:
       - .env
-  elasticsearch:
-    image: elasticsearch:6.8.4
+  mongodb:
+    image: mongo:bionic
     volumes:
-      - esdata:/usr/share/elasticsearch/data
+      - mongo_data:/data/db
     ports:
-      - 9200:9200
-    environment:
-      - discovery.type=single-node
+      - 27017:27017
 
 volumes:
   postgres_data:
-  esdata:
+  mongo_data:

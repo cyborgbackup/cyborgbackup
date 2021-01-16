@@ -58,15 +58,13 @@ services:
     depends_on:
       - postgres
       - rabbitmq
-  elasticsearch:
-    image: elasticsearch:6.8.4
+  mongodb:
+    image: mongo:bionic
     volumes:
-      - esdata:/usr/share/elasticsearch/data
+      - mongo_data:/data/db
     ports:
-      - 9200:9200
-    environment:
-      - discovery.type=single-node
+      - 27017:27017
 
 volumes:
   postgres_data:
-  esdata:
+  mongo_data:
