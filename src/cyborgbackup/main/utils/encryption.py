@@ -1,13 +1,16 @@
+import os
+import stat
+import errno
 import base64
 import hashlib
 import logging
+import tempfile
 from collections import namedtuple
 
 import six
 from cryptography.fernet import Fernet, InvalidToken
 from cryptography.hazmat.backends import default_backend
 from django.utils.encoding import smart_str
-
 
 __all__ = ['get_encryption_key',
            'encrypt_field', 'decrypt_field',
@@ -21,6 +24,7 @@ class Fernet256(Fernet):
     '''Not techincally Fernet, but uses the base of the Fernet spec and uses AES-256-CBC
     instead of AES-128-CBC. All other functionality remain identical.
     '''
+
     def __init__(self, key, backend=None):
         if backend is None:
             backend = default_backend()
@@ -143,3 +147,119 @@ def is_encrypted(value):
     if not isinstance(value, six.string_types):
         return False
     return value.startswith('$encrypted$') and len(value) > len('$encrypted$')
+
+
+class KeypairError(Exception):
+    pass
+
+
+class Keypair(object):
+
+    def __init__(self, size=256, type='ed25519', comment='cyborg@cyborg.local', passphrase=None):
+        self.path = self.generate_temporary_filename()
+        self.size = size
+        self.type = type
+        self.comment = comment
+        self.changed = False
+        self.privatekey = None
+        self.fingerprint = {}
+        self.public_key = {}
+        self.passphrase = passphrase
+
+        if self.type in 'rsa':
+            self.size = 4096 if self.size is None else self.size
+            if self.size < 1024:
+                raise KeypairError('For RSA keys, the minimum size is 1024 bits and the default is 4096 bits. '
+                                   'Attempting to use bit lengths under 1024 will cause the module to fail.')
+
+        if self.type == 'dsa':
+            self.size = 1024 if self.size is None else self.size
+            if self.size != 1024:
+                raise KeypairError('DSA keys must be exactly 1024 bits as specified by FIPS 186-2.')
+
+        if self.type == 'ecdsa':
+            self.size = 256 if self.size is None else self.size
+            if self.size not in (256, 384, 521):
+                raise KeypairError('For ECDSA keys, size determines the key length by selecting from '
+                                   'one of three elliptic curve sizes: 256, 384 or 521 bits. '
+                                   'Attempting to use bit lengths other than these three values for '
+                                   'ECDSA keys will cause this module to fail. ')
+        if self.type == 'ed25519':
+            self.size = 256
+
+        if not self.passphrase:
+            self.generate_passphrase()
+
+    def generate_passphrase(self):
+        import string
+        import random
+        letters_and_digits = string.ascii_letters + string.digits
+        self.passphrase = ''.join((random.choice(letters_and_digits) for i in range(40)))
+
+    @staticmethod
+    def generate_temporary_filename():
+        import string
+        import random
+        letters_and_digits = string.ascii_letters + string.digits
+        return '/tmp/tmpcyborg_'+''.join((random.choice(letters_and_digits) for i in range(15)))
+
+    def generate(self):
+        import subprocess
+        args = [
+            'ssh-keygen',
+            '-q',
+            '-N', '',
+            '-b', str(self.size),
+            '-t', self.type,
+            '-f', self.path,
+        ]
+
+        if self.comment:
+            args.extend(['-C', self.comment])
+        else:
+            args.extend(['-C', ""])
+
+        try:
+            if os.path.exists(self.path) and not os.access(self.path, os.W_OK):
+                os.chmod(self.path, stat.S_IWUSR + stat.S_IRUSR)
+            subprocess.run(args)
+            with open(self.path) as f:
+                self.privatekey = f.read()
+            proc = subprocess.run(['ssh-keygen', '-lf', self.path], stdout=subprocess.PIPE)
+            self.fingerprint = proc.stdout.split()
+            pubkey = subprocess.run(['ssh-keygen', '-yf', self.path], stdout=subprocess.PIPE)
+            self.public_key = pubkey.stdout.strip(b'\n')
+        except Exception as e:
+            raise e
+        finally:
+            self.remove()
+
+    @staticmethod
+    def get_publickey(privatekey):
+        import subprocess
+        f = tempfile.NamedTemporaryFile(delete=False)
+        f.write(privatekey.encode('utf-8'))
+        f.close()
+        pubkey = subprocess.run(['ssh-keygen', '-yf', f.name], stdout=subprocess.PIPE)
+        os.unlink(f.name)
+        return pubkey.stdout.strip(b'\n')
+
+    def remove(self):
+        """Remove the resource from the filesystem."""
+
+        try:
+            os.remove(self.path)
+        except OSError as exc:
+            if exc.errno != errno.ENOENT:
+                raise KeypairError(exc)
+            else:
+                pass
+
+        if os.path.exists(self.path + ".pub"):
+            try:
+                os.remove(self.path + ".pub")
+            except OSError as exc:
+                if exc.errno != errno.ENOENT:
+                    raise KeypairError(exc)
+                else:
+                    pass

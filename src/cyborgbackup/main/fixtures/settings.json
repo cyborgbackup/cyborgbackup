@@ -7,7 +7,9 @@
       "modified": "2018-11-17T00:00:00.000Z",
       "key": "cyborgbackup_mail_system",
       "value": "True",
-      "setting_type": "boolean"
+      "setting_type": "boolean",
+      "order": 1,
+      "group": "3 - Mail"
     }
   },
   {
@@ -18,7 +20,9 @@
       "modified": "2018-11-17T00:00:00.000Z",
       "key": "cyborgbackup_web_enabled",
       "value": "True",
-      "setting_type": "boolean"
+      "setting_type": "boolean",
+      "order": 1,
+      "group": "1 - General"
     }
   },
   {
@@ -29,7 +33,9 @@
       "modified": "2018-11-17T00:00:00.000Z",
       "key": "cyborgbackup_catalog_enabled",
       "value": "True",
-      "setting_type": "boolean"
+      "setting_type": "boolean",
+      "order": 2,
+      "group": "1 - General"
     }
   },
   {
@@ -40,7 +46,9 @@
       "modified": "2018-11-17T00:00:00.000Z",
       "key": "cyborgbackup_auto_prune",
       "value": "True",
-      "setting_type": "boolean"
+      "setting_type": "boolean",
+      "order": 1,
+      "group": "2 - Backup"
     }
   },
   {
@@ -51,7 +59,9 @@
       "modified": "2018-11-17T00:00:00.000Z",
       "key": "cyborgbackup_url",
       "value": "http://127.0.0.1:8000",
-      "setting_type": "string"
+      "setting_type": "string",
+      "order": 4,
+      "group": "1 - General"
     }
   },
   {
@@ -62,7 +72,9 @@
       "modified": "2018-11-17T00:00:00.000Z",
       "key": "cyborgbackup_job_cleaning",
       "value": "90",
-      "setting_type": "integer"
+      "setting_type": "integer",
+      "order": 2,
+      "group": "2 - Backup"
     }
   },
   {
@@ -73,7 +85,9 @@
       "modified": "2018-11-17T00:00:00.000Z",
       "key": "cyborgbackup_ssh_password",
       "value": "",
-      "setting_type": "password"
+      "setting_type": "password",
+      "order": 1,
+      "group": "4 - SSH"
     }
   },
   {
@@ -84,7 +98,9 @@
       "modified": "2018-11-17T00:00:00.000Z",
       "key": "cyborgbackup_mail_from",
       "value": "cyborg@cyborg.local",
-      "setting_type": "string"
+      "setting_type": "string",
+      "order": 2,
+      "group": "3 - Mail"
     }
   },
   {
@@ -95,7 +111,9 @@
       "modified": "2018-11-17T00:00:00.000Z",
       "key": "cyborgbackup_backup_user",
       "value": "root",
-      "setting_type": "string"
+      "setting_type": "string",
+      "order": 3,
+      "group": "2 - Backup"
     }
   },
   {
@@ -106,7 +124,9 @@
       "modified": "2018-11-17T00:00:00.000Z",
       "key": "cyborgbackup_ssh_key",
       "value": "",
-      "setting_type": "privatekey"
+      "setting_type": "privatekey",
+      "order": 2,
+      "group": "4 - SSH"
     }
   },
   {
@@ -117,7 +137,9 @@
       "modified": "2018-11-17T00:00:00.000Z",
       "key": "cyborgbackup_auto_restore_test",
       "value": "",
-      "setting_type": "boolean"
+      "setting_type": "boolean",
+      "order": 3,
+      "group": "1 - General"
     }
   },
   {
@@ -128,7 +150,61 @@
       "modified": "2018-11-17T00:00:00.000Z",
       "key": "cyborgbackup_mail_server",
       "value": "localhost",
-      "setting_type": "string"
+      "setting_type": "string",
+      "order": 3,
+      "group": "3 - Mail"
+    }
+  },
+  {
+    "model": "main.setting",
+    "pk": 13,
+    "fields": {
+      "created": "2018-11-17T00:00:00.000Z",
+      "modified": "2018-11-17T00:00:00.000Z",
+      "key": "cyborgbackup_mail_username",
+      "value": "",
+      "setting_type": "string",
+      "order": 4,
+      "group": "3 - Mail"
+    }
+  },
+  {
+    "model": "main.setting",
+    "pk": 14,
+    "fields": {
+      "created": "2018-11-17T00:00:00.000Z",
+      "modified": "2018-11-17T00:00:00.000Z",
+      "key": "cyborgbackup_mail_password",
+      "value": "",
+      "setting_type": "string",
+      "order": 5,
+      "group": "3 - Mail"
+    }
+  },
+  {
+    "model": "main.setting",
+    "pk": 15,
+    "fields": {
+      "created": "2018-11-17T00:00:00.000Z",
+      "modified": "2018-11-17T00:00:00.000Z",
+      "key": "cyborgbackup_mail_port",
+      "value": "22",
+      "setting_type": "integer",
+      "order": 6,
+      "group": "3 - Mail"
+    }
+  },
+  {
+    "model": "main.setting",
+    "pk": 16,
+    "fields": {
+      "created": "2018-11-17T00:00:00.000Z",
+      "modified": "2018-11-17T00:00:00.000Z",
+      "key": "cyborgbackup_mail_tls",
+      "value": "False",
+      "setting_type": "boolean",
+      "order": 7,
+      "group": "3 - Mail"
     }
   }
 ]

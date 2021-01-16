@@ -838,7 +838,7 @@ class SettingSerializer(BaseSerializer):
 
     class Meta:
         model = Setting
-        fields = ('id', 'url', 'key', 'type', 'setting_type', 'value', 'created', 'modified')
+        fields = ('id', 'url', 'key', 'type', 'setting_type', 'value', 'group', 'order', 'created', 'modified')
 
     def update(self, obj, validated_data):
         validated_data.pop('key', None)

@@ -49,6 +49,7 @@ from cyborgbackup.main.models.users import User
 from cyborgbackup.main.models.settings import Setting
 from cyborgbackup.main.utils.common import get_module_provider, camelcase_to_underscore, get_cyborgbackup_version
 from cyborgbackup.main.utils.callbacks import CallbackQueueDispatcher
+from cyborgbackup.main.utils.encryption import Keypair
 from cyborgbackup.main.modules import Querier
 from cyborgbackup.api.renderers import (BrowsableAPIRenderer, PlainTextRenderer,
                                         DownloadTextRenderer, AnsiDownloadRenderer, AnsiTextRenderer)
@@ -555,6 +556,57 @@ class SettingDetail(RetrieveUpdateAPIView):
 
     model = Setting
     serializer_class = SettingSerializer
+
+
+class SettingGetPublicSsh(ListAPIView):
+
+    model = Setting
+    serializer_class = EmptySerializer
+
+    def list(self, request, *args, **kwargs):
+        set = Setting.get_value(name='cyborgbackup_ssh_key')
+        if set:
+            return Response(Keypair.get_publickey(set))
+        else:
+            return Response([])
+
+
+class SettingGenerateSsh(ListCreateAPIView):
+
+    model = Setting
+    serializer_class = EmptySerializer
+
+    def list(self, request, *args, **kwargs):
+        set = Setting.objects.get(key='cyborgbackup_ssh_key')
+        if set.value != '':
+            return Response([], status=status.HTTP_200_OK)
+        else:
+            return Response([], status=status.HTTP_204_NO_CONTENT)
+
+    def create(self, request, *args, **kwargs):
+        data = request.data
+        set = Setting.objects.get(key='cyborgbackup_ssh_key')
+        logger.debug(data)
+        if set:
+            if (set.value != '' and 'force' in data.keys()) \
+                    or (set.value == ''):
+                sshpass = Setting.objects.get(key='cyborgbackup_ssh_password')
+                password = None
+                if sshpass and sshpass.value != '':
+                    password = sshpass.value
+                kp = Keypair(passphrase=password, size=data['size'], type=data['type'])
+                kp.generate()
+                set.value = kp.privatekey
+                set.save()
+                sshpass.value = kp.passphrase
+                sshpass.save()
+                return Response({
+                    'pubkey': kp.public_key
+                }, status=status.HTTP_201_CREATED)
+            else:
+                return Response(OrderedDict(), status=status.HTTP_409_CONFLICT)
+        else:
+            return Response(OrderedDict(), status=status.HTTP_409_CONFLICT)
 
 
 class ClientList(ListCreateAPIView):

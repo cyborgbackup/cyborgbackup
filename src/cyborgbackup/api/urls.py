@@ -14,7 +14,7 @@ from cyborgbackup.api.views import (
     RepositoryDetail,
     CatalogList,
     CatalogDetail,
-    MongoCatacalog,
+    MongoCatalog,
     PolicyList,
     PolicyDetail,
     PolicyLaunch,
@@ -32,6 +32,8 @@ from cyborgbackup.api.views import (
     JobJobEventsList,
     JobStdout,
     SettingList,
+    SettingGetPublicSsh,
+    SettingGenerateSsh,
     SettingDetail,
     ApiRootView,
     ApiV1RootView,
@@ -105,6 +107,8 @@ job_urls = [
 setting_urls = [
     url(r'^$', SettingList.as_view(), name='setting_list'),
     url(r'^(?P<pk>[0-9]+)/$', SettingDetail.as_view(), name='setting_detail'),
+    url(r'^generate_ssh/$', SettingGenerateSsh.as_view(), name='setting_generate_ssh'),
+    url(r'^get_ssh_publickey/$', SettingGetPublicSsh.as_view(), name='setting_get_ssh_publickey'),
 ]
 
 restore_urls = [
@@ -130,7 +134,7 @@ v1_urls = [
     url(r'^restore/', include(restore_urls)),
     url(r'^catalogs/', include(catalog_urls)),
     url(r'^stats/', include(stats_urls)),
-    url(r'^escatalogs/', MongoCatacalog.as_view(), name='escatalog_list')
+    url(r'^escatalogs/', MongoCatalog.as_view(), name='escatalog_list')
 ]
 
 urlpatterns = [

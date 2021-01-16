@@ -36,6 +36,16 @@ class Setting(CreatedModifiedModel):
         editable=False,
     )
 
+    group = models.TextField(
+        null=True,
+        editable=False
+    )
+
+    order = models.IntegerField(
+        default=0,
+        editable=False
+    )
+
     def get_absolute_url(self, request=None):
         return reverse('api:setting_detail', kwargs={'pk': self.pk}, request=request)
 
