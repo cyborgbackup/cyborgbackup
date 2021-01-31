@@ -16,6 +16,65 @@ from cyborgbackup import get_version
 
 app_name = 'ui'
 
+METRICS_CYBORG_INFO = prometheus_client.Gauge(
+    'cyborgbackup_info',
+    'CyBorgBackup Instance',
+    ['instance', 'version']
+)
+
+METRICS_CYBORG_JOBS_STATUS = prometheus_client.Gauge(
+    'cyborgbackup_jobs_status',
+    'CyBorgBackup Job Status',
+    ['instance', 'status']
+)
+
+METRICS_CYBORG_POLICIES_ENABLED = prometheus_client.Gauge(
+    'cyborgbackup_policies_enabled',
+    'CyBorgBackup Policies Enabled',
+    ['instance', 'enabled']
+)
+
+METRICS_CYBORG_POLICIES_TYPE = prometheus_client.Gauge(
+    'cyborgbackup_policies_type',
+    'CyBorgBackup Policies Type',
+    ['instance', 'policy_type']
+)
+
+METRICS_CYBORG_POLICIES_CLIENTS = prometheus_client.Gauge(
+    'cyborgbackup_policies_clients',
+    'CyBorgBackup Policies Clients',
+    ['instance', 'policy_type']
+)
+
+METRICS_CYBORG_CLIENTS_ENABLED = prometheus_client.Gauge(
+    'cyborgbackup_clients_enabled',
+    'CyBorgBackup Clients Enabled',
+    ['instance', 'enabled']
+)
+
+METRICS_CYBORG_SCHEDULES_ENABLED = prometheus_client.Gauge(
+    'cyborgbackup_schedules_enabled',
+    'CyBorgBackup Schedules Enabled',
+    ['instance', 'enabled']
+)
+
+METRICS_CYBORG_REPOSITORIES_SIZE = prometheus_client.Gauge(
+    'cyborgbackup_repositories_size',
+    'CyBorgBackup Repositories Sizing',
+    ['instance', 'repository_name', 'stat']
+)
+
+METRICS_CYBORG_BACKUPS_SIZE = prometheus_client.Gauge(
+    'cyborgbackup_backups_size',
+    'CyBorgBackup Backup Sizing',
+    ['instance', 'archive_name', 'stat']
+)
+
+METRICS_CYBORG_JOBS_DURATIONS = prometheus_client.Gauge(
+    'cyborgbackup_jobs_duration',
+    'CyBorgBackup Job Duration',
+    ['instance', 'archive_name', 'client', 'policy_type']
+)
 
 class IndexView(TemplateView):
 
@@ -35,58 +94,58 @@ class IndexView(TemplateView):
 
 def _get_metrics():
     instance = socket.gethostname()
-    g1 = prometheus_client.Gauge('cyborgbackup_info', 'CyBorgBackup Instance', ['instance', 'version'])
-    g1.labels(instance, get_version()).set(1)
+    METRICS_CYBORG_INFO.labels(instance, get_version()).set(1)
 
-    g2 = prometheus_client.Gauge('cyborgbackup_jobs_status', 'CyBorgBackup Job Status', ['instance', 'status'])
     for job_state in Job.ALL_STATUS_CHOICES:
-        g2.labels(instance, job_state[0]).set(Job.objects.filter(status=job_state[0]).count())
+        METRICS_CYBORG_JOBS_STATUS.labels(instance, job_state[0]).set(
+            Job.objects.filter(status=job_state[0]).count()
+        )
 
-    g3 = prometheus_client.Gauge('cyborgbackup_policies_enabled', 'CyBorgBackup Policies Enabled', [
-        'instance', 'enabled'
-    ])
     for policy_state in (True, False):
-        g3.labels(instance, policy_state).set(Policy.objects.filter(enabled=policy_state).count())
+        METRICS_CYBORG_POLICIES_ENABLED.labels(instance, policy_state).set(
+            Policy.objects.filter(enabled=policy_state).count()
+        )
 
-    g4 = prometheus_client.Gauge('cyborgbackup_policies_type', 'CyBorgBackup Policies Type', [
-        'instance', 'policy_type'
-    ])
     for policy_type in Policy.POLICY_TYPE_CHOICES:
-        g4.labels(instance, policy_type[0]).set(Policy.objects.filter(policy_type=policy_type[0]).count())
+        METRICS_CYBORG_POLICIES_TYPE.labels(instance, policy_type[0]).set(
+            Policy.objects.filter(policy_type=policy_type[0]).count()
+        )
 
-    g5 = prometheus_client.Gauge('cyborgbackup_policies_clients', 'CyBorgBackup Policies Clients', [
-        'instance', 'policy_type'
-    ])
     for policy in Policy.objects.filter():
-        g5.labels(instance, policy.name).set(policy.clients.all().count())
+        METRICS_CYBORG_POLICIES_CLIENTS.labels(instance, policy.name).set(policy.clients.all().count())
 
-    g6 = prometheus_client.Gauge('cyborgbackup_clients_enabled', 'CyBorgBackup Clients Enabled', [
-        'instance', 'enabled'
-    ])
     for client_state in (True, False):
-        g6.labels(instance, client_state).set(Client.objects.filter(enabled=client_state).count())
+        METRICS_CYBORG_CLIENTS_ENABLED.labels(instance, client_state).set(
+            Client.objects.filter(enabled=client_state).count()
+        )
 
-    g7 = prometheus_client.Gauge('cyborgbackup_schedules_enabled', 'CyBorgBackup Schedules Enabled', [
-        'instance', 'enabled'
-    ])
     for schedule_state in (True, False):
-        g7.labels(instance, client_state).set(Schedule.objects.filter(enabled=schedule_state).count())
+        METRICS_CYBORG_SCHEDULES_ENABLED.labels(instance, client_state).set(
+            Schedule.objects.filter(enabled=schedule_state).count()
+        )
 
-    g8 = prometheus_client.Gauge('cyborgbackup_repositories_size', 'CyBorgBackup Repositories Sizing', [
-        'instance', 'repository_name', 'stat'
-    ])
     for repository in Repository.objects.all():
-        g8.labels(instance, repository.name, 'compressed').set(repository.compressed_size)
-        g8.labels(instance, repository.name, 'deduplicated').set(repository.deduplicated_size)
-        g8.labels(instance, repository.name, 'original').set(repository.original_size)
+        METRICS_CYBORG_REPOSITORIES_SIZE.labels(instance, repository.name, 'compressed').set(
+            repository.compressed_size
+        )
+        METRICS_CYBORG_REPOSITORIES_SIZE.labels(instance, repository.name, 'deduplicated').set(
+            repository.deduplicated_size
+        )
+        METRICS_CYBORG_REPOSITORIES_SIZE.labels(instance, repository.name, 'original').set(
+            repository.original_size
+        )
 
-    g9 = prometheus_client.Gauge('cyborgbackup_backups_size', 'CyBorgBackup Backup Sizing', [
-        'instance', 'archive_name', 'stat'
-    ])
     for job in Job.objects.exclude(archive_name=''):
-        g9.labels(instance, job.archive_name, 'compressed').set(job.compressed_size)
-        g9.labels(instance, job.archive_name, 'deduplicated').set(job.deduplicated_size)
-        g9.labels(instance, job.archive_name, 'original').set(job.original_size)
+        METRICS_CYBORG_BACKUPS_SIZE.labels(instance, job.archive_name, 'compressed').set(job.compressed_size)
+        METRICS_CYBORG_BACKUPS_SIZE.labels(instance, job.archive_name, 'deduplicated').set(job.deduplicated_size)
+        METRICS_CYBORG_BACKUPS_SIZE.labels(instance, job.archive_name, 'original').set(job.original_size)
+
+        METRICS_CYBORG_JOBS_DURATIONS.labels(
+            instance,
+            job.archive_name,
+            job.client.hostname,
+            job.policy.policy_type
+        ).set(job.elapsed)
 
     if "prometheus_multiproc_dir" in os.environ:
         registry = prometheus_client.CollectorRegistry()
