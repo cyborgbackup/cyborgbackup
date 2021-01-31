@@ -42,6 +42,7 @@ services:
     depends_on:
       - postgres
       - rabbitmq
+    restart: unless-stopped
   celery:
     image: cyborgbackup/cyborgbackup:latest
     command: celery -A cyborgbackup worker -E -c 1

@@ -52,6 +52,7 @@ services:
       - postgres
       - mongodb
       - rabbitmq
+    restart: unless-stopped
   celery:
     image: cyborgbackup/cyborgbackup:latest
     command: celery -A cyborgbackup worker -l debug -E
