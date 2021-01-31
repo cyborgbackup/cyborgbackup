@@ -5,7 +5,11 @@ import sys
 
 __all__ = ['celery_app']
 
-__version__ = '1.0'
+__version__ = '1.4'
+
+
+def get_version():
+    return __version__
 
 
 def find_commands(management_dir):

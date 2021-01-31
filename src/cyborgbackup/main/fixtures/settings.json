@@ -206,5 +206,57 @@
       "order": 7,
       "group": "3 - Mail"
     }
+  },
+  {
+    "model": "main.setting",
+    "pk": 17,
+    "fields": {
+      "created": "2018-11-17T00:00:00.000Z",
+      "modified": "2018-11-17T00:00:00.000Z",
+      "key": "cyborgbackup_metrics_enabled",
+      "value": "False",
+      "setting_type": "boolean",
+      "order": 1,
+      "group": "5 - Metrics"
+    }
+  },
+  {
+    "model": "main.setting",
+    "pk": 18,
+    "fields": {
+      "created": "2018-11-17T00:00:00.000Z",
+      "modified": "2018-11-17T00:00:00.000Z",
+      "key": "cyborgbackup_metrics_auth",
+      "value": "True",
+      "setting_type": "boolean",
+      "order": 2,
+      "group": "5 - Metrics"
+    }
+  },
+  {
+    "model": "main.setting",
+    "pk": 19,
+    "fields": {
+      "created": "2018-11-17T00:00:00.000Z",
+      "modified": "2018-11-17T00:00:00.000Z",
+      "key": "cyborgbackup_metrics_auth_username",
+      "value": "cyborg",
+      "setting_type": "string",
+      "order": 3,
+      "group": "5 - Metrics"
+    }
+  },
+  {
+    "model": "main.setting",
+    "pk": 20,
+    "fields": {
+      "created": "2018-11-17T00:00:00.000Z",
+      "modified": "2018-11-17T00:00:00.000Z",
+      "key": "cyborgbackup_metrics_auth_password",
+      "value": "backup",
+      "setting_type": "string",
+      "order": 4,
+      "group": "5 - Metrics"
+    }
   }
 ]
