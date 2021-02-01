@@ -242,6 +242,11 @@ class Command(BaseCommand):
                                 print('Insert {} entries from {} archive'.format(len(list_entries), job.archive_name))
                                 db.catalog.insert_many(list_entries)
                                 if 'archive_name_text_path_text' not in db.catalog.index_information().keys():
-                                    db.catalog.create_index({'archive_name': '$text', 'path': '$text'})
+                                    db.catalog.create_index([
+                                        ('archive_name', pymongo.TEXT),
+                                        ('path', pymongo.TEXT)
+                                    ], name='archive_name_text_path_text', default_language='english')
                                 if 'archive_name_text' not in db.catalog.index_information().keys():
-                                    db.catalog.create_index({'archive_name': '$text'})
+                                    db.catalog.create_index([
+                                        ('archive_name', pymongo.TEXT)
+                                    ], name='archive_name_text', default_language='english')

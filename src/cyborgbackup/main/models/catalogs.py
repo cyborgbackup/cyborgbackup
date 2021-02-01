@@ -79,9 +79,14 @@ class Catalog(PrimordialModel):
         db = pymongo.MongoClient(settings.MONGODB_URL).local
         db.catalog.insert_many(catalog_entries)
         if 'archive_name_text_path_text' not in db.catalog.index_information().keys():
-            db.catalog.create_index({'archive_name': '$text', 'path': '$text'})
+            db.catalog.create_index([
+                ('archive_name', pymongo.TEXT),
+                ('path', pymongo.TEXT)
+            ], name='archive_name_text_path_text', default_language='english')
         if 'archive_name_text' not in db.catalog.index_information().keys():
-            db.catalog.create_index({'archive_name': '$text'})
+            db.catalog.create_index([
+                ('archive_name', pymongo.TEXT)
+            ], name='archive_name_text', default_language='english')
 
         logger.info('Catalog data saved.', extra=dict(python_objects=dict(created=len(catalog_entries))))
         return len(catalog_entries)
