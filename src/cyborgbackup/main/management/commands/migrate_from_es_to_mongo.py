@@ -64,10 +64,6 @@ class Command(BaseCommand):
                             ('archive_name', pymongo.TEXT),
                             ('path', pymongo.TEXT)
                         ], name='archive_name_text_path_text', default_language='english')
-                    if 'archive_name_text' not in db.catalog.index_information().keys():
-                        db.catalog.create_index([
-                            ('archive_name', pymongo.TEXT)
-                        ], name='archive_name_text', default_language='english')
 
                 i = i + 1000
                 search_object = {
