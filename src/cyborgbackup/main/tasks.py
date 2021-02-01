@@ -1309,7 +1309,7 @@ class RunJob(BaseTask):
                 args += ['\"', 'mkdir', '-p', env['PRIVATE_DATA_DIR'], '\"', '&&']
                 args += ['scp', '-qo', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
                 args += [path, path_env, '{}:{}/'.format(repository_conn, env['PRIVATE_DATA_DIR'])]
-                args += ['&&', 'rm', path, path_env, '&&']
+                args += ['&&', 'rm', '-f', path, path_env, '&&']
                 args += ['ssh', '-Ao', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
                 args += [repository_conn]
                 args += ['\". ', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
