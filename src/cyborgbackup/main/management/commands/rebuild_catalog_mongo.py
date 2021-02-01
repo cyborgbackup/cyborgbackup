@@ -215,11 +215,13 @@ class Command(BaseCommand):
                                     (datetime.now()-datetime.utcnow()).total_seconds())/1800)
                                 / 2)
 
+                            print('Clean archive {} catalog entries.'.format(job.archive_name))
+                            db.catalog.delete_many({'archive_name': job.archive_name})
+
                             list_entries = []
                             for line in lines:
-                                json_entry = json.loads(line)
-                                cnt = db.catalog.count({'archive_name': job.archive_name, 'path': json_entry['path']})
-                                if cnt == 0:
+                                try:
+                                    json_entry = json.loads(line)
                                     new_entry = {
                                         'archive_name': job.archive_name,
                                         'job_id': job.pk,
@@ -233,6 +235,8 @@ class Command(BaseCommand):
                                         'mtime': '{}+0{}00'.format(json_entry['mtime'].replace('T', ' '), hoursTimezone)
                                     }
                                     list_entries.append(new_entry)
+                                except Exception:
+                                    continue
 
                             if len(list_entries) > 0:
                                 print('Insert {} entries from {} archive'.format(len(list_entries), job.archive_name))
