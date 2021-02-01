@@ -241,7 +241,7 @@ class Command(BaseCommand):
                             if len(list_entries) > 0:
                                 print('Insert {} entries from {} archive'.format(len(list_entries), job.archive_name))
                                 db.catalog.insert_many(list_entries)
-                                if 'archive_name_text_path_text' in db.catalog.index_information().keys():
+                                if 'archive_name_text_path_text' not in db.catalog.index_information().keys():
                                     db.catalog.create_index({'archive_name': '$text', 'path': '$text'})
-                                if 'archive_name_text' in db.catalog.index_information().keys():
+                                if 'archive_name_text' not in db.catalog.index_information().keys():
                                     db.catalog.create_index({'archive_name': '$text'})
