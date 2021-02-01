@@ -2,11 +2,11 @@ import os
 import re
 import stat
 import shutil
+import pymongo
 import tempfile
 from io import StringIO
 from collections import OrderedDict
 from django.conf import settings
-from elasticsearch import Elasticsearch
 from distutils.version import LooseVersion as Version
 from cyborgbackup.main.expect import run
 from cyborgbackup.main.models.settings import Setting
@@ -20,8 +20,7 @@ from django.db import transaction
 # CyBorgBackup
 from cyborgbackup.main.models import Job, Repository
 
-es_conf = settings.ELASTICSEARCH_DSL['default']['hosts'].split(':')
-es = Elasticsearch([{'host': es_conf[0], 'port': int(es_conf[1])}])
+db = pymongo.MongoClient(settings.MONGODB_URL).local
 
 OPENSSH_KEY_ERROR = u'''\
 It looks like you're trying to use a private key in OpenSSH format, which \
@@ -211,8 +210,7 @@ class Command(BaseCommand):
                             action_text = 'would delete' if self.dry_run else 'deleting'
                             print('{} {}'.format(action_text, entry.archive_name))
                             if not self.dry_run:
-                                es.delete_by_query(index="catalog", doc_type='_doc',
-                                                   body={"query": {"match": {"archive_name": entry.archive_name}}})
+                                db.catalog.delete_many({'archive_name': entry.archive_name})
                                 entry.delete()
 
         return 0, 0
