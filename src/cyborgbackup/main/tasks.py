@@ -1162,7 +1162,7 @@ class RunJob(BaseTask):
                 args += ['scp', '-qo', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
                 args += ['-o', 'PreferredAuthentications=publickey']
                 args += [path, path_env, '{}@{}:{}/'.format(client_user, job.client.hostname, env['PRIVATE_DATA_DIR'])]
-                args += ['&&']
+                args += ['&&', 'rm', path, path_env, '&&']
                 args += ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
                 args += ['{}@{}'.format(client_user, job.client.hostname)]
                 args += ['\". ', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
@@ -1173,7 +1173,6 @@ class RunJob(BaseTask):
                          '-rf',
                          env['PRIVATE_DATA_DIR'],
                          '; exit $exitcode\"']
-                args += ['rm', path, path_env]
             if job.client_id and job.policy.policy_type == 'vm':
                 try:
                     setting_client_user = Setting.objects.get(key='cyborgbackup_backup_user')
@@ -1209,7 +1208,7 @@ class RunJob(BaseTask):
                          path_env,
                          path_backup_script,
                          '{}@{}:{}/'.format(client_user, hypervisor_hostname, env['PRIVATE_DATA_DIR'])]
-                args += ['&&']
+                args += ['&&', 'rm', path_env, path_prepare, path_backup_script, '&&']
                 args += ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
                 args += ['{}@{}'.format(client_user, hypervisor_hostname)]
                 args += ['\". ', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
@@ -1220,7 +1219,6 @@ class RunJob(BaseTask):
                          '-rf',
                          env['PRIVATE_DATA_DIR'],
                          '; exit $exitcode\"']
-                args += ['rm', path_env, path_prepare, path_backup_script]
             if job.repository_id:
                 handle, path = tempfile.mkstemp()
                 f = os.fdopen(handle, 'w')
@@ -1244,7 +1242,7 @@ class RunJob(BaseTask):
                 args += ['\"', 'mkdir', '-p', env['PRIVATE_DATA_DIR'], '\"', '&&']
                 args += ['scp', '-qo', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
                 args += [path, path_env, '{}:{}/'.format(repository_conn, env['PRIVATE_DATA_DIR'])]
-                args += ['&&']
+                args += ['&&', 'rm', path, path_env, '&&']
                 args += ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
                 args += [repository_conn]
                 args += ['\". ', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
@@ -1311,7 +1309,7 @@ class RunJob(BaseTask):
                 args += ['\"', 'mkdir', '-p', env['PRIVATE_DATA_DIR'], '\"', '&&']
                 args += ['scp', '-qo', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
                 args += [path, path_env, '{}:{}/'.format(repository_conn, env['PRIVATE_DATA_DIR'])]
-                args += ['&&']
+                args += ['&&', 'rm', path, path_env, '&&']
                 args += ['ssh', '-Ao', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
                 args += [repository_conn]
                 args += ['\". ', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
@@ -1322,7 +1320,6 @@ class RunJob(BaseTask):
                          '-rf',
                          env['PRIVATE_DATA_DIR'],
                          '; exit $exitcode\"']
-                args += ['rm', path, path_env]
         elif job.job_type == 'prune':
             if job.client_id:
                 prefix = '{}-{}-'.format(job.policy.policy_type, job.client.hostname)
@@ -1358,13 +1355,12 @@ class RunJob(BaseTask):
             new_args += ['\"', 'mkdir', '-p', env['PRIVATE_DATA_DIR'], '\"', '&&']
             new_args += ['scp', '-qo', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
             new_args += [path_env, '{}@{}:{}/'.format(client_user, client, env['PRIVATE_DATA_DIR'])]
-            new_args += ['&&']
+            new_args += ['&&', 'rm', path_env, '&&']
             new_args += ['ssh', '-Ao', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
             new_args += ['{}@{}'.format(client_user, client)]
             new_args += ['\". ', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
             new_args += ['rm', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
             new_args += [' '.join(args), '; exitcode=$?;', 'rm', '-rf', env['PRIVATE_DATA_DIR'], '; exit $exitcode\"']
-            new_args += ['rm', path_env]
             args = new_args
         return args
 
