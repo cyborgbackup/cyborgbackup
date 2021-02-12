@@ -83,6 +83,8 @@ class Catalog(PrimordialModel):
                 ('archive_name', pymongo.TEXT),
                 ('path', pymongo.TEXT)
             ], name='archive_name_text_path_text', default_language='english')
+        if 'archive_name_1' not in db.catalog.index_information().keys():
+            db.catalog.create_index('archive_name', name='archive_name_1', default_language='english')
 
         logger.info('Catalog data saved.', extra=dict(python_objects=dict(created=len(catalog_entries))))
         return len(catalog_entries)

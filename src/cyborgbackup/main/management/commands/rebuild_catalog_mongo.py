@@ -246,3 +246,6 @@ class Command(BaseCommand):
                                         ('archive_name', pymongo.TEXT),
                                         ('path', pymongo.TEXT)
                                     ], name='archive_name_text_path_text', default_language='english')
+                                if 'archive_name_1' not in db.catalog.index_information().keys():
+                                    db.catalog.create_index('archive_name', name='archive_name_1',
+                                                            default_language='english')
