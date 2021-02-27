@@ -15,7 +15,7 @@ jobs:
       - name: Tag Docker Image to Develop
         run: docker tag cyborgbackup/cyborgbackup:dev-$(echo $GITHUB_SHA | cut -c 1-6) cyborgbackup/cyborgbackup:develop
       - name: Push the tagged Docker image
-        run: docker push cyborgbackup/cyborgbackup
+        run: docker push --all-tags cyborgbackup/cyborgbackup
 
   debian-build:
     runs-on: ubuntu-latest
