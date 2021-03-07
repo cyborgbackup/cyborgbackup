@@ -57,7 +57,7 @@ The best platform for general feedback, assistance, and other discussion is our
 To report a bug or request a specific feature, please open a GitHub issue.
 
 .. _documentation: https://cyborgbackup.readthedocs.io
-.. _Discord: https://discord.gg/yHMXJfGtHp
+.. _Discord: https://discord.gg/YqtkAbeYCG
 .. _GitHub Discussions: https://github.com/cyborgbackup/cyborgbackup/discussions
 .. |ci-develop| image:: https://github.com/cyborgbackup/cyborgbackup/actions/workflows/dockerimage-dev.yml/badge.svg
 .. |ci-master| image:: https://github.com/cyborgbackup/cyborgbackup/actions/workflows/dockerimage.yml/badge.svg
