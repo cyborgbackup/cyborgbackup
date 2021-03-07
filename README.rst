@@ -1,13 +1,30 @@
 CyBorgBackup
 ============
 
-|build| |readthedocs| |codacy| |codecov|
-
 CyBorgBackup is a Web and API Interface to manage BorgBackup solution on multiple servers.
 
 It is implemented using Python, Django and AngularJS.
 
-Documentation => <https://cyborgbackup.readthedocs.io>
+The complete documentation can be found at <https://cyborgbackup.readthedocs.io>
+
+Discussion
+==========
+
+* `Discord`_ - Real-time chat hosted by the CyBorgBackup community
+* `GitHub Discussions`_ - Discussion form hosted by GitHub
+
+
+Build Status
+============
+
+  ===========  =======  ============
+  Type         Branch   Status
+  ===========  =======  ============
+  GitHub       master   |ci-develop|
+  Github       develop  |ci-master|
+  CodeCov      master   |codecov|
+  ReadTheDocs  master   |readthedocs|
+  ===========  =======  ============
 
 Features
 ========
@@ -26,13 +43,24 @@ Features
 - Logs system
 - REST API
 
-MailingLists
+Installation
 ============
 
-Users => <users@lists.cyborgbackup.dev>
+Please see `documentation`_ for
+instructions on installing CyBorgBackup.
 
-Developers => <developers@lists.cyborgbackup.dev>
+Providing Feedback
+==================
 
+The best platform for general feedback, assistance, and other discussion is our
+`Github Discussions`_.
+To report a bug or request a specific feature, please open a GitHub issue.
+
+.. _documentation: https://cyborgbackup.readthedocs.io
+.. _Discord: https://discord.gg/yHMXJfGtHp
+.. _GitHub Discussions: https://github.com/cyborgbackup/cyborgbackup/discussions
+.. |ci-develop| image:: https://github.com/cyborgbackup/cyborgbackup/actions/workflows/dockerimage-dev.yml/badge.svg
+.. |ci-master| image:: https://github.com/cyborgbackup/cyborgbackup/actions/workflows/dockerimage.yml/badge.svg
 .. |build| image:: https://travis-ci.org/cyborgbackup/cyborgbackup.svg?branch=master
 .. |readthedocs| image:: https://readthedocs.org/projects/cyborgbackup/badge/?version=latest
 .. |codecov| image:: https://codecov.io/gh/cyborgbackup/cyborgbackup/branch/master/graph/badge.svg
