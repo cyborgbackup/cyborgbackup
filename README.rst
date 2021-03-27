@@ -17,14 +17,14 @@ Discussion
 Build Status
 ============
 
-  ===========  =======  ============
-  Type         Branch   Status
-  ===========  =======  ============
-  GitHub       master   |ci-develop|
-  Github       develop  |ci-master|
-  CodeCov      master   |codecov|
-  ReadTheDocs  master   |readthedocs|
-  ===========  =======  ============
+===========  =======  ============
+Type         Branch   Status
+===========  =======  ============
+GitHub       master   |ci-develop|
+Github       develop  |ci-master|
+CodeCov      master   |codecov|
+ReadTheDocs  master   |readthedocs|
+===========  =======  ============
 
 Features
 ========

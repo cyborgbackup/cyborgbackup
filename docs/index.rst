@@ -1,8 +1,3 @@
-.. CyBorgBackup documentation master file, created by
-   sphinx-quickstart on Fri Nov 14 00:05:47 2018.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
 CyBorgBackup
 ============
 
@@ -13,6 +8,8 @@ Release v\ |version|. (:ref:`Installation <install>`)
     :alt: codecov.io
 .. image:: https://travis-ci.org/cyborgbackup/cyborgbackup.svg?branch=master
 .. image:: https://readthedocs.org/projects/cyborgbackup/badge/?version=latest
+.. image:: https://github.com/cyborgbackup/cyborgbackup/actions/workflows/dockerimage-dev.yml/badge.svg
+.. image:: https://github.com/cyborgbackup/cyborgbackup/actions/workflows/dockerimage.yml/badge.svg
 .. image:: https://api.codacy.com/project/badge/Grade/29ad3c1de5f7405796ea9f8edc05b205
    :alt: Codacy Badge
    :target: https://www.codacy.com/gh/cyborgbackup/cyborgbackup?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=cyborgbackup/cyborgbackup&amp;utm_campaign=Badge_Grade
@@ -69,6 +66,7 @@ The User Guide
    user/install
    user/screenshots
    user/quickstart
+   user/configuration
    user/provider
 
 
