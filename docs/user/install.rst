@@ -37,6 +37,7 @@ To install CyBorgBackup under Docker, run this command in your terminal of choic
     RABBITMQ_DEFAULT_USER=cyborgbackup
     RABBITMQ_DEFAULT_PASS=cyborgbackup
     RABBITMQ_DEFAULT_VHOST=cyborgbackup
+    SECRET_KEY=$(openssl rand -base64 47|sed 's/=//g')
     EOF
     $ docker-compose up
     $ docker-compose exec web /bin/bash
