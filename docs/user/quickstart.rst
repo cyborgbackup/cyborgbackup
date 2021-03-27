@@ -68,10 +68,13 @@ that the object is ready to be used. If the hook didn't work, the job stdout
 show the curl command to launch to enable the object. Or you can use the API to
 set the ready field to true.
 
+.. warning::
+    The URL settings must be defined correctly with an accessible URL of each client of repository nodes.
+
 Policy Type
 -----------
 
-At this time, 7 policy types has been defined in CyBorgBackup.
+At this time, 9 policy types has been defined in CyBorgBackup.
 
 rootfs
 ~~~~~~
