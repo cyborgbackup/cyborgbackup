@@ -15,7 +15,6 @@ import six
 import smtplib
 from email.message import EmailMessage
 from email.headerregistry import Address
-from distutils.version import LooseVersion as Version
 try:
     import psutil
 except Exception:
@@ -49,7 +48,7 @@ from cyborgbackup.main.models.users import User
 from cyborgbackup.main.models.schedules import CyborgBackupScheduleState
 from cyborgbackup.main.expect import run
 from cyborgbackup.main.consumers import emit_channel_notification
-from cyborgbackup.main.utils.common import OutputEventFilter, get_type_for_model, get_ssh_version, load_module_provider
+from cyborgbackup.main.utils.common import OutputEventFilter, get_type_for_model, load_module_provider
 from cyborgbackup.main.utils.encryption import decrypt_field
 from cyborgbackup.main.utils.callbacks import CallbackQueueDispatcher
 

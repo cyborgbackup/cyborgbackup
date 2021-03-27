@@ -61,7 +61,7 @@ class Querier:
         if 'user' in args.keys():
             cmd += ['-u{}'.format(args['user'])]
         if 'password' in args.keys():
-            cmd += ['-p'.format(args['password'])]
+            cmd += ['-p']
             queryargs['password'] = args['password']
         if 'port' in args.keys():
             cmd += ['-P{}'.format(args['port'])]
@@ -203,7 +203,6 @@ class Querier:
 
             shutil.rmtree(kwargs['private_data_dir'])
         except Exception:
-            tb = traceback.format_exc()
             if settings.DEBUG:
                 logger.exception('Exception occurred while running task')
         finally:
@@ -211,6 +210,4 @@ class Querier:
                 logger.info('finished running, producing  events.')
             except Exception:
                 logger.exception('Error flushing stdout and saving event count.')
-        print(rc)
-        print(status)
         return finalOutput, rc
