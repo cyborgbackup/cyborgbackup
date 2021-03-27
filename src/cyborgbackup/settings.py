@@ -31,8 +31,10 @@ PROVIDER_DIR = os.path.join(BASE_DIR, 'cyborgbackup', 'provider')
 
 # SECURITY WARNING: keep the secret key used in production secret!
 try:
-    SECRET_KEY
-except NameError:
+    SECRET_KEY = os.environ.get("SECRET_KEY", None)
+    if not SECRET_KEY:
+        raise Exception("SECRET_KEY not defined")
+except Exception:
     SECRET_FILE = os.path.join(BASE_DIR, 'secret.txt')
     try:
         SECRET_KEY = open(SECRET_FILE).read().strip()
