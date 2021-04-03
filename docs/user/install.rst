@@ -10,7 +10,7 @@ Debian Package
 
 The latest release of CyBorgBackup is available as a Debian package and can be downloaded from github releases page::
 
-    # apt install git postgresql-all elasticsearch rabbitmq-server python3-pip python3-virtualenv python3-setuptools python3-venv systemd nginx git
+    # apt install git postgresql-all rabbitmq-server python3-pip python3-virtualenv python3-setuptools python3-venv systemd nginx git
     # wget https://api.github.com/repos/cyborgbackup/cyborgbackup/releases/latest -O - |grep -oP '"browser_download_url": "\K(.*)(?=")' |wget -i -
     # dpkg -i cyborgbackup_X.X.X_all.deb
 
@@ -19,8 +19,8 @@ To add UI system::
     # wget https://api.github.com/repos/cyborgbackup/cyborgbackup-ui/releases/latest -O - |grep -oP '"browser_download_url": "\K(.*)(?=")' |wget -i -
     # dpkg -i cyborgbackup-ui_X.X.X_all.deb
 
-*Note* : Elactic search is not provided by the Debian repository, you need to follow
-`elasticsearch documentation <https://www.elastic.co/guide/en/elasticsearch/reference/7.6/deb.html>`_.
+*Note* : MongoDB is not provided by the Debian repository, you need to follow
+`mongodb documentation <https://docs.mongodb.com/manual/tutorial/install-mongodb-on-debian/>`_.
 
 
 Docker Install

@@ -13,7 +13,7 @@ django-pglocks==1.0.2
 django-polymorphic==2.0.2
 django-qsstats-magic==1.0.0
 django-rest-swagger==2.1.2
-djangorestframework==3.9.1
+djangorestframework==3.11.2
 django-rest-passwordreset==1.1.0
 kombu==4.2.2.post1
 celery==4.2.1
