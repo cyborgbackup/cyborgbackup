@@ -13,4 +13,6 @@ if [ -z "$CYBORG_READY" ]; then
     python3 "$HOME/manage.py" loaddata settings
     echo "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.create_superuser('admin@cyborg.local', 'admin')" | python3 "$HOME/manage.py" shell
     echo "export CYBORG_READY=1" >> /opt/cyborgbackup/.env
+else
+  python3 $HOME/manage.py rebuild_settings
 fi

@@ -1,3 +1,17 @@
+cyborgbackup (0.5.0) unstable; urgency=low
+
+  * Switch Catalog to MongoDB database
+  * Split UI into 2 project
+  * Update SystemD script
+  * Add configuration documentation
+  * Add SSH generation on settings page
+  * Add clean temporary files on Job
+  * Add metrics exporter
+  * Add group and order on Setting model
+  * Add rebuild_settings command and add them to debian postinst
+
+ -- Gaëtan Ferez <gaetan@ferez.fr>  Sun, 1 Mar 2020 18:50:00 +0000
+
 cyborgbackup (0.4) unstable; urgency=low
 
   * Switch Catalog to ElasticSearch database

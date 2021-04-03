@@ -102,6 +102,7 @@ initenv:
 	echo "RABBITMQ_DEFAULT_USER=cyborgbackup" >> .env
 	echo "RABBITMQ_DEFAULT_PASS=cyborgbackup" >> .env
 	echo "RABBITMQ_DEFAULT_VHOST=cyborgbackup" >> .env
+	echo "SECRET_KEY=$(openssl rand -base64 47|sed 's/=//g')" >> .env
 	echo "MONGODB_HOST=mongodb" >> .env
 
 deb:
