@@ -893,7 +893,7 @@ class MongoCatalog(ListAPIView):
         data = []
         archive_name = request.GET.get('archive_name', None)
         path = request.GET.get('path__regexp', None)
-        db = pymongo.MongoClient().local
+        db = pymongo.MongoClient(dsettings.MONGODB_URL).local
         if path:
             obj = db.catalog.find({'$and':[{'archive_name': archive_name}, {'path':{'$regex':'^{}$'.format(path)}}]}, { "_id": 0, "archive_name": 1, "path": 1, "type": 1, "size": 1, "healthy": 1, "mtime": 1, "owner": 1, "group": 1, "mode": 1})
             data = list(obj)
