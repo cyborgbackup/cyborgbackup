@@ -96,7 +96,7 @@ def _get_metrics():
     instance = socket.gethostname()
     METRICS_CYBORG_INFO.labels(instance, get_version()).set(1)
 
-    for job_state in Job.ALL_STATUS_CHOICES:
+    for job_state in Job.JOB_STATUS_CHOICES:
         METRICS_CYBORG_JOBS_STATUS.labels(instance, job_state[0]).set(
             Job.objects.filter(status=job_state[0]).count()
         )
