@@ -259,4 +259,32 @@
       "group": "5 - Metrics"
     }
   }
+  ,
+  {
+    "model": "main.setting",
+    "pk": 21,
+    "fields": {
+      "created": "2018-11-17T00:00:00.000Z",
+      "modified": "2018-11-17T00:00:00.000Z",
+      "key": "cyborgbackup_integrity_check",
+      "value": "False",
+      "setting_type": "boolean",
+      "order": 4,
+      "group": "2 - Backup"
+    }
+  }
+  ,
+  {
+    "model": "main.setting",
+    "pk": 22,
+    "fields": {
+      "created": "2018-11-17T00:00:00.000Z",
+      "modified": "2018-11-17T00:00:00.000Z",
+      "key": "cyborgbackup_ic_cron",
+      "value": "00 20 * * *",
+      "setting_type": "string",
+      "order": 5,
+      "group": "2 - Backup"
+    }
+  }
 ]

@@ -11,8 +11,10 @@ import tempfile
 import time
 import traceback
 import datetime
+import random
 import six
 import smtplib
+import pymongo
 from email.message import EmailMessage
 from email.headerregistry import Address
 try:
@@ -428,28 +430,10 @@ class LogErrorsTask(Task):
         super(LogErrorsTask, self).on_failure(exc, task_id, args, kwargs, einfo)
 
 
-# @shared_task(queue='cyborgbackup', base=LogErrorsTask)
-# def send_notifications(notification_list, job_id=None):
-#     if not isinstance(notification_list, list):
-#         raise TypeError("notification_list should be of type list")
-#     if job_id is not None:
-#         job_actual = Job.objects.get(id=job_id)
-#
-#     notifications = Notification.objects.filter(id__in=notification_list)
-#     if job_id is not None:
-#         job_actual.notifications.add(*notifications)
-#
-#     for notification in notifications:
-#         try:
-#             sent = notification.notification_template.send(notification.subject, notification.body)
-#             notification.status = "successful"
-#             notification.notifications_sent = sent
-#         except Exception as e:
-#             logger.error(six.text_type("Send Notification Failed {}").format(e))
-#             notification.status = "failed"
-#             notification.error = smart_str(e)
-#         finally:
-#             notification.save()
+def launch_integrity_check():
+    # TODO
+    # Launch Integrity Check on all Repositories based on crontab defined in Settings
+    print("You didn't say the magic word")
 
 
 units = {"B": 1, "kB": 10**3, "MB": 10**6, "GB": 10**9, "TB": 10**12}
@@ -498,6 +482,40 @@ def compute_borg_size(self):
                         repo.deduplicated_size = parseSize(m.group(3))
                         repo.save()
                         break
+
+
+@shared_task(bind=True, base=LogErrorsTask)
+def random_restore_integrity(self):
+    logger.debug('Auto Restore Test for check Integrity')
+    try:
+        setting = Setting.objects.get(key='cyborgbackup_catalog_enabled')
+        if setting.value == 'True':
+            catalog_enabled = True
+        else:
+            catalog_enabled = False
+    except Exception:
+        catalog_enabled = True
+
+    try:
+        setting = Setting.objects.get(key='cyborgbackup_auto_restore_test')
+        if setting.value == 'True':
+            autorestore_test = True
+        else:
+            autorestore_test = False
+    except Exception:
+        autorestore_test = False
+
+    if autorestore_test and catalog_enabled:
+        jobs = Job.objects.filter(archive_name__isnull=False)
+        if jobs.exists():
+            selected_job = random.choice(jobs)
+            db = pymongo.MongoClient(settings.MONGODB_URL).local
+            query = {"archive_name": selected_job.archive_name, "type": "-"}
+            entries_count = db.catalog.count(query)
+            r = random.randint(1, entries_count + 1)
+            selected_items = list(db.catalog.find(query).limit(1).skip(r))
+            if len(selected_items) == 1:
+                print(selected_items)
 
 
 @shared_task(bind=True, base=LogErrorsTask)
