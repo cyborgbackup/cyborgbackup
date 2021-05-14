@@ -1267,20 +1267,12 @@ class RunJob(BaseTask):
                 handle, path = tempfile.mkstemp()
                 f = os.fdopen(handle, 'w')
                 token, created = Token.objects.get_or_create(user=agentUser)
-                master_jobs = Job.objects.filter(dependent_jobs=job.pk)
-                master_job = None
-                if master_jobs.exists():
-                    master_job = master_jobs.first()
-                if not master_job:
-                    master_jobs = Job.objects.filter(dependent_jobs=job.old_pk)
-                    if master_jobs.exists():
-                        master_job = master_jobs.first()
-                if not master_job:
+                if not job.master_job:
                     raise Exception("Unable to get master job")
                 job_events = JobEvent.objects.filter(
-                    job=master_job.pk,
+                    job=job.master_job.pk,
                     stdout__contains="Archive name: {}".format(
-                        master_job.policy.policy_type
+                        job.master_job.policy.policy_type
                     )
                 )
                 archive_name = None
@@ -1289,8 +1281,8 @@ class RunJob(BaseTask):
                     archive_name = job_stdout.split(':')[1].strip()
                 if not archive_name:
                     raise Exception("Latest backup haven't archive name in the report")
-                master_job.archive_name = archive_name
-                master_job.save()
+                job.master_job.archive_name = archive_name
+                job.master_job.save()
                 base_script = os.path.join(settings.SCRIPTS_DIR, 'cyborgbackup', 'fill_catalog')
                 with open(base_script) as fs:
                     script = fs.read()
@@ -1586,13 +1578,10 @@ class RunJob(BaseTask):
                 else:
                     env['CYBORG_BORG_REPOSITORY'] = job.policy.repository.path
             if job.job_type == 'catalog':
-                master_jobs = Job.objects.filter(dependent_jobs=job.pk)
-                if master_jobs.exists():
-                    master_job = master_jobs.first()
                 job_events = JobEvent.objects.filter(
-                    job=master_job.pk,
+                    job=job.master_job.pk,
                     stdout__contains="Archive name: {}".format(
-                        master_job.policy.policy_type
+                        job.master_job.policy.policy_type
                     )
                 )
                 archive_name = None
@@ -1603,7 +1592,7 @@ class RunJob(BaseTask):
                     env['CYBORG_JOB_ARCHIVE_NAME'] = archive_name
                 else:
                     raise Exception('Unable to get archive from backup. Backup job may failed.')
-                env['CYBORG_JOB_ID'] = str(master_job.pk)
+                env['CYBORG_JOB_ID'] = str(job.master_job.pk)
         else:
             env['BORG_PASSPHRASE'] = job.policy.repository.repository_key
             env['BORG_REPO'] = job.policy.repository.path

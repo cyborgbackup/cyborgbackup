@@ -296,6 +296,13 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
         null=True,
         editable=False,
     )
+    master_job = models.ForeignKey(
+        'self',
+        related_name='%(class)s_master_job+',
+        on_delete=models.CASCADE,
+        null=True,
+        editable=False,
+    )
     hypervisor = models.CharField(
         max_length=1024,
         blank=True,
