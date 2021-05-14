@@ -2,7 +2,7 @@ import json
 import logging
 
 from channels import Group
-from channels.auth import channel_session_user_from_http, channel_session_user
+from channels.auth import channel_session_user
 from cyborgbackup.main.auth_token import rest_auth
 
 from django.core.serializers.json import DjangoJSONEncoder
