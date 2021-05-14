@@ -1,6 +1,7 @@
 import logging
 
 from django.db import models
+from django.core.validators import MaxValueValidator, MinValueValidator
 from cyborgbackup.api.versioning import reverse
 from cyborgbackup.main.models.base import PrimordialModel
 from cyborgbackup.main.utils.common import copy_model_by_class, copy_m2m_relationships
@@ -28,6 +29,12 @@ class Client(PrimordialModel):
         max_length=50,
         blank=True,
         default=''
+    )
+
+    port = models.PositiveIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(65535)],
+        blank=True,
+        default=22
     )
 
     ready = models.BooleanField(

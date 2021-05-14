@@ -873,7 +873,7 @@ class ClientSerializer(BaseSerializer):
 
     class Meta:
         model = Client
-        fields = ('*', '-name', '-description', 'hostname', 'ip', 'bandwidth_limit',
+        fields = ('*', '-name', '-description', 'hostname', 'ip', 'bandwidth_limit', 'port',
                   'version', 'ready', 'hypervisor_ready', 'hypervisor_name', 'enabled', 'uuid')
 
     def get_summary_fields(self, obj):

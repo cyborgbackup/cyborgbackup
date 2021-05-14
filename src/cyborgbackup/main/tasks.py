@@ -1157,6 +1157,8 @@ class RunJob(BaseTask):
                 os.chmod(path, stat.S_IEXEC | stat.S_IREAD)
                 args = ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
                 args += ['{}@{}'.format(client_user, job.client.hostname)]
+                if job.client.port != 22:
+                    args += ['-p', job.client.port]
                 args += ['\"', 'mkdir', '-p', env['PRIVATE_DATA_DIR'], '\"', '&&']
                 args += ['scp', '-qo', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
                 args += ['-o', 'PreferredAuthentications=publickey']
