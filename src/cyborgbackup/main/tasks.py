@@ -1436,6 +1436,10 @@ class RunJob(BaseTask):
         if policy_type == 'folders':
             obj_folders = json.loads(job.policy.extra_vars)
             path = ' '.join(obj_folders['folders'])
+            if 'exclude' in obj_folders.keys():
+                for item in obj_folders['exclude']:
+                    if item not in excludedDirs:
+                        excludedDirs.append(item)
         if policy_type == 'mail':
             path = '/var/lib/mail /var/mail'
         if policy_type in ('mysql', 'postgresql', 'piped'):
