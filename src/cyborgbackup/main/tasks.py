@@ -1436,6 +1436,8 @@ class RunJob(BaseTask):
         if policy_type == 'folders':
             obj_folders = json.loads(job.policy.extra_vars)
             path = ' '.join(obj_folders['folders'])
+        if policy_type in ('rootfs', 'config', 'folders'):
+            obj_folders = json.loads(job.policy.extra_vars)
             if 'exclude' in obj_folders.keys():
                 for item in obj_folders['exclude']:
                     if item not in excludedDirs:
