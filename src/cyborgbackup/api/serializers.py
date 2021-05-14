@@ -620,7 +620,7 @@ class JobSerializer(BaseSerializer):
         fields = ('*', 'launch_type', 'status', 'policy',
                   'failed', 'started', 'finished', 'elapsed', 'job_args',
                   'original_size', 'compressed_size', 'deduplicated_size', 'archive_name',
-                  'job_cwd', 'job_env', 'job_explanation', 'client', 'repository',
+                  'job_cwd', 'job_env', 'job_explanation', 'client', 'repository', 'master_job',
                   'dependent_jobs', 'result_traceback', 'event_processing_finished', 'job_type')
 
     def get_types(self):

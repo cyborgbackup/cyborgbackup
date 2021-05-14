@@ -706,7 +706,7 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
     @classmethod
     def _get_job_field_names(cls):
         return set(
-            ['name', 'description', 'policy', 'client', 'repository', 'job_type']
+            ['name', 'description', 'policy', 'client', 'repository', 'job_type', 'master_job']
         )
 
     def copy_job(self, limit=None):
