@@ -136,7 +136,7 @@ class TaskManager:
     }
     '''
     def get_active_tasks(self):
-        if not hasattr(settings, 'IGNORE_CELERY_INSPECTOR'):
+        if not hasattr(settings, 'IGNORE_CELERY_INSPECTOR') or not getattr(settings, 'IGNORE_CELERY_INSPECTOR'):
             app = Celery('cyborgbackup')
             app.config_from_object('django.conf:settings')
             inspector = Inspect(app=app)
@@ -388,7 +388,13 @@ class TaskManager:
     def fail_jobs_if_not_in_celery(self, node_jobs, active_tasks, celery_task_start_time,
                                    isolated=False):
         for task in node_jobs:
-            if (task.celery_task_id not in active_tasks and not hasattr(settings, 'IGNORE_CELERY_INSPECTOR')):
+            if (
+                task.celery_task_id not in active_tasks
+                and (
+                    not hasattr(settings, 'IGNORE_CELERY_INSPECTOR')
+                    or not getattr(settings, 'IGNORE_CELERY_INSPECTOR')
+                )
+            ):
                 if task.modified > celery_task_start_time:
                     continue
                 new_status = 'failed'
