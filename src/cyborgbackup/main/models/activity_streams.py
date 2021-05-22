@@ -45,8 +45,6 @@ class ActivityStream(models.Model):
     policy = models.ManyToManyField("Policy", blank=True)
     repository = models.ManyToManyField("Repository", blank=True)
 
-    setting = JSONField(blank=True)
-
     def get_absolute_url(self, request=None):
         return reverse('api:activity_stream_detail', kwargs={'pk': self.pk}, request=request)
 

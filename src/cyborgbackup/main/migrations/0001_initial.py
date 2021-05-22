@@ -63,7 +63,7 @@ class Migration(migrations.Migration):
                 ('object_relationship_type', models.TextField(blank=True)),
                 ('object1', models.TextField()),
                 ('object2', models.TextField()),
-                ('setting', cyborgbackup.main.fields.JSONField(blank=True, default=dict)),
+                ('setting', models.CharField(default='{}', editable=False, max_length=1024)),
                 ('actor', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='activity_stream', to=settings.AUTH_USER_MODEL)),
             ],
             options={
@@ -128,7 +128,7 @@ class Migration(migrations.Migration):
                 ('modified', models.DateTimeField(default=None, editable=False)),
                 ('uuid', models.UUIDField(default=uuid.uuid4, editable=False)),
                 ('name', models.CharField(max_length=512)),
-                ('inputs', cyborgbackup.main.fields.CredentialInputField(blank=True, default={}, help_text='Enter inputs using either JSON or YAML syntax. Use the radio button to toggle between the two. Refer to the Ansible Tower documentation for example syntax.')),
+                ('inputs', models.CharField(default='{}', editable=False, max_length=1024)),
                 ('created_by', models.ForeignKey(default=None, editable=False, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name="{'class': 'credential', 'model_name': 'credential', 'app_label': 'main'}(class)s_created+", to=settings.AUTH_USER_MODEL)),
             ],
             options={
@@ -144,8 +144,8 @@ class Migration(migrations.Migration):
                 ('uuid', models.UUIDField(default=uuid.uuid4, editable=False)),
                 ('name', models.CharField(max_length=512)),
                 ('kind', models.CharField(choices=[('ssh', 'Machine'), ('net', 'Network'), ('scm', 'Source Control'), ('cloud', 'Cloud'), ('insights', 'Insights')], max_length=32)),
-                ('inputs', cyborgbackup.main.fields.CredentialTypeInputField(blank=True, default={}, help_text='Enter inputs using either JSON or YAML syntax. Use the radio button to toggle between the two. Refer to the Ansible Tower documentation for example syntax.')),
-                ('injectors', cyborgbackup.main.fields.CredentialTypeInjectorField(blank=True, default={}, help_text='Enter injectors using either JSON or YAML syntax. Use the radio button to toggle between the two. Refer to the Ansible Tower documentation for example syntax.')),
+                ('inputs', models.CharField(default='{}', editable=False, max_length=1024)),
+                ('injectors', models.CharField(default='{}', editable=False, max_length=1024)),
                 ('created_by', models.ForeignKey(default=None, editable=False, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name="{'class': 'credentialtype', 'model_name': 'credentialtype', 'app_label': 'main'}(class)s_created+", to=settings.AUTH_USER_MODEL)),
                 ('modified_by', models.ForeignKey(default=None, editable=False, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name="{'class': 'credentialtype', 'model_name': 'credentialtype', 'app_label': 'main'}(class)s_modified+", to=settings.AUTH_USER_MODEL)),
             ],

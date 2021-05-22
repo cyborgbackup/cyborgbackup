@@ -250,6 +250,7 @@ class Policy(PrimordialModel):
                 catalog_job.job_type = 'catalog'
                 catalog_job.name = "Catalog Job {} {}".format(self.name, client.hostname)
                 catalog_job.description = "Catalog Job for Policy {} of client {}".format(self.name, client.hostname)
+                catalog_job.master_job = job
                 catalog_job.save()
                 job.dependent_jobs = catalog_job
                 job.save()
@@ -262,6 +263,10 @@ class Policy(PrimordialModel):
                     prune_job.job_type = 'prune'
                     prune_job.name = "Prune Job {} {}".format(self.name, client.hostname)
                     prune_job.description = "Prune Job for Policy {} of client {}".format(self.name, client.hostname)
+                    if catalog_enabled:
+                        prune_job.master_job = catalog_job
+                    else:
+                        prune_job.master_job = job
                     prune_job.save()
                     if catalog_enabled:
                         catalog_job.dependent_jobs = prune_job
