@@ -454,7 +454,7 @@ def compute_borg_size(self):
                               job_type='job').order_by('-finished')
     if jobs.exists():
         for job in jobs:
-            events = JobEvent.objects.filter(job_id=job.pk).order_by('-counter')
+            events = JobEvent.objects.filter(job_id=job.pk, stdout__contains='This archive:').order_by('-counter')
             for event in events:
                 prg = re.compile(r"This archive:\s*([0-9\.]*\s*.B)\s*([0-9\.]*\s*.B)\s*([0-9\.]*\s*.B)\s*")
                 m = prg.match(event.stdout)
@@ -464,7 +464,7 @@ def compute_borg_size(self):
                     job.deduplicated_size = parseSize(m.group(3))
                     job.save()
                     break
-    repos = Repository.objects.filter(original_size=0, deduplicated_size=0, compressed_size=0, ready=True)
+    repos = Repository.objects.filter(ready=True)
     if repos.exists():
         for repo in repos:
             jobs = Job.objects.filter(policy__repository_id=repo.pk,
@@ -472,7 +472,7 @@ def compute_borg_size(self):
                                       job_type='job').order_by('-finished')
             if jobs.exists():
                 last_running_job = jobs.first()
-                events = JobEvent.objects.filter(job_id=last_running_job.pk).order_by('-counter')
+                events = JobEvent.objects.filter(job_id=last_running_job.pk, stdout__contains='All archives:').order_by('-counter')
                 for event in events:
                     prg = re.compile(r"All archives:\s*([0-9\.]*\s*.B)\s*([0-9\.]*\s*.B)\s*([0-9\.]*\s*.B)\s*")
                     m = prg.match(event.stdout)
