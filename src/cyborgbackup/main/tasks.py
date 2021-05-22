@@ -690,22 +690,23 @@ def cyborgbackup_periodic_scheduler(self):
         policy.save()
     policies = Policy.objects.enabled().between(last_run, run_now)
     for policy in policies:
-        policy.save()  # To update next_run timestamp.
-        try:
-            new_job = policy.create_job()
-            new_job.launch_type = 'scheduled'
-            new_job.save(update_fields=['launch_type'])
-            can_start = new_job.signal_start()
-        except Exception:
-            logger.exception('Error spawning scheduled job.')
-            continue
-        if not can_start:
-            new_job.status = 'failed'
-            expl = "Scheduled job could not start because it was not in the right state or required manual credentials"
-            new_job.job_explanation = expl
-            new_job.save(update_fields=['status', 'job_explanation'])
-            new_job.websocket_emit_status("failed")
-        emit_channel_notification('schedules-changed', dict(id=policy.id, group_name="jobs"))
+        if policy.repository.enabled and policy.schedule.enabled:
+            policy.save()  # To update next_run timestamp.
+            try:
+                new_job = policy.create_job()
+                new_job.launch_type = 'scheduled'
+                new_job.save(update_fields=['launch_type'])
+                can_start = new_job.signal_start()
+            except Exception:
+                logger.exception('Error spawning scheduled job.')
+                continue
+            if not can_start:
+                new_job.status = 'failed'
+                expl = "Scheduled job could not start because it was not in the right state or required manual credentials"
+                new_job.job_explanation = expl
+                new_job.save(update_fields=['status', 'job_explanation'])
+                new_job.websocket_emit_status("failed")
+            emit_channel_notification('schedules-changed', dict(id=policy.id, group_name="jobs"))
     state.save()
 
 
