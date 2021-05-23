@@ -1181,9 +1181,13 @@ class RunJob(BaseTask):
                 args += ['\"', 'mkdir', '-p', env['PRIVATE_DATA_DIR'], '\"', '&&']
                 args += ['scp', '-qo', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
                 args += ['-o', 'PreferredAuthentications=publickey']
+                if job.client.port != 22:
+                    args += ['-P'+job.client.port]
                 args += [path, path_env, '{}@{}:{}/'.format(client_user, job.client.hostname, env['PRIVATE_DATA_DIR'])]
                 args += ['&&', 'rm', '-f', path, path_env, '&&']
                 args += ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
+                if job.client.port != 22:
+                    args += ['-p', job.client.port]
                 args += ['{}@{}'.format(client_user, job.client.hostname)]
                 args += ['\". ', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
                 args += ['rm', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
@@ -1364,12 +1368,18 @@ class RunJob(BaseTask):
             f.close()
             new_args = ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
             new_args += ['{}@{}'.format(client_user, client)]
+            if job.client.port != 22:
+                new_args += ['-p', job.client.port]
             new_args += ['\"', 'mkdir', '-p', env['PRIVATE_DATA_DIR'], '\"', '&&']
             new_args += ['scp', '-qo', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
+            if job.client.port != 22:
+                new_args += ['-P'+job.client.port]
             new_args += [path_env, '{}@{}:{}/'.format(client_user, client, env['PRIVATE_DATA_DIR'])]
             new_args += ['&&', 'rm', '-f', path_env, '&&']
             new_args += ['ssh', '-Ao', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
             new_args += ['{}@{}'.format(client_user, client)]
+            if job.client.port != 22:
+                args += ['-p', job.client.port]
             new_args += ['\". ', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
             new_args += ['rm', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
             new_args += [' '.join(args), '; exitcode=$?;', 'rm', '-rf', env['PRIVATE_DATA_DIR'], '; exit $exitcode\"']
