@@ -142,6 +142,7 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
         ('catalog', 'Catalog Job'),
         ('prune', 'Prune Job'),
         ('restore', 'Restore Job'),
+        ('integrity', 'Integrity Check Job'),
     ]
 
     VERBOSITY_CHOICES = [
