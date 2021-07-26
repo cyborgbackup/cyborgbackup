@@ -10,7 +10,7 @@ Debian Package
 
 The latest release of CyBorgBackup is available as a Debian package and can be downloaded from github releases page::
 
-    # apt install git postgresql-all rabbitmq-server python3-pip python3-virtualenv python3-setuptools python3-venv systemd nginx git
+    # apt install git postgresql-all rabbitmq-server python3-pip python3-virtualenv python3-setuptools python3-venv systemd nginx
     # wget https://api.github.com/repos/cyborgbackup/cyborgbackup/releases/latest -O - |grep -oP '"browser_download_url": "\K(.*)(?=")' |wget -i -
     # dpkg -i cyborgbackup_X.X.X_all.deb
 
