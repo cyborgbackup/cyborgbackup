@@ -17,9 +17,6 @@ from rest_framework import fields
 from rest_framework import serializers
 from rest_framework import validators
 
-# Django-Polymorphic
-from polymorphic.models import PolymorphicModel
-
 # cyborgbackup
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
@@ -307,8 +304,6 @@ class BaseSerializer(serializers.ModelSerializer, metaclass=BaseSerializerMetacl
                     fval = getattr(fkval, field, None)
 
                     if fval is None and field == 'type':
-                        if isinstance(fkval, PolymorphicModel):
-                            fkval = fkval.get_real_instance()
                         fval = get_type_for_model(fkval)
                     if fval is not None:
                         summary_fields[fk][field] = fval

@@ -29,7 +29,7 @@ from jsonschema import Draft4Validator, FormatChecker
 import jsonschema.exceptions
 
 # Django-JSONField
-from jsonfield import JSONField as upstream_JSONField
+from django.db.models import JSONField as upstream_JSONField
 
 # DRF
 from rest_framework import serializers

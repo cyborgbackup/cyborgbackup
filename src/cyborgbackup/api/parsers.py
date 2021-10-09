@@ -5,7 +5,6 @@ import yaml
 
 # Django
 from django.conf import settings
-from django.utils import six
 from django.utils.translation import ugettext_lazy as _
 
 # Django REST Framework
@@ -63,4 +62,4 @@ class JSONParser(parsers.JSONParser):
                 raise ParseError(_('JSON parse error - not a JSON object'))
             return obj
         except ValueError as exc:
-            raise ParseError(_('JSON parse error - %s\nPossible cause: trailing comma.' % six.text_type(exc)))
+            raise ParseError(_('JSON parse error - %s\nPossible cause: trailing comma.' % str(exc)))

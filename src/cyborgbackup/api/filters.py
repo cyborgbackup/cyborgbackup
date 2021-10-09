@@ -4,10 +4,9 @@ import json
 import logging
 
 # Django
-from django.core.exceptions import FieldError, ValidationError
+from django.core.exceptions import FieldError, ValidationError, FieldDoesNotExist
 from django.db import models
 from django.db.models import Q
-from django.db.models.fields import FieldDoesNotExist
 from django.db.models.fields.related import ForeignObjectRel, ManyToManyField, ForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey

@@ -29,7 +29,7 @@ services:
       - rabbitmq
   channel_workers:
     image: cyborgbackup/cyborgbackup:latest
-    command: bash -c 'python /cyborgbackup/manage.py runworker --only-channels websocket.*'
+    command: bash -c 'python /cyborgbackup/manage.py runworker websocket.*'
     volumes:
       - ./src:/cyborgbackup
     env_file:

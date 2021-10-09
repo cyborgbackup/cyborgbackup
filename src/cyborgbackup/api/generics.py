@@ -7,7 +7,7 @@ import traceback
 # Django
 from django.conf import settings
 from django.db import connection
-from django.db.models.fields import FieldDoesNotExist
+from django.core.exceptions import FieldDoesNotExist
 from django.db.models.fields.related import OneToOneRel
 from django.http import QueryDict
 from django.shortcuts import get_object_or_404

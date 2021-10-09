@@ -112,9 +112,11 @@ BROKER_URL = "amqp://{}:{}@{}/{}".format(os.environ.get("RABBITMQ_DEFAULT_USER",
 MONGODB_URL = "mongodb://{}/".format(os.environ.get("MONGODB_HOST", "127.0.0.1"))
 
 CHANNEL_LAYERS = {
-    'default': {'BACKEND': 'asgi_amqp.AMQPChannelLayer',
-                'ROUTING': 'cyborgbackup.main.routing.channel_routing',
-                'CONFIG': {'url': BROKER_URL}}
+    'default': {'BACKEND': 'channels_rabbitmq.core.RabbitmqChannelLayer',
+                'CONFIG': {
+                    'host': BROKER_URL
+                }
+    }
 }
 
 MIDDLEWARE = [
@@ -158,7 +160,8 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'cyborgbackup.wsgi.application'
 
-ASGI_APPLICATION = 'cyborgbackup.routing.application'
+#ASGI_APPLICATION = 'cyborgbackup.routing.application'
+ASGI_APPLICATION = 'cyborgbackup.asgi.application'
 
 ASGI_AMQP = {
     'INIT_FUNC': 'cyborgbackup.prepare_env',
@@ -260,6 +263,10 @@ LOGGING = {
         'cyborgbackup': {
             'handlers': ['console'],
             'level': 'DEBUG',
+        },
+        "": {
+            "handlers": ["console"],
+            "level": "INFO",
         },
     },
 }

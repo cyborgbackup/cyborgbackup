@@ -2,4 +2,5 @@ from django.apps import AppConfig
 
 
 class ApiConfig(AppConfig):
-    name = 'api'
+    name = 'cyborgbackup.api'
+    verbose_name = 'API'
