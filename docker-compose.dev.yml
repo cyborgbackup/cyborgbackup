@@ -11,8 +11,8 @@ services:
       - "5432:5432"
   rabbitmq:
     image: "rabbitmq:management"
-    env_file:
-      - .env
+    volumes:
+      - ./tools/rabbitmq_docker/:/etc/rabbitmq/
     ports:
       - "5672:5672"
       - "15672:15672"
