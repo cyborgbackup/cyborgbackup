@@ -238,7 +238,7 @@ class Policy(PrimordialModel):
             job = copy_model_by_class(self, job_class, fields, kwargs)
             job.policy_id = self.pk
             job.client_id = client.pk
-            job.status = 'waiting'
+            job.status = 'pending'
             job.name = "Backup Job {} {}".format(self.name, client.hostname)
             job.description = "Backup Job for Policy {} of client {}".format(self.name, client.hostname)
             job.save()
@@ -314,7 +314,7 @@ class Policy(PrimordialModel):
         job.policy_id = self.pk
         job.client_id = source_job.client.pk
         job.archive_name = source_job.archive_name
-        job.status = 'waiting'
+        job.status = 'new'
         job.name = "Restore Job {} {}".format(self.name, source_job.client.hostname)
         job.description = "Restore Job for Policy {} of client {}".format(self.name, source_job.client.hostname)
         job.save()

@@ -768,7 +768,7 @@ class PolicyLaunch(RetrieveAPIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         for client in obj.clients.all():
-            jobs = Job.objects.filter(client=client.pk)
+            jobs = Job.objects.filter(client=client.pk, repository=obj.repository.pk)
             if jobs.exists():
                 for job in jobs:
                     if job.status in ['waiting', 'pending', 'running']:
