@@ -8,7 +8,7 @@ EnvironmentFile=-/etc/default/cyborgbackup
 WorkingDirectory=/opt/cyborgbackup
 User=cyborgbackup
 Group=cyborgbackup
-ExecStart=/opt/cyborgbackup/venv/bin/daphne -b 127.0.0.1 -p 8151 cyborgbackup.asgi:channel_layer
+ExecStart=/opt/cyborgbackup/venv/bin/daphne -b 127.0.0.1 -p 8151 cyborgbackup.asgi:application
 
 [Install]
 WantedBy=multi-user.target

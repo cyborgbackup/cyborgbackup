@@ -7,7 +7,6 @@ from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.settings import api_settings
 from channels.sessions import SessionMiddlewareStack
 from channels.routing import ProtocolTypeRouter, URLRouter, ChannelNameRouter
-from django.contrib.auth.models import AnonymousUser
 from django.core.asgi import get_asgi_application
 
 from cyborgbackup import prepare_env
@@ -18,6 +17,9 @@ prepare_env()
 logger = logging.getLogger('cyborgbackup.asgi')
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "cyborgbackup.settings")
 
+django_asgi_app = get_asgi_application()
+
+from django.contrib.auth.models import AnonymousUser
 
 class EmptyRequest:
     _request = {}
@@ -68,7 +70,7 @@ class TokenAuthMiddleware:
 
 application = ProtocolTypeRouter({
     # Django's ASGI application to handle traditional HTTP requests
-    "http": get_asgi_application(),
+    "http": django_asgi_app,
 
     # WebSocket handler
     "websocket": TokenAuthMiddleware(
