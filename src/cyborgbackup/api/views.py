@@ -895,8 +895,8 @@ class MongoCatalog(ListAPIView):
         path = request.GET.get('path__regexp', None)
         db = pymongo.MongoClient(dsettings.MONGODB_URL).local
         if path:
-            obj = db.catalog.find({'$and':[{'archive_name': archive_name}, {'path':{'$regex':'^{}$'.format(path)}}]}, { "_id": 0, "archive_name": 1, "path": 1, "type": 1, "size": 1, "healthy": 1, "mtime": 1, "owner": 1, "group": 1, "mode": 1})
-            data = list(obj)
+            obj = db.catalog.find({'$and': [{'archive_name': archive_name}, {'path': {'$regex': '^{}$'.format(path)}}]}, {"_id": 0, "archive_name": 1, "path": 1, "type": 1, "size": 1, "healthy": 1, "mtime": 1, "owner": 1, "group": 1, "mode": 1})
+            data = list(obj.sort('path', 1))
             return Response({'count': len(data), 'results': data})
         else:
             obj = db.catalog.count({'archive_name': archive_name})
