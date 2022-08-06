@@ -89,7 +89,7 @@ class TaskManager:
         if Job.objects.filter(repository=task.policy.repository.pk, status__in=('pending', 'waiting', 'running')).count() > 0:
             return True
 
-        if Job.objects.filter(client=task.client.pk, status__in=('running')).count() > 0:
+        if task.client and Job.objects.filter(client=task.client.pk, status__in=('running')).count() > 0:
             return True
 
         return False
