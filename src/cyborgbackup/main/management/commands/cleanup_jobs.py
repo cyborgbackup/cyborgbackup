@@ -1,3 +1,4 @@
+import datetime
 import os
 import re
 import stat
@@ -7,6 +8,7 @@ import tempfile
 from io import StringIO
 from collections import OrderedDict
 from django.conf import settings
+from django.utils import timezone
 from distutils.version import LooseVersion as Version
 from cyborgbackup.main.expect import run
 from cyborgbackup.main.models.settings import Setting
@@ -190,7 +192,7 @@ class Command(BaseCommand):
             print('A job is already running, exiting.')
             return
 
-        repos = Repository.objects.filter(enabled=True)
+        repos = Repository.objects.filter()
         repoArchives = []
         if repos.exists():
             for repo in repos:
@@ -201,17 +203,32 @@ class Command(BaseCommand):
                     for type in ('rootfs', 'vm', 'mysql', 'postgresql', 'config', 'piped', 'mail', 'folders'):
                         if '{}-'.format(type) in archive_name:
                             repoArchives.append(archive_name)
-                print(repoArchives)
 
-                entries = Job.objects.filter(job_type='job')
-                if entries.exists():
-                    for entry in entries:
-                        if entry.archive_name != '' and entry.archive_name and entry.archive_name not in repoArchives:
+            entries = Job.objects.filter(job_type='job')
+            keepJobs = []
+            deletedJobs = []
+            if entries.exists():
+                for entry in entries:
+                    if entry.archive_name != '' and entry.archive_name and entry.archive_name not in repoArchives:
+                        action_text = 'would delete' if self.dry_run else 'deleting'
+                        print('{} {}'.format(action_text, entry.archive_name))
+                        if not self.dry_run:
+                            db.catalog.delete_many({'archive_name': entry.archive_name})
+                            deletedJobs.append(entry)
+                            entry.delete()
+                    else:
+                        if entry.archive_name is None and entry.created < ( timezone.now() - datetime.timedelta(days=settings.JOB_RETENTION)):
                             action_text = 'would delete' if self.dry_run else 'deleting'
-                            print('{} {}'.format(action_text, entry.archive_name))
+                            print('{} orphan JobID={} => {}'.format(action_text, entry.pk, entry.name))
                             if not self.dry_run:
-                                db.catalog.delete_many({'archive_name': entry.archive_name})
                                 entry.delete()
+
+            if not self.dry_run:
+                Job.objects.exclude(job_type='job')\
+                    .filter(dependent_jobs_id__isnull=True,
+                            master_job_id__isnull=True,
+                            created__lt=( timezone.now() - datetime.timedelta(days=settings.JOB_RETENTION)))\
+                    .delete()
 
         return 0, 0
 
