@@ -2,7 +2,7 @@
 import logging
 
 # Django
-from django.utils.encoding import smart_text
+from django.utils.encoding import smart_str
 
 # Django REST Framework
 from rest_framework import authentication
@@ -16,7 +16,7 @@ class LoggedBasicAuthentication(authentication.BasicAuthentication):
         ret = super(LoggedBasicAuthentication, self).authenticate(request)
         if ret:
             username = ret[0].username if ret[0] else '<none>'
-            logger.debug(smart_text(u"User {} performed a {} to {} through the API".format(username,
+            logger.debug(smart_str(u"User {} performed a {} to {} through the API".format(username,
                                                                                            request.method,
                                                                                            request.path)))
         return ret

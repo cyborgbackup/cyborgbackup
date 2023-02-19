@@ -11,33 +11,25 @@ from collections import OrderedDict
 
 # Django
 from django.core.validators import URLValidator
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 # Django REST Framework
-from rest_framework.fields import CharField, IntegerField, ListField, NullBooleanField, DictField
-
-from jinja2 import Environment, StrictUndefined
-from jinja2.exceptions import UndefinedError
+from rest_framework.fields import CharField, IntegerField, ListField, BooleanField, DictField
 
 # Django
-from django.core import exceptions as django_exceptions
 from django.db import models
 from django.db.models.fields.related_descriptors import ReverseOneToOneDescriptor
 
 # jsonschema
-from jsonschema import Draft4Validator, FormatChecker
+from jsonschema import Draft4Validator
 import jsonschema.exceptions
 
 # Django-JSONField
 from django.db.models import JSONField as upstream_JSONField
 
-# DRF
-from rest_framework import serializers
 
 # CyBorgBackup
 from cyborgbackup.main.utils.filters import SmartFilter
-from cyborgbackup.main.validators import validate_ssh_private_key
-from cyborgbackup.main import utils
 
 
 # Provide a (better) custom error message for enum jsonschema validation
@@ -90,11 +82,11 @@ class StringListBooleanField(ListField):
         try:
             if isinstance(value, (list, tuple)):
                 return super(StringListBooleanField, self).to_representation(value)
-            elif value in NullBooleanField.TRUE_VALUES:
+            elif value in BooleanField.TRUE_VALUES:
                 return True
-            elif value in NullBooleanField.FALSE_VALUES:
+            elif value in BooleanField.FALSE_VALUES:
                 return False
-            elif value in NullBooleanField.NULL_VALUES:
+            elif value in BooleanField.NULL_VALUES:
                 return None
             elif isinstance(value, basestring):
                 return self.child.to_representation(value)
@@ -107,11 +99,11 @@ class StringListBooleanField(ListField):
         try:
             if isinstance(data, (list, tuple)):
                 return super(StringListBooleanField, self).to_internal_value(data)
-            elif data in NullBooleanField.TRUE_VALUES:
+            elif data in BooleanField.TRUE_VALUES:
                 return True
-            elif data in NullBooleanField.FALSE_VALUES:
+            elif data in BooleanField.FALSE_VALUES:
                 return False
-            elif data in NullBooleanField.NULL_VALUES:
+            elif data in BooleanField.NULL_VALUES:
                 return None
             elif isinstance(data, basestring):
                 return self.child.run_validation(data)

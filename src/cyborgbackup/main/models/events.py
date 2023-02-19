@@ -4,7 +4,7 @@ import logging
 from django.db import models
 from django.utils.dateparse import parse_datetime
 from django.utils.timezone import utc
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from cyborgbackup.api.versioning import reverse
 from cyborgbackup.main.fields import JSONField

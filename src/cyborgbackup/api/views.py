@@ -20,7 +20,7 @@ from django.utils.timezone import now
 from django.views.decorators.csrf import csrf_exempt
 from django.template.loader import render_to_string
 from django.http import HttpResponse
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 # Django REST Framework
 from rest_framework.exceptions import PermissionDenied, ParseError
@@ -29,6 +29,7 @@ from rest_framework.response import Response
 from rest_framework.settings import api_settings
 from rest_framework.views import exception_handler
 from rest_framework import status, renderers
+from rest_framework.reverse import reverse
 
 # CyBorgBackup
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -37,7 +38,6 @@ from cyborgbackup.api.generics import (APIView, GenericAPIView, ListAPIView,
                                        ListCreateAPIView, SubListAPIView, RetrieveAPIView,
                                        RetrieveUpdateAPIView, RetrieveUpdateDestroyAPIView,
                                        get_view_name)
-from cyborgbackup.main.models import reverse
 from cyborgbackup.main.models.events import JobEvent
 from cyborgbackup.main.models.catalogs import Catalog
 from cyborgbackup.main.models.clients import Client

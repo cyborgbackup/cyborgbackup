@@ -6,9 +6,6 @@ import msgpack
 from django.conf import settings
 from asgiref.sync import async_to_sync
 from channels.generic.websocket import WebsocketConsumer
-from channels.layers import get_channel_layer
-
-from django.core.serializers.json import DjangoJSONEncoder
 
 logger = logging.getLogger('cyborgbackup.main.consumers')
 
@@ -21,7 +18,6 @@ class CyborgBackupConsumer(WebsocketConsumer):
 
     def receive(self, text_data=None, bytes_data=None):
         data = json.loads(text_data)
-        current_groups = []
         if 'groups' in data:
             groups = data['groups']
             current_groups = set(self.scope['session']['groups'] if 'groups' in self.scope['session'] else [])

@@ -18,7 +18,6 @@ from cyborgbackup.main.models.jobs import (
 from cyborgbackup.main.models.clients import Client
 from cyborgbackup.main.models.repositories import Repository
 from cyborgbackup.main.utils.common import get_type_for_model, load_module_provider
-from cyborgbackup.main.signals import disable_activity_stream
 
 # Celery
 from celery import Celery
@@ -191,9 +190,8 @@ class TaskManager:
             # TODO: run error handler to fail sub-tasks and send notifications
         else:
             logger.info('Submitting %s to instance group cyborgbackup.', task.log_format)
-            with disable_activity_stream():
-                task.celery_task_id = str(uuid.uuid4())
-                task.save()
+            task.celery_task_id = str(uuid.uuid4())
+            task.save()
 
             self.consume_capacity(task, 'cyborgbackup')
 

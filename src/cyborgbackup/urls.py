@@ -13,19 +13,18 @@ Including another URLconf
     1. Import the include() function: from django.conf.urls import url, include
     2. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))
 """
-from django.conf.urls import url
 from django.contrib import admin
 from django.conf import settings
-from django.urls import include, path
+from django.urls import include, path, re_path
 
 app_name = 'cyborgbackup'
 urlpatterns = [
-    url(r'^admin/', admin.site.urls),
-    url(r'^api/', include((
+    re_path(r'^admin/', admin.site.urls),
+    re_path(r'^api/', include((
         'cyborgbackup.api.urls',
         'cyborgbackup'
     ), namespace='api')),
-    url(r'', include('cyborgbackup.ui.urls', namespace='ui')),
+    re_path(r'', include('cyborgbackup.ui.urls', namespace='ui')),
 ]
 
 if settings.DEBUG:

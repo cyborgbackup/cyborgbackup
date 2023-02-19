@@ -11,9 +11,9 @@ from collections import OrderedDict
 # Django
 from django.conf import settings
 from django.db import models, connection
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from django.utils.timezone import now
-from django.utils.encoding import smart_text
+from django.utils.encoding import smart_str
 from django.apps import apps
 
 from django_celery_results.models import TaskResult
@@ -773,7 +773,7 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
         return dict(id=self.id,
                     name=self.name,
                     url=self.get_ui_url(),
-                    created_by=smart_text(self.created_by),
+                    created_by=smart_str(self.created_by),
                     started=self.started.isoformat() if self.started is not None else None,
                     finished=self.finished.isoformat() if self.finished is not None else None,
                     status=self.status,

@@ -3,7 +3,6 @@ import base64
 import socket
 import prometheus_client
 from prometheus_client import multiprocess
-from django.conf.urls import url
 from django.views.generic.base import TemplateView
 from django.contrib.staticfiles import views
 from django.http import HttpResponse
@@ -155,22 +154,21 @@ def _get_metrics():
     return prometheus_client.generate_latest(registry)
 
 
-def MetricsPrometheus(request):
+def metrics_prometheus(request):
     metrics_enabled = Setting.objects.get(key='cyborgbackup_metrics_enabled')
     if metrics_enabled and metrics_enabled.value == 'True':
         metrics_auth = Setting.objects.get(key='cyborgbackup_metrics_auth')
         if metrics_auth and metrics_auth.value == 'True':
             if 'HTTP_AUTHORIZATION' in request.META:
                 auth = request.META['HTTP_AUTHORIZATION'].split()
-                if len(auth) == 2:
-                    if auth[0].lower() == "basic":
-                        uname, passwd = base64.b64decode(auth[1]).split(b':')
-                        metrics_user = Setting.objects.get(key='cyborgbackup_metrics_auth_username')
-                        metrics_pass = Setting.objects.get(key='cyborgbackup_metrics_auth_password')
-                        if uname.decode('utf-8') == metrics_user.value and passwd.decode('utf-8') == metrics_pass.value:
-                            return HttpResponse(
-                                _get_metrics(), content_type=prometheus_client.CONTENT_TYPE_LATEST
-                            )
+                if len(auth) == 2 and auth[0].lower() == "basic":
+                    uname, passwd = base64.b64decode(auth[1]).split(b':')
+                    metrics_user = Setting.objects.get(key='cyborgbackup_metrics_auth_username')
+                    metrics_pass = Setting.objects.get(key='cyborgbackup_metrics_auth_password')
+                    if uname.decode('utf-8') == metrics_user.value and passwd.decode('utf-8') == metrics_pass.value:
+                        return HttpResponse(
+                            _get_metrics(), content_type=prometheus_client.CONTENT_TYPE_LATEST
+                        )
             response = HttpResponse()
             response.status_code = 401
             response['WWW-Authenticate'] = 'Basic realm="CyBorgBackup Metrics"'
@@ -186,7 +184,7 @@ def MetricsPrometheus(request):
 index = IndexView.as_view()
 
 urlpatterns = [
-    url(r'^$', index, name='index'),
-    url(r'^metrics$', MetricsPrometheus),
+    re_path(r'^$', index, name='index'),
+    re_path(r'^metrics$', metrics_prometheus),
     re_path(r'^(?P<path>.*)$', views.serve),
 ]

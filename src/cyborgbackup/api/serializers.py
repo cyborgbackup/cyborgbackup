@@ -6,8 +6,8 @@ from collections import OrderedDict
 # Django
 from django.core.exceptions import ObjectDoesNotExist, ValidationError as DjangoValidationError
 from django.db import models
-from django.utils.translation import ugettext_lazy as _
-from django.utils.encoding import force_text
+from django.utils.translation import gettext_lazy as _
+from django.utils.encoding import force_str
 from django.utils.text import capfirst
 from django.utils.timezone import now
 
@@ -244,7 +244,7 @@ class BaseSerializer(serializers.ModelSerializer, metaclass=BaseSerializerMetacl
         }
         choices = []
         for t in self.get_types():
-            name = type_name_map.get(t, force_text(get_model_for_type(t)._meta.verbose_name).title())
+            name = type_name_map.get(t, force_str(get_model_for_type(t)._meta.verbose_name).title())
             choices.append((t, name))
         return choices
 
@@ -503,7 +503,7 @@ class BaseSerializer(serializers.ModelSerializer, metaclass=BaseSerializerMetacl
                         v2.extend(e)
                     else:
                         v2.append(e)
-                d[k] = map(force_text, v2)
+                d[k] = map(force_str, v2)
             raise ValidationError(d)
         return attrs
 
@@ -1095,7 +1095,7 @@ class CatalogListSerializer(DynamicFieldsSerializerMixin, CatalogSerializer):
 
 
 class StatsSerializer(EmptySerializer):
-    stats = serializers.ListField(serializers.SerializerMethodField())
+    stats = serializers.ListField()
 
 
 class CyborgTokenObtainPairSerializer(TokenObtainPairSerializer):

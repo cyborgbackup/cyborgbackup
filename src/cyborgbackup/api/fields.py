@@ -20,7 +20,7 @@ class NullFieldMixin(object):
         return (is_empty_value, data)
 
 
-class BooleanNullField(NullFieldMixin, serializers.NullBooleanField):
+class BooleanNullField(NullFieldMixin, serializers.BooleanField):
     '''
     Custom boolean field that allows null and empty string as False values.
     '''

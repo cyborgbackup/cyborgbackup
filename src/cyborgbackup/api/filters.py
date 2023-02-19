@@ -10,8 +10,8 @@ from django.db.models import Q
 from django.db.models.fields.related import ForeignObjectRel, ManyToManyField, ForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
-from django.utils.encoding import force_text
-from django.utils.translation import ugettext_lazy as _
+from django.utils.encoding import force_str
+from django.utils.translation import gettext_lazy as _
 
 # Django REST Framework
 from rest_framework.exceptions import ParseError, PermissionDenied
@@ -131,7 +131,7 @@ class FieldLookupBackend(BaseFilterBackend):
         return field, new_lookup
 
     def to_python_related(self, value):
-        value = force_text(value)
+        value = force_str(value)
         if value.lower() in ('none', 'null'):
             return None
         else:
@@ -221,7 +221,7 @@ class FieldLookupBackend(BaseFilterBackend):
                 # Search across related objects.
                 if key.endswith('__search'):
                     for value in values:
-                        search_value, new_keys = self.value_to_python(queryset.model, key, force_text(value))
+                        search_value, new_keys = self.value_to_python(queryset.model, key, force_str(value))
                         assert isinstance(new_keys, list)
                         for new_key in new_keys:
                             search_filters.append((new_key, search_value))

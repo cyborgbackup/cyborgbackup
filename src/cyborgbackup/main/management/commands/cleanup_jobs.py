@@ -227,7 +227,7 @@ class Command(BaseCommand):
                 Job.objects.exclude(job_type='job')\
                     .filter(dependent_jobs_id__isnull=True,
                             master_job_id__isnull=True,
-                            created__lt=( timezone.now() - datetime.timedelta(days=settings.JOB_RETENTION)))\
+                            created__lt=(timezone.now() - datetime.timedelta(days=settings.JOB_RETENTION)))\
                     .delete()
 
         return 0, 0

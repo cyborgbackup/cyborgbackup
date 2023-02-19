@@ -12,9 +12,9 @@ from django.db.models.fields.related import OneToOneRel
 from django.http import QueryDict
 from django.shortcuts import get_object_or_404
 from django.template.loader import render_to_string
-from django.utils.encoding import smart_text
+from django.utils.encoding import smart_str
 from django.utils.safestring import mark_safe
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from django.contrib.auth import views as auth_views
 
 # Django REST Framework
@@ -314,8 +314,8 @@ class GenericAPIView(LoggingViewSetMixin, generics.GenericAPIView, APIView):
         if hasattr(self.model, "_meta"):
             if hasattr(self.model._meta, "verbose_name"):
                 d.update({
-                    'model_verbose_name': smart_text(self.model._meta.verbose_name),
-                    'model_verbose_name_plural': smart_text(self.model._meta.verbose_name_plural),
+                    'model_verbose_name': smart_str(self.model._meta.verbose_name),
+                    'model_verbose_name_plural': smart_str(self.model._meta.verbose_name_plural),
                 })
             serializer = self.get_serializer()
             for method, key in [
@@ -450,8 +450,8 @@ class SubListAPIView(ParentMixin, ListAPIView):
     def get_description_context(self):
         d = super(SubListAPIView, self).get_description_context()
         d.update({
-            'parent_model_verbose_name': smart_text(self.parent_model._meta.verbose_name),
-            'parent_model_verbose_name_plural': smart_text(self.parent_model._meta.verbose_name_plural),
+            'parent_model_verbose_name': smart_str(self.parent_model._meta.verbose_name),
+            'parent_model_verbose_name_plural': smart_str(self.parent_model._meta.verbose_name_plural),
         })
         return d
 
@@ -476,8 +476,8 @@ class SubListLoopAPIView(ParentMixin, ListAPIView):
     def get_description_context(self):
         d = super(SubListLoopAPIView, self).get_description_context()
         d.update({
-            'parent_model_verbose_name': smart_text(self.parent_model._meta.verbose_name),
-            'parent_model_verbose_name_plural': smart_text(self.parent_model._meta.verbose_name_plural),
+            'parent_model_verbose_name': smart_str(self.parent_model._meta.verbose_name),
+            'parent_model_verbose_name_plural': smart_str(self.parent_model._meta.verbose_name_plural),
         })
         return d
 

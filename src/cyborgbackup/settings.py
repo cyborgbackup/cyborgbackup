@@ -71,6 +71,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'rest_framework_swagger',
     'channels',
+    'auditlog',
     'django_rest_passwordreset',
     'debug_toolbar',
     'cyborgbackup.ui',

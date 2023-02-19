@@ -3,10 +3,6 @@ import functools
 from channels.handler import AsgiRequest
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.settings import api_settings
-from django.conf import settings
-
-#print(api_settings.DEFAULT_AUTHENTICATION_CLASSES)
-#authenticators = [auth() for auth in api_settings.DEFAULT_AUTHENTICATION_CLASSES]
 
 
 def rest_auth(func):
