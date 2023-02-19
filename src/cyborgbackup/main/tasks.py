@@ -31,12 +31,12 @@ from celery import Task, shared_task, Celery
 from django.conf import settings
 from django.db import transaction, DatabaseError
 from django.utils.timezone import now
-# from django.contrib.auth.models import User
 from django.core import management
 from django.core.cache import cache
 from django.core.exceptions import ObjectDoesNotExist
 from django_pglocks import advisory_lock as django_pglocks_advisory_lock
 from django.db import connection
+from jinja2 import Environment, FileSystemLoader
 from rest_framework.authtoken.models import Token
 
 # CyBorgBackup
@@ -97,33 +97,33 @@ def build_report(type):
         since *= 31
     started = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(seconds=since)
     jobs = Job.objects.filter(started__gte=started, job_type='job')
-    totalTimes = 0
-    totalBackups = 0
-    totalSize = 0
-    totalDeduplicated = 0
+    total_times = 0
+    total_backups = 0
+    total_size = 0
+    total_deduplicated = 0
     lines = []
     if jobs.exists():
         for job in jobs:
-            numberOfFiles = Catalog.objects.filter(job=job.pk).__len__()
-            totalTimes += job.elapsed
-            totalBackups += 1
-            totalSize += job.original_size
-            totalDeduplicated += job.deduplicated_size
+            number_of_files = Catalog.objects.filter(job=job.pk).__len__()
+            total_times += job.elapsed
+            total_backups += 1
+            total_size += job.original_size
+            total_deduplicated += job.deduplicated_size
             line = {
                 'client': job.client.hostname,
                 'type': job.policy.policy_type,
                 'status': job.status,
                 'duration': str(datetime.timedelta(seconds=float(job.elapsed))),
-                'numberFiles': str(numberOfFiles),
+                'numberFiles': str(number_of_files),
                 'original_size': str(humanbytes(job.original_size)),
                 'deduplicated_size': str(humanbytes(job.deduplicated_size))
             }
             lines.append(line)
     report = {
-        'times': totalTimes,
-        'backups': totalBackups,
-        'size': humanbytes(totalSize),
-        'deduplicated': humanbytes(totalDeduplicated),
+        'times': total_times,
+        'backups': total_backups,
+        'size': humanbytes(total_size),
+        'deduplicated': humanbytes(total_deduplicated),
         'lines': lines
     }
     return report
@@ -156,13 +156,11 @@ def generate_html_table(elements):
     for col in elements['columns']:
         table += '<th>'+col['title']+'</th>\n'
     table += '</tr></thead>\n<tbody>'
-    i = 0
     for elt in elements['lines']:
         table += '<tr>'
         for col in elements['columns']:
             table += '<td>'+elt[col['key']]+'</td>\n'
         table += '</tr>\n'
-        i += 1
     table += '</tbody></table>\n'
     return table
 
@@ -202,178 +200,42 @@ def send_email(elements, type, mail_to):
     msg['From'] = Address("CyBorgBackup", mail_address.split('@')[0], mail_address.split('@')[1])
     msg['To'] = mail_to
     if type != 'after':
-        asciiTable = generate_ascii_table(elements)
-        htmlTable = generate_html_table(elements)
+        ascii_table = generate_ascii_table(elements)
+        html_table = generate_html_table(elements)
     else:
-        htmlTable = generate_html_joboutput(elements)
+        ascii_table = ""
+        html_table = generate_html_joboutput(elements)
     logo = os.path.join(settings.BASE_DIR, 'cyborgbackup', 'logo.txt')
     with open(logo) as f:
         logo_text = f.read()
-    if type in ('daily', 'weekly', 'monthly'):
-        msg.set_content("""\
-CyBorgBackup Report
-    {} Report of {}
-
-    Number of backups : {}
-    Total backup time : {}
-    Total backup size : {}
-    Total deduplicated size : {}
-
-{}
-""".format(type.capitalize(), datetime.datetime.now().strftime("%d/%m/%Y"),
-            elements['backups'], elements['times'],
-            elements['size'], elements['deduplicated'], asciiTable))
-    if type in ('summary'):
-        msg.set_content("""\
-CyBorgBackup Summary Report
-
-{}
-""".format(asciiTable))
-    if type in ('after'):
-        header = ''
-        if elements['job'].job_explanation and elements['job'].job_explanation != '':
-            header += """Job Explanation : \n{}\n""".format(elements['job'].job_explanation)
-        if elements['job'].result_traceback and elements['job'].result_traceback != '':
-            header += """Result Traceback : \n{}\n""".format(elements['job'].result_traceback)
-        msg.set_content("""\
-CyBorgBackup Backup Report
-
-{} : {}
-{}
-Job output :
-{}
-""".format(elements['title'], elements['state'], header, '\n'.join(elements['lines'])))
-    header = """\
-<html>
-  <head>
-    <title>CyBorgBackup</title>
-    <style type="text/css">
-       body { margin: 0;background-color: #F0F3F4; }
-       table {
-         border-spacing: 0;border-collapse: collapse;width: 100%;max-width: 100%;
-         font: 14px/16px "Roboto", sans-serif;color: #666666;
-       }
-       th {
-         border-top: 0; text-align: center; border-bottom: none; vertical-align: bottom;
-         white-space: nowrap;line-height: 1.42;font-weight: 400;padding: 8px;
-       }
-       td {
-         text-align: center; padding: 0 8px; line-height: 35px;
-         border-top: 1px solid gainsboro; vertical-align: top;
-       }
-       div.content { width: 1000px;padding: 15px 32px 15px 40px;font: 14px/16px "Roboto", sans-serif; }
-       div.card { position: relative;padding: 0 15px;float: left;box-sizing: border-box; }
-       div.panel {
-         color: #666666;background-color: #ffffff;border: none;border-radius: 5px;position: relative;
-         margin-bottom: 24px;box-shadow: 0 5px 5px 0 rgba(0, 0, 0, 0.25);box-sizing: border-box;
-       }
-       .block-top .panel > .panel-body { height: 50px; }
-       .panel > .panel-body { padding: 15px 22px;box-sizing: border-box; }
-       div.top {
-         background-color: #1C2B36; box-shadow: 2px 0px 3px rgba(0, 0, 0, 0.5);
-         height: 100px;width: 100%; min-width: 320px; padding: 10px 32px 10px 40px;
-       }
-      .alert-failed { color: #721c24;background-color: #f8d7da;border-color: #f5c6cb; }
-      .alert-success { color: #155724;background-color: #d4edda;border-color: #c3e6cb; }
-      .alert {
-        font-size: 15px;position: relative;padding: .75rem 1.25rem;
-        margin-bottom: 1rem;border: 1px solid transparent;border-radius: .25rem;
-      }
-      .alert img { width: 17px;vertical-align: middle;margin-right: 10px; }
-      div.top div {
-        font-size: 24px;font-family: "Roboto", sans-serif;color: white;
-      }
-      div.top div.img { float: left;width: 150px;height: 100px; }
-      div.top div.title { margin-top: 20px; }
-      .job-results-standard-out {
-        -ms-flex: 1;flex: 1;-ms-flex-preferred-size: auto;flex-basis: auto;
-        height: auto;display: -ms-flexbox;display: flex;border: 1px solid #D7D7D7;
-        border-radius: 5px;margin-top: 10px;
-      }
-      .JobResultsStdOut {
-        height: auto;width: 900px;-ms-flex-direction: column;flex-direction: column;
-        -ms-flex-align: stretch;align-items: stretch;
-      }
-      .JobResultsStdOut-stdoutContainer {
-        -ms-flex: 1;flex: 1;position: relative;background-color: #FCFCFC;
-        overflow-y: auto;overflow-x: hidden;
-      }
-      .JobResultsStdOut-aLineOfStdOut {
-         display: -ms-flexbox;display: flex;
-         font-family: Monaco, Menlo, Consolas, "Courier New", monospace;
-      }
-      .JobResultsStdOut-lineNumberColumn {
-         display: -ms-flexbox;display: flex;background-color: #EBEBEB;text-align: right;
-         padding-right: 10px;padding-top: 2px;padding-bottom: 2px;width: 75px;color: #848992;
-         -ms-flex: 1 0 70px;flex: 1 0 70px;user-select: none;-moz-user-select: none;
-         -webkit-user-select: none;-ms-user-select: none;z-index: 1;border-right: 1px solid #D7D7D7;
-      }
-      .JobResultsStdOut-stdoutColumn {
-         padding-left: 20px;padding-right: 20px;padding-top: 2px;padding-bottom: 2px;
-         color: #707070;display: inline-block;white-space: pre-wrap;word-break: break-all;
-         width: 100%;background-color: #FCFCFC;
-      }
-      .JobResultsStdOut-lineExpander {
-         text-align: left;padding-left: 11px;margin-right: auto;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="top"><div class="img">"""
-    header += '<img src="{}"/>'.format(logo_text)
-
-    if type in ('daily', 'weekly', 'monthly'):
-        header += """\
-</div><div class="title"><span style="color: #209e91;">CyBorg</span>Backup</div><div>{} Report of {}</div>
-</div>""".format(type.capitalize(), datetime.datetime.now().strftime("%d/%m/%Y"))
-    elif type == 'after':
-        header += """\
-</div><div class="title"><span style="color: #209e91;">CyBorg</span>Backup</div><div>Backup Job Report</div>
-</div>""".format(type.capitalize())
-    else:
-        header += """\
-</div><div class="title"><span style="color: #209e91;">CyBorg</span>Backup</div><div>{} Report</div>
-</div>""".format(type.capitalize())
-
-    header += '<div class="content">'
-
-    if type in ('daily', 'weekly', 'monthly'):
-        header += """\
-<div class="card block-top"><div class="panel"><div class="panel-body">Total Backups : {}</div></div></div>
-<div class="card block-top"><div class="panel"><div class="panel-body">Total Duration : {}</div></div></div>
-<div class="card block-top"><div class="panel"><div class="panel-body">Total Size : {}</div></div></div>
-<div class="card block-top"><div class="panel"><div class="panel-body">Total Deduplicated Size : {}</div></div></div>
-""".format(elements['backups'], elements['times'],
-           elements['size'], elements['deduplicated'])
-    elif type == 'after':
+    context = {
+        "type": type,
+        "logo_text": logo_text,
+        "now": datetime.datetime.now(),
+        "ascii_table": ascii_table,
+        "html_table": html_table
+    }
+    context.update(elements)
+    if type == 'after':
         if elements['state'] == 'successful':
             logo = os.path.join(settings.BASE_DIR, 'cyborgbackup', 'icon_success.txt')
             with open(logo) as f:
-                state_icon = f.read()
-            css_class = "alert-success"
+                context['state_icon'] = f.read()
+            context['state_class'] = "alert-success"
         else:
             logo = os.path.join(settings.BASE_DIR, 'cyborgbackup', 'icon_failed.txt')
             with open(logo) as f:
-                state_icon = f.read()
-            css_class = "alert-failed"
-        header += '<div class="alert {}"><img src="{}" />{}</div>'.format(css_class, state_icon, elements['title'])
-        if elements['job'].job_explanation and elements['job'].job_explanation != '':
-            header += """<div class="card block-top" style="width:400px; height: auto;">
-            <div class="panel"><div class="panel-body">Job Explanation : <br><span>{}</span>
-            </div></div></div>""".format(elements['job'].job_explanation)
-        if elements['job'].result_traceback and elements['job'].result_traceback != '':
-            header += """<div class="card block-top" style="width:400px; height: auto;">
-            <div class="panel"><div class="panel-body">Resutl Traceback : <br><span>{}</span>
-            </div></div></div>""".format(elements['job'].result_traceback)
+                context['state_icon'] = f.read()
+            context['state_class'] = "alert-failed"
 
-    content = """\
-<div class="card" style="clear:both"><div class="panel"><div class="panel-body">
-      {}
-</div></div></div>
-</div>""".format(htmlTable)
+    environment = Environment(loader=FileSystemLoader("templates/"))
+    tmpl_html = environment.get_template("mail_html.j2")
+    tmpl_text = environment.get_template("mail_text.j2")
 
-    html = header + content + '</body></html>'
-    msg.add_alternative(html, subtype='html')
+    html_version = tmpl_html.render(context)
+    text_version = tmpl_text.render(context)
+    msg.set_content(text_version)
+    msg.add_alternative(html_version, subtype='html')
     logger.debug('Send Email')
     with smtplib.SMTP(mail_server) as s:
         s.send_message(msg)
@@ -388,7 +250,7 @@ def advisory_lock(*args, **kwargs):
         yield True
 
 
-class _CyBorgBackupTaskError():
+class _CyBorgBackupTaskError:
     def build_exception(self, task, message=None):
         if message is None:
             message = "Execution error running {}".format(task.log_format)
@@ -517,9 +379,95 @@ def random_restore_integrity(self):
             if len(selected_items) == 1:
                 print(selected_items)
 
+def _cyborgbackup_notifier_summary(policy_pk):
+    logger.debug('Summary')
+    users = User.objects.filter(notify_backup_summary=True)
+    policy = Policy.objects.get(pk=policy_pk)
+
+    try:
+        setting = Setting.objects.get(key='cyborgbackup_catalog_enabled')
+        if setting.value == 'True':
+            catalog_enabled = True
+        else:
+            catalog_enabled = False
+    except Exception:
+        catalog_enabled = True
+
+    try:
+        setting = Setting.objects.get(key='cyborgbackup_auto_prune')
+        if setting.value == 'True':
+            auto_prune_enabled = True
+        else:
+            auto_prune_enabled = False
+    except Exception:
+        auto_prune_enabled = True
+    report = {'lines': []}
+    order = 1
+    report['lines'].append({
+        'order': str(order),
+        'title': 'Policy {}'.format(policy.name),
+        'type': 'policy'
+    })
+    order += 1
+    if not policy.repository.ready:
+        report['lines'].append({
+            'order': str(order),
+            'title': "Prepare Repository {}".format(policy.repository.name),
+            'type': "repository"
+        })
+    have_prune_info = (policy.keep_hourly or policy.keep_daily
+                       or policy.keep_weekly or policy.keep_monthly or policy.keep_yearly)
+    for client in policy.clients.all():
+        if not client.ready:
+            order += 1
+            report['lines'].append({
+                'order': str(order),
+                'title': "Prepare Client {}".format(client.hostname),
+                'type': "client"
+            })
+        order += 1
+        report['lines'].append({
+            'order': str(order),
+            'title': "Backup Job {} {}".format(policy.name, client.hostname),
+            'type': policy.policy_type
+        })
+        if catalog_enabled:
+            order += 1
+            report['lines'].append({
+                'order': str(order),
+                'title': "Catalog Job {} {}".format(policy.name, client.hostname),
+                'type': "catalog"
+            })
+        if auto_prune_enabled and have_prune_info:
+            order += 1
+            report['lines'].append({
+                'order': str(order),
+                'title': "Prune Job {} {}".format(policy.name, client.hostname),
+                'type': "prune"
+            })
+    report['columns'] = [
+        {'title': 'Order', 'key': 'order', 'minsize': 7},
+        {'title': 'Title', 'key': 'title', 'minsize': 7},
+        {'title': 'Type', 'key': 'type', 'minsize': 6}
+    ]
+    return report, users
+
+def _cyborgbackup_notifier_after(job_pk):
+    logger.debug('After Backup')
+    job = Job.objects.get(pk=job_pk)
+    users = []
+    if job.status == 'successful':
+        users = User.objects.filter(notify_backup_success=True)
+    if job.status == 'failed':
+        users = User.objects.filter(notify_backup_failed=True)
+    jobevents = JobEvent.objects.filter(job_id=job_pk).order_by('counter')
+    lines = []
+    for event in jobevents:
+        lines.append(event.stdout)
+    return {'state': job.status, 'title': job.name, 'lines': lines, 'job': job}, users
 
 @shared_task(bind=True, base=LogErrorsTask)
-def cyborgbackup_notifier(self, type, *kwargs):
+def cyborgbackup_notifier(type, *kwargs):
     logger.debug('CyBorgBackup Notifier')
     users = None
     if type in ('daily', 'weekly', 'monthly'):
@@ -544,95 +492,15 @@ def cyborgbackup_notifier(self, type, *kwargs):
                 send_email(report, type, user.email)
     else:
         if type == 'summary':
-            logger.debug('Summary')
-            policy_pk = kwargs[0]
-            policy = Policy.objects.get(pk=policy_pk)
-            users = User.objects.filter(notify_backup_summary=True)
-            try:
-                setting = Setting.objects.get(key='cyborgbackup_catalog_enabled')
-                if setting.value == 'True':
-                    catalog_enabled = True
-                else:
-                    catalog_enabled = False
-            except Exception:
-                catalog_enabled = True
-
-            try:
-                setting = Setting.objects.get(key='cyborgbackup_auto_prune')
-                if setting.value == 'True':
-                    auto_prune_enabled = True
-                else:
-                    auto_prune_enabled = False
-            except Exception:
-                auto_prune_enabled = True
-            report = {'lines': []}
-            order = 1
-            report['lines'].append({
-                'order': str(order),
-                'title': 'Policy {}'.format(policy.name),
-                'type': 'policy'
-            })
-            order += 1
-            if not policy.repository.ready:
-                report['lines'].append({
-                    'order': str(order),
-                    'title': "Prepare Repository {}".format(policy.repository.name),
-                    'type': "repository"
-                })
-            have_prune_info = (policy.keep_hourly or policy.keep_daily
-                               or policy.keep_weekly or policy.keep_monthly or policy.keep_yearly)
-            for client in policy.clients.all():
-                if not client.ready:
-                    order += 1
-                    report['lines'].append({
-                        'order': str(order),
-                        'title': "Prepare Client {}".format(client.hostname),
-                        'type': "client"
-                    })
-                order += 1
-                report['lines'].append({
-                    'order': str(order),
-                    'title': "Backup Job {} {}".format(policy.name, client.hostname),
-                    'type': policy.policy_type
-                })
-                if catalog_enabled:
-                    order += 1
-                    report['lines'].append({
-                        'order': str(order),
-                        'title': "Catalog Job {} {}".format(policy.name, client.hostname),
-                        'type': "catalog"
-                    })
-                if auto_prune_enabled and have_prune_info:
-                    order += 1
-                    report['lines'].append({
-                        'order': str(order),
-                        'title': "Prune Job {} {}".format(policy.name, client.hostname),
-                        'type': "prune"
-                    })
-            report['columns'] = [
-                {'title': 'Order', 'key': 'order', 'minsize': 7},
-                {'title': 'Title', 'key': 'title', 'minsize': 7},
-                {'title': 'Type', 'key': 'type', 'minsize': 6}
-            ]
+            report, users = _cyborgbackup_notifier_summary(kwargs[0])
         if type == 'after':
-            logger.debug('After Backup')
-            job_pk = kwargs[0]
-            job = Job.objects.get(pk=job_pk)
-            if job.status == 'successful':
-                users = User.objects.filter(notify_backup_success=True)
-            if job.status == 'failed':
-                users = User.objects.filter(notify_backup_failed=True)
-            jobevents = JobEvent.objects.filter(job_id=job_pk).order_by('counter')
-            lines = []
-            for event in jobevents:
-                lines.append(event.stdout)
-            report = {'state': job.status, 'title': job.name, 'lines': lines, 'job': job}
+            report, users = _cyborgbackup_notifier_after(kwargs[0])
         for user in users:
             send_email(report, type, user.email)
 
 
 @shared_task(bind=True, base=LogErrorsTask)
-def prune_catalog(self):
+def prune_catalog():
     logger.debug('Prune deleted archive in Catalog')
     if not Job.objects.filter(status='running').exists():
         try:
@@ -644,7 +512,7 @@ def prune_catalog(self):
 
 
 @shared_task(bind=True, base=LogErrorsTask)
-def borg_restore_test(self):
+def borg_restore_test():
     logger.debug('Borg Restore Test')
     try:
         setting = Setting.objects.get(key='cyborgbackup_auto_restore_test')
@@ -656,7 +524,7 @@ def borg_restore_test(self):
 
 
 @shared_task(bind=True, base=LogErrorsTask)
-def borg_repository_integrity(self):
+def borg_repository_integrity():
     logger.debug('Borg Repository Integrity')
     try:
         setting = Setting.objects.get(key='cyborgbackup_check_repository')
@@ -668,16 +536,15 @@ def borg_repository_integrity(self):
 
 
 @shared_task(bind=True, base=LogErrorsTask)
-def purge_old_stdout_files(self):
+def purge_old_stdout_files():
     nowtime = time.time()
     for f in os.listdir(settings.JOBOUTPUT_ROOT):
         if os.path.getctime(os.path.join(settings.JOBOUTPUT_ROOT, f)) < nowtime - settings.LOCAL_STDOUT_EXPIRE_TIME:
             os.unlink(os.path.join(settings.JOBOUTPUT_ROOT, f))
             logger.info(six.text_type("Removing {}").format(os.path.join(settings.JOBOUTPUT_ROOT, f)))
 
-
 @shared_task(bind=True, base=LogErrorsTask)
-def cyborgbackup_periodic_scheduler(self):
+def cyborgbackup_periodic_scheduler():
     run_now = now()
     state = CyborgBackupScheduleState.objects.get_or_create(pk=1)[0]
     last_run = state.schedule_last_run
@@ -691,7 +558,7 @@ def cyborgbackup_periodic_scheduler(self):
     policies = Policy.objects.enabled().between(last_run, run_now)
     for policy in policies:
         if policy.repository.enabled and policy.schedule.enabled:
-            policy.save()  # To update next_run timestamp.
+            policy.save()
             try:
                 new_job = policy.create_job()
                 new_job.launch_type = 'scheduled'
@@ -711,7 +578,7 @@ def cyborgbackup_periodic_scheduler(self):
 
 
 @shared_task(bind=True, queue='cyborgbackup', base=LogErrorsTask)
-def handle_work_success(self, result, task_actual):
+def handle_work_success(result, task_actual):
     try:
         instance = Job.get_instance_by_type(task_actual['type'], task_actual['id'])
     except ObjectDoesNotExist:
@@ -736,7 +603,7 @@ def handle_work_error(task_id, *args, **kwargs):
                 instance = Job.get_instance_by_type(each_task['type'], each_task['id'])
                 if not instance:
                     # Unknown task type
-                    logger.warn("Unknown task type: {}".format(each_task['type']))
+                    logger.warning("Unknown task type: {}".format(each_task['type']))
                     continue
             except ObjectDoesNotExist:
                 logger.warning('Missing {} `{}` in error callback.'.format(each_task['type'], each_task['id']))
@@ -756,14 +623,9 @@ def handle_work_error(task_id, *args, **kwargs):
                 instance.save()
                 instance.websocket_emit_status("failed")
 
-    # We only send 1 job complete message since all the job completion message
-    # handling does is trigger the scheduler. If we extend the functionality of
-    # what the job complete message handler does then we may want to send a
-    # completion event for each job here.
     if first_instance:
         from cyborgbackup.main.utils.tasks import run_job_complete
         run_job_complete.delay(first_instance.id)
-        pass
 
 
 def with_path_cleanup(f):
@@ -1125,8 +987,8 @@ class RunJob(BaseTask):
         '''
         passwords = {}
         for setting in Setting.objects.filter(key__contains='ssh_key'):
-            set = Setting.objects.get(key=setting.key.replace('ssh_key', 'ssh_password'))
-            passwords['credential_{}'.format(setting.key)] = decrypt_field(set, 'value')
+            set_parsed = Setting.objects.get(key=setting.key.replace('ssh_key', 'ssh_password'))
+            passwords['credential_{}'.format(setting.key)] = decrypt_field(set_parsed, 'value')
         return passwords
 
     def build_extra_vars_file(self, vars, **kwargs):
@@ -1138,253 +1000,388 @@ class RunJob(BaseTask):
         os.chmod(path, stat.S_IRUSR)
         return path
 
-    def build_args(self, job, **kwargs):
-        '''
-        Build command line argument list for running the task,
-        optionally using ssh-agent for public/private key authentication.
-        '''
+    def _build_args_for_check(self, job, **kwargs):
+        agent_users = User.objects.filter(is_agent=True)
         env = self.build_env(job, **kwargs)
-        if job.job_type == 'check':
-            agentUsers = User.objects.filter(is_agent=True)
-            if not agentUsers.exists():
-                agentUser = User()
-                agentUser.email = 'cyborg@agent.local'
-                agentUser.is_superuser = True
-                agentUser.is_agent = True
-                agentUser.save()
-            else:
-                agentUser = agentUsers.first()
-            if job.client_id and job.policy.policy_type != 'vm':
-                try:
-                    setting_client_user = Setting.objects.get(key='cyborgbackup_backup_user')
-                    client_user = setting_client_user.value
-                except Exception:
-                    client_user = 'root'
-                handle, path = tempfile.mkstemp()
-                f = os.fdopen(handle, 'w')
-                token, created = Token.objects.get_or_create(user=agentUser)
-                base_script = os.path.join(settings.SCRIPTS_DIR, 'cyborgbackup', 'prepare_client')
-                with open(base_script) as fs:
-                    script = fs.read()
-                f.write(script)
-                f.close()
-                handle_env, path_env = tempfile.mkstemp()
-                f = os.fdopen(handle_env, 'w')
-                for key, var in env.items():
-                    f.write('export {}="{}"\n'.format(key, var))
-                f.close()
-                os.chmod(path, stat.S_IEXEC | stat.S_IREAD)
-                args = ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
-                args += ['{}@{}'.format(client_user, job.client.hostname)]
-                if job.client.port != 22:
-                    args += ['-p', job.client.port]
-                args += ['\"', 'mkdir', '-p', env['PRIVATE_DATA_DIR'], '\"', '&&']
-                args += ['scp', '-qo', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
-                args += ['-o', 'PreferredAuthentications=publickey']
-                if job.client.port != 22:
-                    args += ['-P'+job.client.port]
-                args += [path, path_env, '{}@{}:{}/'.format(client_user, job.client.hostname, env['PRIVATE_DATA_DIR'])]
-                args += ['&&', 'rm', '-f', path, path_env, '&&']
-                args += ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
-                if job.client.port != 22:
-                    args += ['-p', job.client.port]
-                args += ['{}@{}'.format(client_user, job.client.hostname)]
-                args += ['\". ', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
-                args += ['rm', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
-                args += [os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path)),
-                         '; exitcode=$?;',
-                         'rm',
-                         '-rf',
-                         env['PRIVATE_DATA_DIR'],
-                         '; exit $exitcode\"']
-            if job.client_id and job.policy.policy_type == 'vm':
-                try:
-                    setting_client_user = Setting.objects.get(key='cyborgbackup_backup_user')
-                    client_user = setting_client_user.value
-                except Exception:
-                    client_user = 'root'
-                handle, path_prepare = tempfile.mkstemp()
-                f = os.fdopen(handle, 'w')
-                base_script = os.path.join(settings.SCRIPTS_DIR, 'cyborgbackup', 'prepare_hypervisor')
-                with open(base_script) as fs:
-                    script = fs.read()
-                f.write(script)
-                f.close()
-                handle, path_backup_script = tempfile.mkstemp()
-                f = os.fdopen(handle, 'w')
-                provider = load_module_provider(job.policy.vmprovider)
-                hypervisor_hostname = provider.get_client(job.client.hostname)
-                f.write(provider.get_script())
-                f.close()
-                backupScriptPath = os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_backup_script))
-                env.update({'CYBORGBACKUP_BACKUP_SCRIPT': backupScriptPath})
-                handle_env, path_env = tempfile.mkstemp()
-                f = os.fdopen(handle_env, 'w')
-                for key, var in env.items():
-                    f.write('export {}="{}"\n'.format(key, var))
-                f.close()
-                os.chmod(path_prepare, stat.S_IEXEC | stat.S_IREAD)
-                args = ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
-                args += ['{}@{}'.format(client_user, hypervisor_hostname)]
-                args += ['\"', 'mkdir', '-p', env['PRIVATE_DATA_DIR'], '\"', '&&']
-                args += ['scp', '-qo', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
-                args += [path_prepare,
-                         path_env,
-                         path_backup_script,
-                         '{}@{}:{}/'.format(client_user, hypervisor_hostname, env['PRIVATE_DATA_DIR'])]
-                args += ['&&', 'rm', '-f', path_env, path_prepare, path_backup_script, '&&']
-                args += ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
-                args += ['{}@{}'.format(client_user, hypervisor_hostname)]
-                args += ['\". ', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
-                args += ['rm', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
-                args += [os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_prepare)),
-                         '; exitcode=$?;',
-                         'rm',
-                         '-rf',
-                         env['PRIVATE_DATA_DIR'],
-                         '; exit $exitcode\"']
-            if job.repository_id:
-                handle, path = tempfile.mkstemp()
-                f = os.fdopen(handle, 'w')
-                token, created = Token.objects.get_or_create(user=agentUser)
-                base_script = os.path.join(settings.SCRIPTS_DIR, 'cyborgbackup', 'prepare_repository')
-                with open(base_script) as fs:
-                    script = fs.read()
-                f.write(script)
-                f.close()
-                os.chmod(path, stat.S_IEXEC | stat.S_IREAD)
-                handle_env, path_env = tempfile.mkstemp()
-                f = os.fdopen(handle_env, 'w')
-                for key, var in env.items():
-                    if key == 'CYBORG_BORG_REPOSITORY' and ':' in var:
-                        var = var.split(':')[1]
-                    f.write('export {}="{}"\n'.format(key, var))
-                f.close()
-                repository_conn = job.policy.repository.path.split(':')[0]
-                args = ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
-                args += [repository_conn]
-                args += ['\"', 'mkdir', '-p', env['PRIVATE_DATA_DIR'], '\"', '&&']
-                args += ['scp', '-qo', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
-                args += [path, path_env, '{}:{}/'.format(repository_conn, env['PRIVATE_DATA_DIR'])]
-                args += ['&&', 'rm', '-f', path, path_env, '&&']
-                args += ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
-                args += [repository_conn]
-                args += ['\". ', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
-                args += ['rm', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
-                args += [os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path)),
-                         '; exitcode=$?;',
-                         'rm',
-                         '-rf',
-                         env['PRIVATE_DATA_DIR'],
-                         '; exit $exitcode\"']
-                args += ['rm', path, path_env]
-        elif job.job_type == 'catalog':
-            agentUsers = User.objects.filter(is_agent=True)
-            if not agentUsers.exists():
-                agentUser = User()
-                agentUser.email = 'cyborg@agent.local'
-                agentUser.is_superuser = True
-                agentUser.is_agent = True
-                agentUser.save()
-            else:
-                agentUser = agentUsers.first()
-            if job.client_id:
-                handle, path = tempfile.mkstemp()
-                f = os.fdopen(handle, 'w')
-                token, created = Token.objects.get_or_create(user=agentUser)
-                if not job.master_job:
-                    raise Exception("Unable to get master job")
-                job_events = JobEvent.objects.filter(
-                    job=job.master_job.pk,
-                    stdout__contains="Archive name: {}".format(
-                        job.master_job.policy.policy_type
-                    )
-                )
-                archive_name = None
-                if job_events.exists():
-                    job_stdout = job_events.first().stdout
-                    archive_name = job_stdout.split(':')[1].strip()
-                if not archive_name:
-                    raise Exception("Latest backup haven't archive name in the report")
-                job.master_job.archive_name = archive_name
-                job.master_job.save()
-                base_script = os.path.join(settings.SCRIPTS_DIR, 'cyborgbackup', 'fill_catalog')
-                with open(base_script) as fs:
-                    script = fs.read()
-                f.write(script)
-                f.close()
-                os.chmod(path, stat.S_IEXEC | stat.S_IREAD)
-                handle_env, path_env = tempfile.mkstemp()
-                f = os.fdopen(handle_env, 'w')
-                for key, var in env.items():
-                    f.write('export {}="{}"\n'.format(key, var))
-                f.close()
-                repository_conn = job.policy.repository.path.split(':')[0]
-                args = ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
-                args += [repository_conn]
-                args += ['\"', 'mkdir', '-p', env['PRIVATE_DATA_DIR'], '\"', '&&']
-                args += ['scp', '-qo', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
-                args += [path, path_env, '{}:{}/'.format(repository_conn, env['PRIVATE_DATA_DIR'])]
-                args += ['&&', 'rm', '-f', path, path_env, '&&']
-                args += ['ssh', '-Ao', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
-                args += [repository_conn]
-                args += ['\". ', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
-                args += ['rm', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
-                args += [os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path)),
-                         '; exitcode=$?;',
-                         'rm',
-                         '-rf',
-                         env['PRIVATE_DATA_DIR'],
-                         '; exit $exitcode\"']
-        elif job.job_type == 'prune':
-            if job.client_id:
-                prefix = '{}-{}-'.format(job.policy.policy_type, job.client.hostname)
-                args = ['borg', 'prune', '-v', '--list']
-                args += ['--prefix', prefix]
-                if job.policy.keep_hourly and job.policy.keep_hourly > 0:
-                    args += ['--keep-hourly={}'.format(job.policy.keep_hourly)]
-                if job.policy.keep_daily and job.policy.keep_daily > 0:
-                    args += ['--keep-daily={}'.format(job.policy.keep_daily)]
-                if job.policy.keep_weekly and job.policy.keep_weekly > 0:
-                    args += ['--keep-weekly={}'.format(job.policy.keep_weekly)]
-                if job.policy.keep_monthly and job.policy.keep_monthly > 0:
-                    args += ['--keep-monthly={}'.format(job.policy.keep_monthly)]
-                if job.policy.keep_yearly and job.policy.keep_yearly > 0:
-                    args += ['--keep-monthly={}'.format(job.policy.keep_yearly)]
-        elif job.job_type == 'restore':
-            logger.debug(job.extra_vars)
-            logger.debug(job.extra_vars_dict)
-            if job.client_id:
-                args = ['mkdir', '-p', job.extra_vars_dict['dest_folder'], '&&', 'cd', job.extra_vars_dict['dest_folder'],
-                        '&&', 'borg', 'extract', '-v', '--list', '{}::{}'.format(job.policy.repository.path, job.archive_name),
-                        job.extra_vars_dict['item'], '-n' if job.extra_vars_dict['dry_run'] else '']
-                logger.debug(' '.join(args))
+        if not agent_users.exists():
+            agent_user = User()
+            agent_user.email = 'cyborg@agent.local'
+            agent_user.is_superuser = True
+            agent_user.is_agent = True
+            agent_user.save()
         else:
-            (client, client_user, args) = self.build_borg_cmd(job)
+            agent_user = agent_users.first()
+        if job.client_id and job.policy.policy_type != 'vm':
+            try:
+                setting_client_user = Setting.objects.get(key='cyborgbackup_backup_user')
+                client_user = setting_client_user.value
+            except Exception:
+                client_user = 'root'
+            handle, path = tempfile.mkstemp()
+            f = os.fdopen(handle, 'w')
+            token, created = Token.objects.get_or_create(user=agent_user)
+            base_script = os.path.join(settings.SCRIPTS_DIR, 'cyborgbackup', 'prepare_client')
+            with open(base_script) as fs:
+                script = fs.read()
+            f.write(script)
+            f.close()
             handle_env, path_env = tempfile.mkstemp()
             f = os.fdopen(handle_env, 'w')
             for key, var in env.items():
                 f.write('export {}="{}"\n'.format(key, var))
             f.close()
-            new_args = ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
-            new_args += ['{}@{}'.format(client_user, client)]
-            if job.client.port != 22:
-                new_args += ['-p', job.client.port]
-            new_args += ['\"', 'mkdir', '-p', env['PRIVATE_DATA_DIR'], '\"', '&&']
-            new_args += ['scp', '-qo', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
-            if job.client.port != 22:
-                new_args += ['-P'+job.client.port]
-            new_args += [path_env, '{}@{}:{}/'.format(client_user, client, env['PRIVATE_DATA_DIR'])]
-            new_args += ['&&', 'rm', '-f', path_env, '&&']
-            new_args += ['ssh', '-Ao', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
-            new_args += ['{}@{}'.format(client_user, client)]
+            os.chmod(path, stat.S_IEXEC | stat.S_IREAD)
+            args = ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
+            args += ['{}@{}'.format(client_user, job.client.hostname)]
             if job.client.port != 22:
                 args += ['-p', job.client.port]
-            new_args += ['\". ', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
-            new_args += ['rm', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
-            new_args += [' '.join(args), '; exitcode=$?;', 'rm', '-rf', env['PRIVATE_DATA_DIR'], '; exit $exitcode\"']
-            args = new_args
+            args += ['\"', 'mkdir', '-p', env['PRIVATE_DATA_DIR'], '\"', '&&']
+            args += ['scp', '-qo', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
+            args += ['-o', 'PreferredAuthentications=publickey']
+            if job.client.port != 22:
+                args += ['-P' + job.client.port]
+            args += [path, path_env, '{}@{}:{}/'.format(client_user, job.client.hostname, env['PRIVATE_DATA_DIR'])]
+            args += ['&&', 'rm', '-f', path, path_env, '&&']
+            args += ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
+            if job.client.port != 22:
+                args += ['-p', job.client.port]
+            args += ['{}@{}'.format(client_user, job.client.hostname)]
+            args += ['\". ', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
+            args += ['rm', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
+            args += [os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path)),
+                     '; exitcode=$?;',
+                     'rm',
+                     '-rf',
+                     env['PRIVATE_DATA_DIR'],
+                     '; exit $exitcode\"']
+        if job.client_id and job.policy.policy_type == 'vm':
+            try:
+                setting_client_user = Setting.objects.get(key='cyborgbackup_backup_user')
+                client_user = setting_client_user.value
+            except Exception:
+                client_user = 'root'
+            handle, path_prepare = tempfile.mkstemp()
+            f = os.fdopen(handle, 'w')
+            base_script = os.path.join(settings.SCRIPTS_DIR, 'cyborgbackup', 'prepare_hypervisor')
+            with open(base_script) as fs:
+                script = fs.read()
+            f.write(script)
+            f.close()
+            handle, path_backup_script = tempfile.mkstemp()
+            f = os.fdopen(handle, 'w')
+            provider = load_module_provider(job.policy.vmprovider)
+            hypervisor_hostname = provider.get_client(job.client.hostname)
+            f.write(provider.get_script())
+            f.close()
+            backupScriptPath = os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_backup_script))
+            env.update({'CYBORGBACKUP_BACKUP_SCRIPT': backupScriptPath})
+            handle_env, path_env = tempfile.mkstemp()
+            f = os.fdopen(handle_env, 'w')
+            for key, var in env.items():
+                f.write('export {}="{}"\n'.format(key, var))
+            f.close()
+            os.chmod(path_prepare, stat.S_IEXEC | stat.S_IREAD)
+            args = ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
+            args += ['{}@{}'.format(client_user, hypervisor_hostname)]
+            args += ['\"', 'mkdir', '-p', env['PRIVATE_DATA_DIR'], '\"', '&&']
+            args += ['scp', '-qo', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
+            args += [path_prepare,
+                     path_env,
+                     path_backup_script,
+                     '{}@{}:{}/'.format(client_user, hypervisor_hostname, env['PRIVATE_DATA_DIR'])]
+            args += ['&&', 'rm', '-f', path_env, path_prepare, path_backup_script, '&&']
+            args += ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
+            args += ['{}@{}'.format(client_user, hypervisor_hostname)]
+            args += ['\". ', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
+            args += ['rm', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
+            args += [os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_prepare)),
+                     '; exitcode=$?;',
+                     'rm',
+                     '-rf',
+                     env['PRIVATE_DATA_DIR'],
+                     '; exit $exitcode\"']
+        if job.repository_id:
+            handle, path = tempfile.mkstemp()
+            f = os.fdopen(handle, 'w')
+            token, created = Token.objects.get_or_create(user=agentUser)
+            base_script = os.path.join(settings.SCRIPTS_DIR, 'cyborgbackup', 'prepare_repository')
+            with open(base_script) as fs:
+                script = fs.read()
+            f.write(script)
+            f.close()
+            os.chmod(path, stat.S_IEXEC | stat.S_IREAD)
+            handle_env, path_env = tempfile.mkstemp()
+            f = os.fdopen(handle_env, 'w')
+            for key, var in env.items():
+                if key == 'CYBORG_BORG_REPOSITORY' and ':' in var:
+                    var = var.split(':')[1]
+                f.write('export {}="{}"\n'.format(key, var))
+            f.close()
+            repository_conn = job.policy.repository.path.split(':')[0]
+            args = ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
+            args += [repository_conn]
+            args += ['\"', 'mkdir', '-p', env['PRIVATE_DATA_DIR'], '\"', '&&']
+            args += ['scp', '-qo', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
+            args += [path, path_env, '{}:{}/'.format(repository_conn, env['PRIVATE_DATA_DIR'])]
+            args += ['&&', 'rm', '-f', path, path_env, '&&']
+            args += ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
+            args += [repository_conn]
+            args += ['\". ', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
+            args += ['rm', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
+            args += [os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path)),
+                     '; exitcode=$?;',
+                     'rm',
+                     '-rf',
+                     env['PRIVATE_DATA_DIR'],
+                     '; exit $exitcode\"']
+            args += ['rm', path, path_env]
         return args
+
+    def _build_args_for_catalog(self, job , **kwargs):
+        agent_users = User.objects.filter(is_agent=True)
+        env = self.build_env(job, **kwargs)
+        args = []
+        if not agent_users.exists():
+            agent_user = User()
+            agent_user.email = 'cyborg@agent.local'
+            agent_user.is_superuser = True
+            agent_user.is_agent = True
+            agent_user.save()
+        else:
+            agent_user = agent_users.first()
+        if job.client_id:
+            handle, path = tempfile.mkstemp()
+            f = os.fdopen(handle, 'w')
+            token, created = Token.objects.get_or_create(user=agent_user)
+            if not job.master_job:
+                raise Exception("Unable to get master job")
+            job_events = JobEvent.objects.filter(
+                job=job.master_job.pk,
+                stdout__contains="Archive name: {}".format(
+                    job.master_job.policy.policy_type
+                )
+            )
+            archive_name = None
+            if job_events.exists():
+                job_stdout = job_events.first().stdout
+                archive_name = job_stdout.split(':')[1].strip()
+            if not archive_name:
+                raise Exception("Latest backup haven't archive name in the report")
+            job.master_job.archive_name = archive_name
+            job.master_job.save()
+            base_script = os.path.join(settings.SCRIPTS_DIR, 'cyborgbackup', 'fill_catalog')
+            with open(base_script) as fs:
+                script = fs.read()
+            f.write(script)
+            f.close()
+            os.chmod(path, stat.S_IEXEC | stat.S_IREAD)
+            handle_env, path_env = tempfile.mkstemp()
+            f = os.fdopen(handle_env, 'w')
+            for key, var in env.items():
+                f.write('export {}="{}"\n'.format(key, var))
+            f.close()
+            repository_conn = job.policy.repository.path.split(':')[0]
+            args = ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
+            args += [repository_conn]
+            args += ['\"', 'mkdir', '-p', env['PRIVATE_DATA_DIR'], '\"', '&&']
+            args += ['scp', '-qo', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
+            args += [path, path_env, '{}:{}/'.format(repository_conn, env['PRIVATE_DATA_DIR'])]
+            args += ['&&', 'rm', '-f', path, path_env, '&&']
+            args += ['ssh', '-Ao', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
+            args += [repository_conn]
+            args += ['\". ', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
+            args += ['rm', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
+            args += [os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path)),
+                     '; exitcode=$?;',
+                     'rm',
+                     '-rf',
+                     env['PRIVATE_DATA_DIR'],
+                     '; exit $exitcode\"']
+        return args
+
+    def _build_args_for_prune(self, job, **kwargs):
+        args = []
+        if job.client_id:
+            prefix = '{}-{}-'.format(job.policy.policy_type, job.client.hostname)
+            args = ['borg', 'prune', '-v', '--list']
+            args += ['--prefix', prefix]
+            if job.policy.keep_hourly and job.policy.keep_hourly > 0:
+                args += ['--keep-hourly={}'.format(job.policy.keep_hourly)]
+            if job.policy.keep_daily and job.policy.keep_daily > 0:
+                args += ['--keep-daily={}'.format(job.policy.keep_daily)]
+            if job.policy.keep_weekly and job.policy.keep_weekly > 0:
+                args += ['--keep-weekly={}'.format(job.policy.keep_weekly)]
+            if job.policy.keep_monthly and job.policy.keep_monthly > 0:
+                args += ['--keep-monthly={}'.format(job.policy.keep_monthly)]
+            if job.policy.keep_yearly and job.policy.keep_yearly > 0:
+                args += ['--keep-monthly={}'.format(job.policy.keep_yearly)]
+        return args
+
+    def _build_args_for_restore(self, job, **kwargs):
+        logger.debug(job.extra_vars)
+        logger.debug(job.extra_vars_dict)
+        args = []
+        if job.client_id:
+            args = ['mkdir', '-p', job.extra_vars_dict['dest_folder'], '&&', 'cd', job.extra_vars_dict['dest_folder'],
+                    '&&', 'borg', 'extract', '-v', '--list',
+                    '{}::{}'.format(job.policy.repository.path, job.archive_name),
+                    job.extra_vars_dict['item'], '-n' if job.extra_vars_dict['dry_run'] else '']
+            logger.debug(' '.join(args))
+        return args
+
+    def _build_args_for_backup(self, job, **kwargs):
+        env = self.build_env(job, **kwargs)
+        (client, client_user, args) = self.build_borg_cmd(job)
+        handle_env, path_env = tempfile.mkstemp()
+        f = os.fdopen(handle_env, 'w')
+        for key, var in env.items():
+            f.write('export {}="{}"\n'.format(key, var))
+        f.close()
+        new_args = ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
+        new_args += ['{}@{}'.format(client_user, client)]
+        if job.client.port != 22:
+            new_args += ['-p', job.client.port]
+        new_args += ['\"', 'mkdir', '-p', env['PRIVATE_DATA_DIR'], '\"', '&&']
+        new_args += ['scp', '-qo', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
+        if job.client.port != 22:
+            new_args += ['-P' + job.client.port]
+        new_args += [path_env, '{}@{}:{}/'.format(client_user, client, env['PRIVATE_DATA_DIR'])]
+        new_args += ['&&', 'rm', '-f', path_env, '&&']
+        new_args += ['ssh', '-Ao', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
+        new_args += ['{}@{}'.format(client_user, client)]
+        if job.client.port != 22:
+            args += ['-p', job.client.port]
+        new_args += ['\". ', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
+        new_args += ['rm', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
+        new_args += [' '.join(args), '; exitcode=$?;', 'rm', '-rf', env['PRIVATE_DATA_DIR'], '; exit $exitcode\"']
+        return new_args
+
+    def build_args(self, job, **kwargs):
+        '''
+        Build command line argument list for running the task,
+        optionally using ssh-agent for public/private key authentication.
+        '''
+        if job.job_type == 'check':
+            return self._build_args_for_check(job, **kwargs)
+        elif job.job_type == 'catalog':
+            return self._build_args_for_catalog(job, **kwargs)
+        elif job.job_type == 'prune':
+            return self._build_args_for_prune(job, **kwargs)
+        elif job.job_type == 'restore':
+            return self._build_args_for_restore(job, **kwargs)
+        else:
+            return self._build_args_for_backup(job, **kwargs)
+
+    def _build_borg_cmd_for_rootfs(self):
+        path = '/'
+        excluded_dirs = ['/media',
+                        '/dev',
+                        '/proc',
+                        '/sys',
+                        '/var/run',
+                        '/run',
+                        '/lost+found',
+                        '/mnt',
+                        '/var/lib/lxcfs',
+                        '/tmp']
+        return path, excluded_dirs
+
+    def _build_borg_cmd_for_config(self):
+        return '/etc', []
+
+    def _build_borg_cmd_for_folders(self, job):
+        obj_folders = json.loads(job.policy.extra_vars)
+        path = ' '.join(obj_folders['folders'])
+        return path, []
+
+    def _build_borg_cmd_for_mail(self):
+        path = '/var/lib/mail /var/mail'
+        return path, []
+
+    def _build_borg_cmd_for_piped_mysql(self, job):
+        piped = 'mysqldump'
+        database_specify = False
+        if job.policy.extra_vars != '':
+            mysql_json = json.loads(job.policy.extra_vars)
+            if 'extended_mysql' in mysql_json and str(job.client.pk) in mysql_json['extended_mysql'].keys():
+                vars = mysql_json['extended_mysql'][str(job.client.pk)]
+                if 'user' in vars['credential'] and vars['credential']['user']:
+                    piped += " -u{}".format(vars['credential']['user'])
+                if 'password' in vars['credential'] and vars['credential']['password']:
+                    piped += " -p{}".format(vars['credential']['password'])
+                if 'databases' in vars and vars['databases']:
+                    database_specify = True
+                    piped += " --databases {}".format(' '.join(vars['databases']))
+            else:
+                if 'user' in mysql_json and mysql_json['user']:
+                    piped += " -u{}".format(mysql_json['user'])
+                if 'password' in mysql_json and mysql_json['password']:
+                    piped += " -p{}".format(mysql_json['password'])
+                if 'databases' in mysql_json and mysql_json['databases']:
+                    database_specify = True
+                    if isinstance(mysql_json['databases'], list):
+                        piped += " --databases {}".format(' '.join(mysql_json['databases']))
+                    else:
+                        piped += " {}".format(mysql_json['databases'])
+
+        if not database_specify:
+            piped += " --all-databases"
+        return piped
+
+    def _build_borg_cmd_for_piped_postgresql(self, job):
+        piped = ''
+        database_specify = False
+        if job.policy.extra_vars != '':
+            pgsql_json = json.loads(job.policy.extra_vars)
+            if 'extended_postgresql' in pgsql_json and str(job.client.pk) in pgsql_json['extended_postgresql'].keys():
+                vars = pgsql_json['extended_postgresql'][str(job.client.pk)]
+                if 'databases' in vars and vars['databases']:
+                    database_specify = True
+                    piped += " --databases {}".format(' '.join(vars['databases']))
+            else:
+                if 'database' in pgsql_json and pgsql_json['database']:
+                    database_specify = True
+                    piped += 'sudo -u postgres pg_dump {}'.format(pgsql_json['database'])
+        if not database_specify:
+            piped += 'sudo -u postgres pg_dumpall'
+        return piped
+
+    def _build_borg_cmd_for_piped_vm(self, job):
+        provider = load_module_provider(job.policy.vmprovider)
+        client = provider.get_client(job.client.hostname)
+        client_hostname = client
+        piped_list = ['/var/cache/cyborgbackup/borg_backup_vm']
+        return ' '.join(piped_list)
+
+    def _build_borg_cmd_for_piped_proxmox(self, job):
+        proxmox_json = json.loads(job.policy.extra_vars)
+        piped = 'vzdump --mode snapshot --stdout true '
+        if 'extended_proxmox' in proxmox_json.keys() and str(job.client.pk) in proxmox_json['extended_proxmox'].keys():
+            piped += ' '.join(str(x) for x in proxmox_json['extended_proxmox'][str(job.client.pk)])
+        else:
+            piped += '--all'
+        return piped
+
+    def _build_borg_cmd_for_piped(self, policy_type, job):
+        piped = ''
+        if policy_type == 'mysql':
+            return self._build_borg_cmd_for_piped_mysql(job)
+        elif policy_type == 'postgresql':
+            return self._build_borg_cmd_for_piped_postgresql(job)
+        elif policy_type == 'vm':
+            return self._build_borg_cmd_for_piped_vm(job)
+        elif policy_type == 'proxmox':
+            return self._build_borg_cmd_for_piped_proxmox(job)
+        else:
+            command_specify = False
+            if job.policy.extra_vars != '':
+                piped_json = json.loads(job.policy.extra_vars)
+                if 'command' in piped_json and piped_json['command']:
+                    command_specify = True
+                    piped += piped_json['command']
+            if not command_specify:
+                raise Exception('Command for piped backup not defined')
+        return piped
 
 ########
 # Backup host => backupHost
@@ -1427,9 +1424,9 @@ class RunJob(BaseTask):
 
     def build_borg_cmd(self, job):
         policy_type = job.policy.policy_type
-        jobDate = job.created
-        jobDateString = jobDate.strftime("%Y-%m-%d_%H-%M")
-        excludedDirs = []
+        job_date = job.created
+        job_date_string = job_date.strftime("%Y-%m-%d_%H-%M")
+        excluded_dirs = []
         args = []
         piped = ''
         client = job.client.hostname
@@ -1443,162 +1440,83 @@ class RunJob(BaseTask):
             args = ['sudo', '-E']+args
         args += ['borg']
         args += ['create']
-        repositoryPath = ''
+        repository_path = ''
         if not job.policy.mode_pull:
-            repositoryPath = job.policy.repository.path
+            repository_path = job.policy.repository.path
         args += ['--debug', '-v', '--stats']
         archive_client_name = job.client.hostname
         if policy_type == 'rootfs':
-            path = '/'
-            excludedDirs = ['/media',
-                            '/dev',
-                            '/proc',
-                            '/sys',
-                            '/var/run',
-                            '/run',
-                            '/lost+found',
-                            '/mnt',
-                            '/var/lib/lxcfs',
-                            '/tmp']
+            path, excluded_dirs = self._build_borg_cmd_for_rootfs()
         if policy_type == 'config':
-            path = '/etc'
+            path, excluded_dirs = self._build_borg_cmd_for_config()
         if policy_type == 'folders':
-            obj_folders = json.loads(job.policy.extra_vars)
-            path = ' '.join(obj_folders['folders'])
+            path, excluded_dirs = self._build_borg_cmd_for_folders(job)
         if policy_type in ('rootfs', 'config', 'folders'):
             obj_folders = json.loads(job.policy.extra_vars)
             if 'exclude' in obj_folders.keys():
                 for item in obj_folders['exclude']:
-                    if item not in excludedDirs:
-                        excludedDirs.append(item)
+                    if item not in excluded_dirs:
+                        excluded_dirs.append(item)
         if policy_type == 'mail':
-            path = '/var/lib/mail /var/mail'
-        if policy_type in ('mysql', 'postgresql', 'piped'):
+            path, excluded_dirs = self._build_borg_cmd_for_mail()
+        if policy_type in ('mysql', 'postgresql', 'piped', 'vm', 'proxmox'):
             path = '-'
-            if policy_type == 'mysql':
-                piped += 'mysqldump'
-                database_specify = False
-                if job.policy.extra_vars != '':
-                    mysql_json = json.loads(job.policy.extra_vars)
-                    if 'extended_mysql' in mysql_json and str(job.client.pk) in mysql_json['extended_mysql'].keys():
-                        vars = mysql_json['extended_mysql'][str(job.client.pk)]
-                        if 'user' in vars['credential'] and vars['credential']['user']:
-                            piped += " -u{}".format(vars['credential']['user'])
-                        if 'password' in vars['credential'] and vars['credential']['password']:
-                            piped += " -p{}".format(vars['credential']['password'])
-                        if 'databases' in vars and vars['databases']:
-                            database_specify = True
-                            piped += " --databases {}".format(' '.join(vars['databases']))
-                    else:
-                        if 'user' in mysql_json and mysql_json['user']:
-                            piped += " -u{}".format(mysql_json['user'])
-                        if 'password' in mysql_json and mysql_json['password']:
-                            piped += " -p{}".format(mysql_json['password'])
-                        if 'databases' in mysql_json and mysql_json['databases']:
-                            database_specify = True
-                            if isinstance(mysql_json['databases'], list):
-                                piped += " --databases {}".format(' '.join(mysql_json['databases']))
-                            else:
-                                piped += " {}".format(mysql_json['databases'])
+            piped = self._build_borg_cmd_for_piped(policy_type, job)
+            if not job.policy.mode_pull:
+                args = [piped, '|']+args
 
-                if not database_specify:
-                    piped += " --all-databases"
-            if policy_type == 'postgresql':
-                database_specify = False
-                if job.policy.extra_vars != '':
-                    pgsql_json = json.loads(job.policy.extra_vars)
-                    if 'extended_postgresql' in pgsql_json and str(job.client.pk) in pgsql_json['extended_postgresql'].keys():
-                        vars = pgsql_json['extended_postgresql'][str(job.client.pk)]
-                        if 'databases' in vars and vars['databases']:
-                            database_specify = True
-                            piped += " --databases {}".format(' '.join(vars['databases']))
-                    else:
-                        if 'database' in pgsql_json and pgsql_json['database']:
-                            database_specify = True
-                            piped += 'sudo -u postgres pg_dump {}'.format(pgsql_json['database'])
-                if not database_specify:
-                    piped += 'sudo -u postgres pg_dumpall'
-            if policy_type == 'piped':
-                command_specify = False
-                if job.policy.extra_vars != '':
-                    piped_json = json.loads(job.policy.extra_vars)
-                    if 'command' in piped_json and piped_json['command']:
-                        command_specify = True
-                        piped += piped_json['command']
-                if not command_specify:
-                    raise Exception('Command for piped backup not defined')
-            if not job.policy.mode_pull:
-                args = [piped, '|']+args
-        if policy_type == 'vm':
-            path = '-'
-            provider = load_module_provider(job.policy.vmprovider)
-            client = provider.get_client(job.client.hostname)
-            client_hostname = client
-            piped_list = ['/var/cache/cyborgbackup/borg_backup_vm']
-            piped = ' '.join(piped_list)
-            if not job.policy.mode_pull:
-                args = [piped, '|']+args
-        if policy_type == 'proxmox':
-            path = '-'
-            proxmox_json = json.loads(job.policy.extra_vars)
-            piped = 'vzdump --mode snapshot --stdout true '
-            if 'extended_proxmox' in proxmox_json.keys() and str(job.client.pk) in proxmox_json['extended_proxmox'].keys():
-                piped += ' '.join(str(x) for x in proxmox_json['extended_proxmox'][str(job.client.pk)])
-            else:
-                piped += '--all'
-            if not job.policy.mode_pull:
-                args = [piped, '|']+args
-        args += ['{}::{}-{}-{}'.format(repositoryPath, policy_type, archive_client_name, jobDateString)]
+        args += ['{}::{}-{}-{}'.format(repository_path, policy_type, archive_client_name, job_date_string)]
+
         if job.policy.mode_pull and policy_type in ('rootfs', 'config', 'mail'):
             path = '.'+path
         args += [path]
-        if len(excludedDirs) > 0:
+
+        if len(excluded_dirs) > 0:
             keyword = '--exclude '
             if job.policy.mode_pull:
                 keyword += '.'
-            args += (keyword + (' '+keyword).join(excludedDirs)).split(' ')
+            args += (keyword + (' '+keyword).join(excluded_dirs)).split(' ')
+
         if job.policy.mode_pull:
-            (clientUri, repository_path) = job.policy.repository.path.split(':')
-            client = clientUri.split('@')[1]
-            client_user = clientUri.split('@')[0]
+            (client_uri, repository_path) = job.policy.repository.path.split(':')
+            client = client_uri.split('@')[1]
+            client_user = client_uri.split('@')[0]
             if policy_type in ('rootfs', 'config', 'mail', 'folders'):
-                sshFsDirectory = '/tmp/sshfs_{}_{}'.format(client_hostname, jobDateString)
-                pullCmd = ['mkdir', '-p', sshFsDirectory]
-                pullCmd += ['&&', 'sshfs', 'root@{}:{}'.format(client_hostname, path[1::]), sshFsDirectory]
-                pullCmd += ['&&', 'cd', sshFsDirectory]
-                pullCmd += ['&&']+args
-                args = pullCmd
+                sshfs_directory = '/tmp/sshfs_{}_{}'.format(client_hostname, job_date_string)
+                pull_cmd = ['mkdir', '-p', sshfs_directory]
+                pull_cmd += ['&&', 'sshfs', 'root@{}:{}'.format(client_hostname, path[1::]), sshfs_directory]
+                pull_cmd += ['&&', 'cd', sshfs_directory]
+                pull_cmd += ['&&']+args
+                args = pull_cmd
             if policy_type in ('mysql', 'postgresql', 'piped', 'vm'):
-                pullCmd = ['ssh', '{}@{}'.format(client_user, client_hostname)]
+                pull_cmd = ['ssh', '{}@{}'.format(client_user, client_hostname)]
                 if client_user != 'root':
                     piped = 'sudo -E '+piped
-                pullCmd += ["'"+piped+"'|"+' '.join(args)]
-                args = pullCmd
-            if policy_type == 'vm':
-                pass
+                pull_cmd += ["'"+piped+"'|"+' '.join(args)]
+                args = pull_cmd
 
-        return (client, client_user, args)
+        return client, client_user, args
 
     def build_safe_args(self, job, **kwargs):
         return self.build_args(job, display=True, **kwargs)
 
     def build_env(self, job, **kwargs):
         env = super(RunJob, self).build_env(job, **kwargs)
-        agentUsers = User.objects.filter(is_agent=True)
-        if not agentUsers.exists():
-            agentUser = User()
-            agentUser.email = 'cyborg@agent.local'
-            agentUser.is_superuser = True
-            agentUser.is_agent = True
-            agentUser.save()
+        agent_users = User.objects.filter(is_agent=True)
+        if not agent_users.exists():
+            agent_user = User()
+            agent_user.email = 'cyborg@agent.local'
+            agent_user.is_superuser = True
+            agent_user.is_agent = True
+            agent_user.save()
         else:
-            agentUser = agentUsers.first()
-            token, created = Token.objects.get_or_create(user=agentUser)
+            agent_user = agent_users.first()
+            token, created = Token.objects.get_or_create(user=agent_user)
         if token and (job.job_type == 'check' or job.job_type == 'catalog'):
             env['CYBORG_AGENT_TOKEN'] = str(token)
             try:
-                set = Setting.objects.get(key='cyborgbackup_url')
-                base_url = set.value
+                setting = Setting.objects.get(key='cyborgbackup_url')
+                base_url = setting.value
             except Exception:
                 base_url = 'http://web:8000'
             if job.job_type == 'check':

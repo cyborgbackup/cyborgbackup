@@ -1,0 +1,126 @@
+<html>
+  <head>
+    <title>CyBorgBackup</title>
+    <style type="text/css">
+       body { margin: 0;background-color: #F0F3F4; }
+       table {
+         border-spacing: 0;border-collapse: collapse;width: 100%;max-width: 100%;
+         font: 14px/16px "Roboto", sans-serif;color: #666666;
+       }
+       th {
+         border-top: 0; text-align: center; border-bottom: none; vertical-align: bottom;
+         white-space: nowrap;line-height: 1.42;font-weight: 400;padding: 8px;
+       }
+       td {
+         text-align: center; padding: 0 8px; line-height: 35px;
+         border-top: 1px solid gainsboro; vertical-align: top;
+       }
+       div.content { width: 1000px;padding: 15px 32px 15px 40px;font: 14px/16px "Roboto", sans-serif; }
+       div.card { position: relative;padding: 0 15px;float: left;box-sizing: border-box; }
+       div.panel {
+         color: #666666;background-color: #ffffff;border: none;border-radius: 5px;position: relative;
+         margin-bottom: 24px;box-shadow: 0 5px 5px 0 rgba(0, 0, 0, 0.25);box-sizing: border-box;
+       }
+       .block-top .panel > .panel-body { height: 50px; }
+       .panel > .panel-body { padding: 15px 22px;box-sizing: border-box; }
+       div.top {
+         background-color: #1C2B36; box-shadow: 2px 0px 3px rgba(0, 0, 0, 0.5);
+         height: 100px;width: 100%; min-width: 320px; padding: 10px 32px 10px 40px;
+       }
+      .alert-failed { color: #721c24;background-color: #f8d7da;border-color: #f5c6cb; }
+      .alert-success { color: #155724;background-color: #d4edda;border-color: #c3e6cb; }
+      .alert {
+        font-size: 15px;position: relative;padding: .75rem 1.25rem;
+        margin-bottom: 1rem;border: 1px solid transparent;border-radius: .25rem;
+      }
+      .alert img { width: 17px;vertical-align: middle;margin-right: 10px; }
+      div.top div {
+        font-size: 24px;font-family: "Roboto", sans-serif;color: white;
+      }
+      div.top div.img { float: left;width: 150px;height: 100px; }
+      div.top div.title { margin-top: 20px; }
+      .job-results-standard-out {
+        -ms-flex: 1;flex: 1;-ms-flex-preferred-size: auto;flex-basis: auto;
+        height: auto;display: -ms-flexbox;display: flex;border: 1px solid #D7D7D7;
+        border-radius: 5px;margin-top: 10px;
+      }
+      .JobResultsStdOut {
+        height: auto;width: 900px;-ms-flex-direction: column;flex-direction: column;
+        -ms-flex-align: stretch;align-items: stretch;
+      }
+      .JobResultsStdOut-stdoutContainer {
+        -ms-flex: 1;flex: 1;position: relative;background-color: #FCFCFC;
+        overflow-y: auto;overflow-x: hidden;
+      }
+      .JobResultsStdOut-aLineOfStdOut {
+         display: -ms-flexbox;display: flex;
+         font-family: Monaco, Menlo, Consolas, "Courier New", monospace;
+      }
+      .JobResultsStdOut-lineNumberColumn {
+         display: -ms-flexbox;display: flex;background-color: #EBEBEB;text-align: right;
+         padding-right: 10px;padding-top: 2px;padding-bottom: 2px;width: 75px;color: #848992;
+         -ms-flex: 1 0 70px;flex: 1 0 70px;user-select: none;-moz-user-select: none;
+         -webkit-user-select: none;-ms-user-select: none;z-index: 1;border-right: 1px solid #D7D7D7;
+      }
+      .JobResultsStdOut-stdoutColumn {
+         padding-left: 20px;padding-right: 20px;padding-top: 2px;padding-bottom: 2px;
+         color: #707070;display: inline-block;white-space: pre-wrap;word-break: break-all;
+         width: 100%;background-color: #FCFCFC;
+      }
+      .JobResultsStdOut-lineExpander {
+         text-align: left;padding-left: 11px;margin-right: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="top">
+        <div class="img">
+            <img src="{{ logo_text }}"/>
+        </div>
+        <div class="title">
+            <span style="color: #209e91;">CyBorg</span>Backup
+        </div>
+        {%- if type in ('daily', 'weekly', 'monthly') -%}
+        <div>{{ type | capitalize }} Report of {{ datetime.datetime.now().strftime("%d/%m/%Y") }}</div>
+        {%- elif type == 'after' -%}
+        <div class="title"><span style="color: #209e91;">CyBorg</span>Backup</div><div>Backup Job Report</div>
+        {%- else -%}
+        <div class="title"><span style="color: #209e91;">CyBorg</span>Backup</div><div>{{ type | capitalize }} Report</div>
+        {%- endif -%}
+    </div>
+    <div class="content">
+        {%- if type in ('daily', 'weekly', 'monthly') -%}
+        <div class="card block-top"><div class="panel"><div class="panel-body">Total Backups : {}</div></div></div>
+        <div class="card block-top"><div class="panel"><div class="panel-body">Total Duration : {}</div></div></div>
+        <div class="card block-top"><div class="panel"><div class="panel-body">Total Size : {}</div></div></div>
+        <div class="card block-top"><div class="panel"><div class="panel-body">Total Deduplicated Size : {}</div></div></div>
+        {%- elif type == 'after' -%}
+        <div class="alert {{ state_class }}"><img src="{{ state_icon }}" />{{ title }}</div>
+
+        {%- if job.job_explanation and job.explanation != '' -%}
+        <div class="card block-top" style="width:400px; height: auto;">
+            <div class="panel">
+                <div class="panel-body">Job Explanation : <br><span>{{ job.job_explanation }}</span></div>
+            </div>
+        </div>
+        {%- endif -%}
+
+        {%- if job.result_traceback and job.result_traceback != '' -%}
+        <div class="card block-top" style="width:400px; height: auto;">
+            <div class="panel">
+                <div class="panel-body">Result Traceback : <br><span>{{ job.result_traceback }}</span></div>
+            </div>
+        </div>
+        {%- endif -%}
+        {%- endif -%}
+
+        <div class="card" style="clear:both">
+            <div class="panel">
+                <div class="panel-body">
+                    {{ html_table }}
+                </div>
+            </div>
+        </div>
+    </div>
+    </body>
+</html>

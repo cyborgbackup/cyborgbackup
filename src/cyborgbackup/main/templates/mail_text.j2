@@ -1,0 +1,28 @@
+{%- if type in ('daily', 'weekly', 'monthly') -%}
+CyBorgBackup Report
+    {{ type | capitalize }} Report of {}
+
+    Number of backups : {{ backups }}
+    Total backup time : {{ times }}
+    Total backup size : {{ size }}
+    Total deduplicated size : {{ deduplicated }}
+{%- elif type == 'summary' -%}
+CyBorgBackup Summary Report
+{%- endif -%}
+{%- if type == 'after' -%}
+CyBorgBackup Backup Report
+
+{{ title }} : {{ state }}
+{%- if job.job_explanation and job.explanation != '' -%}
+Job Explanation :
+{{ job.explanation }}
+{%- if job.result_traceback and job.result_traceback != '' -%}
+Result Traceback :
+{{ job.result_traceback }}
+{%- endif -%}
+
+Job output :
+{{ lines | join('\n') }}
+{%- else -%}
+{{ ascii_table }}
+{%- endif -%}
