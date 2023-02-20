@@ -88,7 +88,7 @@ class TaskManager:
         if Job.objects.filter(repository=task.policy.repository.pk, status__in=('pending', 'waiting', 'running')).count() > 0:
             return True
 
-        if task.client and Job.objects.filter(client=task.client.pk, status__in=('running')).count() > 0:
+        if task.client and Job.objects.filter(client=task.client.pk, status='running').count() > 0:
             return True
 
         return False
@@ -114,7 +114,7 @@ class TaskManager:
                                                                   modified__lte=now - timedelta(seconds=60))))
         for j in jobs:
             waiting_jobs.append(j)
-        return (execution_nodes, waiting_jobs)
+        return execution_nodes, waiting_jobs
 
     '''
     Tasks that are currently running in celery
@@ -147,7 +147,7 @@ class TaskManager:
             inspector = Inspect(app=app)
             active_task_queues = inspector.active()
         else:
-            logger.warn("Ignoring celery task inspector")
+            logger.warning("Ignoring celery task inspector")
             active_task_queues = None
 
         queues = None
@@ -163,9 +163,9 @@ class TaskManager:
                 queues[queue_name] = active_tasks
         else:
             if not hasattr(settings, 'CELERY_UNIT_TEST'):
-                return (None, None)
+                return None, None
 
-        return (active_task_queues, queues)
+        return active_task_queues, queues
 
     def start_task(self, task, dependent_tasks=[]):
         from cyborgbackup.main.tasks import handle_work_error, handle_work_success
@@ -192,8 +192,6 @@ class TaskManager:
             logger.info('Submitting %s to instance group cyborgbackup.', task.log_format)
             task.celery_task_id = str(uuid.uuid4())
             task.save()
-
-            self.consume_capacity(task, 'cyborgbackup')
 
         def post_commit():
             task.websocket_emit_status(task.status)
@@ -232,7 +230,7 @@ class TaskManager:
         repository_task.save()
         return repository_task
 
-    def should_prepare_repository(self, job, latest_prepare_repository):
+    def should_prepare_repository(self, latest_prepare_repository):
         if latest_prepare_repository is None:
             return True
 
@@ -256,7 +254,7 @@ class TaskManager:
         client_task.save()
         return client_task
 
-    def should_prepare_client(self, job, latest_prepare_client):
+    def should_prepare_client(self, latest_prepare_client):
         if latest_prepare_client is None:
             return True
 
@@ -286,7 +284,7 @@ class TaskManager:
         client_task.save()
         return client_task
 
-    def should_prepare_hypervisor(self, job, latest_prepare_hypervisor):
+    def should_prepare_hypervisor(self, latest_prepare_hypervisor):
         if latest_prepare_hypervisor is None:
             return True
 
@@ -314,7 +312,7 @@ class TaskManager:
         dependencies = []
         if type(task) is Job and task.launch_type != 'dependency' and task.job_type != 'catalog':
             latest_repository_creation = self.get_latest_repository_creation(task)
-            if self.should_prepare_repository(task, latest_repository_creation):
+            if self.should_prepare_repository(latest_repository_creation):
                 repository_task = self.create_prepare_repository(task)
                 dependencies.append(repository_task)
             else:
@@ -324,7 +322,7 @@ class TaskManager:
             if task.client:
                 if task.policy.policy_type == 'vm':
                     latest_hypervisor_preparation = self.get_latest_hypervisor_preparation(task)
-                    if self.should_prepare_hypervisor(task, latest_hypervisor_preparation):
+                    if self.should_prepare_hypervisor(latest_hypervisor_preparation):
                         hypervisor_task = self.create_prepare_hypervisor(task)
                         dependencies.append(hypervisor_task)
                     else:
@@ -332,7 +330,7 @@ class TaskManager:
                             dependencies.append(latest_hypervisor_preparation)
                 else:
                     latest_client_preparation = self.get_latest_client_preparation(task)
-                    if self.should_prepare_client(task, latest_client_preparation):
+                    if self.should_prepare_client(latest_client_preparation):
                         client_task = self.create_prepare_client(task)
                         dependencies.append(client_task)
                     else:
@@ -346,21 +344,12 @@ class TaskManager:
             if self.is_job_blocked(task):
                 logger.debug(six.text_type("Dependent {} is blocked from running").format(task.log_format))
                 continue
-            found_acceptable_queue = False
-            if self.get_remaining_capacity('cyborgbackup') <= 0:
-                logger.debug(six.text_type("Skipping group {} capacity <= 0").format('cyborgbackup'))
-                continue
-            if not self.would_exceed_capacity(task, 'cyborgbackup'):
-                msg = six.text_type("Starting dependent {} in group {}")
-                logger.debug(msg.format(task.log_format, 'cyborgbackup'))
-                self.graph['cyborgbackup']['graph'].add_job(task)
-                tasks_to_fail = list(filter(lambda t: t != task, dependency_tasks))
-                tasks_to_fail += [dependent_task]
-                self.start_task(task, tasks_to_fail)
-                found_acceptable_queue = True
-            if not found_acceptable_queue:
-                msg = six.text_type("Dependent {} couldn't be scheduled on graph, waiting for next cycle")
-                logger.debug(msg.format(task.log_format))
+            msg = six.text_type("Starting dependent {} in group {}")
+            logger.debug(msg.format(task.log_format, 'cyborgbackup'))
+            self.graph['cyborgbackup']['graph'].add_job(task)
+            tasks_to_fail = list(filter(lambda t: t != task, dependency_tasks))
+            tasks_to_fail += [dependent_task]
+            self.start_task(task, tasks_to_fail)
 
     def process_pending_tasks(self, pending_tasks):
         for task in pending_tasks:
@@ -368,26 +357,10 @@ class TaskManager:
             if self.is_job_blocked(task):
                 logger.debug(six.text_type("{} is blocked from running").format(task.log_format))
                 continue
-            found_acceptable_queue = False
-            remaining_capacity = self.get_remaining_capacity('cyborgbackup')
-            if remaining_capacity <= 0:
-                logger.debug(six.text_type("Skipping group {}, remaining_capacity {} <= 0").format(
-                    'cyborgbackup', remaining_capacity))
-                continue
-            if not self.would_exceed_capacity(task, 'cyborgbackup'):
-                logger.debug(six.text_type("Starting {} in group {} (remaining_capacity={})").format(
-                    task.log_format, 'cyborgbackup', remaining_capacity))
-                self.graph['cyborgbackup']['graph'].add_job(task)
 
-                self.start_task(task, [])
-                found_acceptable_queue = True
-                break
-            else:
-                logger.debug(six.text_type("Not enough capacity to run {} on {} (remaining_capacity={})").format(
-                    task.log_format, 'cyborgbackup', remaining_capacity))
-            if not found_acceptable_queue:
-                msg = six.text_type("{} couldn't be scheduled on graph, waiting for next cycle")
-                logger.debug(msg.format(task.log_format))
+            self.graph['cyborgbackup']['graph'].add_job(task)
+            self.start_task(task, [])
+            break
 
     def fail_jobs_if_not_in_celery(self, node_jobs, active_tasks, celery_task_start_time,
                                    isolated=False):
@@ -415,8 +388,6 @@ class TaskManager:
                 except DatabaseError:
                     logger.error("Task {} DB error in marking failed. Job possibly deleted.".format(task.log_format))
                     continue
-                if hasattr(task, 'send_notification_templates'):
-                    task.send_notification_templates('failed')
                 task.websocket_emit_status(new_status)
                 logger.error("{}Task {} has no record in celery. Marking as failed".format(
                     'Isolated ' if isolated else '', task.log_format))
@@ -467,28 +438,8 @@ class TaskManager:
                 isolated=isolated
             )
 
-    def calculate_capacity_consumed(self, tasks):
-        self.graph['cyborgbackup']['consumed_capacity'] = 0
-
-    def would_exceed_capacity(self, task, instance_group):
-        current_capacity = self.graph['cyborgbackup']['consumed_capacity']
-        capacity_total = self.graph['cyborgbackup']['capacity_total']
-        if current_capacity == 0:
-            return False
-        return (task.task_impact + current_capacity > capacity_total)
-
-    def consume_capacity(self, task, instance_group):
-        logger.debug(six.text_type('{} consumed {} capacity units from {} with prior total of {}').format(
-                     task.log_format, task.task_impact, 'cyborgbackup', 8))
-        self.graph[instance_group]['consumed_capacity'] += task.task_impact
-
-    def get_remaining_capacity(self, instance_group):
-        return (self.graph[instance_group]['capacity_total'] - self.graph[instance_group]['consumed_capacity'])
-
     def process_tasks(self, all_sorted_tasks):
         running_tasks = filter(lambda t: t.status in ['waiting', 'running'], all_sorted_tasks)
-
-        self.calculate_capacity_consumed(running_tasks)
 
         self.process_running_tasks(running_tasks)
 
