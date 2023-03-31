@@ -15,7 +15,7 @@ djangorestframework==3.14.0
 django-rest-passwordreset==1.3.0
 kombu>=4.2.2.post1
 celery>=5.1.0
-redis==4.5.1
+redis==4.5.4
 paramiko==3.0.0
 pexpect==4.8.0
 psutil==5.9.4
