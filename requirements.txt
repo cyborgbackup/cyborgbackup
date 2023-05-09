@@ -4,7 +4,7 @@ channels==4.0.0
 channels_rabbitmq==4.0.1
 daphne==4.0.0
 decorator==5.1.1
-Django==4.1.7
+Django==4.1.9
 django-auditlog>=0.4.5
 django-celery-results==2.4.0
 django-crum==0.7.9
