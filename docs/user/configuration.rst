@@ -31,6 +31,8 @@ Repositories
 A repository must be defined to start backup.
 The path must be in URI format as the following : **user@fqdn:path**
 
+CyBorgBackup will try connect using SSH to this URI.
+
 .. warning::
     Same as the SSH Key configuration, the user defined in the path must have the CyBorgBackup SSK Key configured in authorized_keys file.
 
@@ -59,6 +61,8 @@ For example, if you configure 7 Keep Daily and 4 Keep Weekly, CyBorgBackup will 
 By default, CyBorgbackup will connect on each client and each client will push the backup to the repository using ssh connection.
 The "Pull Mode" permit to change the method, CyBorgBackup will connect on the repository node and from them, connect to each client.
 Be careful, the client need to connect to the repository node.
+
+Depending of the policy type, you can configure extra configuration using the pencil button on the right of each client button. You must add client before editing extra configuration.
 
 Ready ?
 -------
