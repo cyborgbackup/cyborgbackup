@@ -1,14 +1,20 @@
 #!/bin/bash
 
-###################################################
-##          CyBorgBackup Prepare Client          ##
-##   Author : Gaëtan Ferez <gaetan@milkywan.fr>  ##
-##                 Version 0.1                   ##
-###################################################
+########################################################
+##          CyBorgBackup Prepare Client               ##
+##   Author : Gaëtan Ferez <gaetan@cyborgbackup.dev>  ##
+##                 Version 0.1                        ##
+########################################################
 
 echo "Check Curl"
 curl -V 2>&1 1>/dev/null || (echo "Curl not found. Install it." && sudo apt-get -q update && sudo apt-get -q -y install curl)
 binary=$(curl -sL https://api.github.com/repos/borgbackup/borg/releases/latest | grep "browser_download_url" | grep 'borg-linux64"' | cut -d : -f 2,3 | tr -d \\\")
+
+if [ -f /usr/local/bin/borg ]
+then
+  echo "Remove old Borg binary"
+  sudo rm /usr/local/bin/borg
+fi
 
 echo "Check Borg"
 borg -V 2>&1 1>/dev/null || (echo "Get latest Borg Version." && curl -sL $binary -o /tmp/borg && sudo mv /tmp/borg /usr/local/bin/borg && sudo chmod a+x /usr/local/bin/borg)

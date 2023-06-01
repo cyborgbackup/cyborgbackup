@@ -1,10 +1,10 @@
 #!/bin/bash
 
-###################################################
-##           CyBorgBackup Fill Catalog           ##
-##   Author : Gaëtan Ferez <gaetan@milkywan.fr>  ##
-##                 Version 0.1                   ##
-###################################################
+########################################################
+##          CyBorgBackup Fill Catalog                 ##
+##   Author : Gaëtan Ferez <gaetan@cyborgbackup.dev>  ##
+##                 Version 0.1                        ##
+########################################################
 
 
 echo "Check Curl"

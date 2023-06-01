@@ -1,5 +1,5 @@
 [Unit]
-Description=CyBorgBackup Celery Service
+Description=CyBorgBackup Celery Worker Main Tasks Service
 PartOf=cyborgbackup.service
 
 [Service]
@@ -8,7 +8,7 @@ EnvironmentFile=-/etc/default/cyborgbackup
 WorkingDirectory=/opt/cyborgbackup
 User=cyborgbackup
 Group=cyborgbackup
-ExecStart=/opt/cyborgbackup/venv/bin/celery -A cyborgbackup worker -E -c 1
+ExecStart=/opt/cyborgbackup/venv/bin/celery -A cyborgbackup worker -n "worker-main@%%h" -c 1 -E -Q main_tasks
 
 [Install]
 WantedBy=multi-user.target

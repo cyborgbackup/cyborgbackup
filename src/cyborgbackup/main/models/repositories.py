@@ -96,9 +96,6 @@ class Repository(PrimordialModel):
         job.description = "Repository {} Borg Preparation".format(self.name)
         job.save()
 
-        from cyborgbackup.main.signals import disable_activity_stream
-        fields = ()
-        with disable_activity_stream():
-            copy_m2m_relationships(self, job, fields, kwargs=kwargs)
+        copy_m2m_relationships(self, job, (), kwargs=kwargs)
 
         return job

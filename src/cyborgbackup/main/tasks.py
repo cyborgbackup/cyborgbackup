@@ -15,6 +15,7 @@ import random
 import six
 import smtplib
 import pymongo
+import requests
 from email.message import EmailMessage
 from email.headerregistry import Address
 try:
@@ -26,6 +27,7 @@ from contextlib import contextmanager
 
 # Celery
 from celery import Task, shared_task, Celery
+from celery.app import app_or_default
 
 # Django
 from django.conf import settings
@@ -46,6 +48,7 @@ from cyborgbackup.main.models.events import JobEvent
 from cyborgbackup.main.models.settings import Setting
 from cyborgbackup.main.models.policies import Policy
 from cyborgbackup.main.models.catalogs import Catalog
+from cyborgbackup.main.models.clients import Client
 from cyborgbackup.main.models.users import User
 from cyborgbackup.main.models.schedules import CyborgBackupScheduleState
 from cyborgbackup.main.expect import run
@@ -345,6 +348,17 @@ def compute_borg_size(self):
                         repo.save()
                         break
 
+@shared_task(bind=True, base=LogErrorsTask)
+def check_borg_new_version(self):
+    logger.debug('Check New Release of Borg binary')
+    r = requests.get('https://api.github.com/repos/borgbackup/borg/releases/latest')
+    data = r.json()
+    latest_version = data['tag_name']
+    db = pymongo.MongoClient(settings.MONGODB_URL).local
+    db.versions.replace_one({'version': latest_version},{
+        'version': latest_version,
+        'check_date': datetime.datetime.now()
+    }, upsert=True)
 
 @shared_task(bind=True, base=LogErrorsTask)
 def random_restore_integrity(self):
@@ -467,7 +481,7 @@ def _cyborgbackup_notifier_after(job_pk):
     return {'state': job.status, 'title': job.name, 'lines': lines, 'job': job}, users
 
 @shared_task(bind=True, base=LogErrorsTask)
-def cyborgbackup_notifier(type, *kwargs):
+def cyborgbackup_notifier(self, type, *kwargs):
     logger.debug('CyBorgBackup Notifier')
     users = None
     if type in ('daily', 'weekly', 'monthly'):
@@ -500,7 +514,7 @@ def cyborgbackup_notifier(type, *kwargs):
 
 
 @shared_task(bind=True, base=LogErrorsTask)
-def prune_catalog():
+def prune_catalog(self):
     logger.debug('Prune deleted archive in Catalog')
     if not Job.objects.filter(status='running').exists():
         try:
@@ -512,7 +526,7 @@ def prune_catalog():
 
 
 @shared_task(bind=True, base=LogErrorsTask)
-def borg_restore_test():
+def borg_restore_test(self):
     logger.debug('Borg Restore Test')
     try:
         setting = Setting.objects.get(key='cyborgbackup_auto_restore_test')
@@ -524,7 +538,7 @@ def borg_restore_test():
 
 
 @shared_task(bind=True, base=LogErrorsTask)
-def borg_repository_integrity():
+def borg_repository_integrity(self):
     logger.debug('Borg Repository Integrity')
     try:
         setting = Setting.objects.get(key='cyborgbackup_check_repository')
@@ -536,7 +550,7 @@ def borg_repository_integrity():
 
 
 @shared_task(bind=True, base=LogErrorsTask)
-def purge_old_stdout_files():
+def purge_old_stdout_files(self):
     nowtime = time.time()
     for f in os.listdir(settings.JOBOUTPUT_ROOT):
         if os.path.getctime(os.path.join(settings.JOBOUTPUT_ROOT, f)) < nowtime - settings.LOCAL_STDOUT_EXPIRE_TIME:
@@ -544,7 +558,7 @@ def purge_old_stdout_files():
             logger.info(six.text_type("Removing {}").format(os.path.join(settings.JOBOUTPUT_ROOT, f)))
 
 @shared_task(bind=True, base=LogErrorsTask)
-def cyborgbackup_periodic_scheduler():
+def cyborgbackup_periodic_scheduler(self):
     run_now = now()
     state = CyborgBackupScheduleState.objects.get_or_create(pk=1)[0]
     last_run = state.schedule_last_run
@@ -577,8 +591,8 @@ def cyborgbackup_periodic_scheduler():
     state.save()
 
 
-@shared_task(bind=True, queue='cyborgbackup', base=LogErrorsTask)
-def handle_work_success(result, task_actual):
+@shared_task(bind=True, base=LogErrorsTask)
+def handle_work_success(self, result, task_actual):
     try:
         instance = Job.get_instance_by_type(task_actual['type'], task_actual['id'])
     except ObjectDoesNotExist:
@@ -591,8 +605,8 @@ def handle_work_success(result, task_actual):
     run_job_complete.delay(instance.id)
 
 
-@shared_task(queue='cyborgbackup', base=LogErrorsTask)
-def handle_work_error(task_id, *args, **kwargs):
+@shared_task(base=LogErrorsTask)
+def handle_work_error(self, task_id, *args, **kwargs):
     subtasks = kwargs.get('subtasks', None)
     logger.debug('Executing error task id %s, subtasks: %s' % (task_id, str(subtasks)))
     first_instance = None
@@ -1073,8 +1087,8 @@ class RunJob(BaseTask):
             hypervisor_hostname = provider.get_client(job.client.hostname)
             f.write(provider.get_script())
             f.close()
-            backupScriptPath = os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_backup_script))
-            env.update({'CYBORGBACKUP_BACKUP_SCRIPT': backupScriptPath})
+            backup_script_path = os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_backup_script))
+            env.update({'CYBORGBACKUP_BACKUP_SCRIPT': backup_script_path})
             handle_env, path_env = tempfile.mkstemp()
             f = os.fdopen(handle_env, 'w')
             for key, var in env.items():
@@ -1103,7 +1117,7 @@ class RunJob(BaseTask):
         if job.repository_id:
             handle, path = tempfile.mkstemp()
             f = os.fdopen(handle, 'w')
-            token, created = Token.objects.get_or_create(user=agentUser)
+            token, created = Token.objects.get_or_create(user=agent_user)
             base_script = os.path.join(settings.SCRIPTS_DIR, 'cyborgbackup', 'prepare_repository')
             with open(base_script) as fs:
                 script = fs.read()
@@ -1571,4 +1585,4 @@ class RunJob(BaseTask):
         return d
 
 
-Celery('cyborgbackup').register_task(RunJob())
+app_or_default().register_task(RunJob())

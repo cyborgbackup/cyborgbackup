@@ -347,13 +347,12 @@ PERSISTENT_CALLBACK_MESSAGES = True
 USE_CALLBACK_QUEUE = True
 CALLBACK_QUEUE = "callback_tasks"
 
-IGNORE_CELERY_INSPECTOR = True
+IGNORE_CELERY_INSPECTOR = False
 CELERY_RDBSIG = 1
 CELERY_ALWAYS_EAGER = True
 CELERY_BROKER_URL = BROKER_URL
 CELERY_BROKER_POOL_LIMIT = None
 CELERY_EVENT_QUEUE_TTL = 5
-CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TRACK_STARTED = True
 CELERYD_TASK_TIME_LIMIT = 86400
 CELERYD_TASK_SOFT_TIME_LIMIT = None
@@ -361,14 +360,29 @@ CELERYD_POOL_RESTARTS = True
 CELERY_RESULT_BACKEND = 'django-db'
 CELERY_IMPORTS = ('cyborgbackup.main.utils.tasks', 'cyborgbackup.main.tasks')
 CELERY_QUEUES = (
-    Queue('cyborgbackup', Exchange('cyborgbackup'), routing_key='cyborgbackup'),
+    Queue('main_tasks', routing_key='main_tasks'),
+    Queue('backup_job', routing_key='backup_job'),
     Broadcast('cyborgbackup_broadcast_all')
 )
+CELERY_DEFAULT_QUEUE='backup_job'
+CELERY_DEFAULT_ROUTING_KEY='backup.job'
 CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 
-CELERY_ROUTES = {}
+main_tasks_route = {
+    'queue': 'main_tasks'
+}
+
+CELERY_ROUTES = {
+    'cyborgbackup.main.tasks.cyborgbackup_notifier': main_tasks_route,
+    'cyborgbackup.main.tasks.cyborgbackup_periodic_scheduler': main_tasks_route,
+    'cyborgbackup.main.tasks.compute_borg_size': main_tasks_route,
+    'cyborgbackup.main.tasks.prune_catalog': main_tasks_route,
+    'cyborgbackup.main.tasks.check_borg_new_version': main_tasks_route,
+    'cyborgbackup.main.utils.tasks.run_task_manager': main_tasks_route,
+    'cyborgbackup.main.tasks.run_job': {'queue': 'backup_job'}
+}
 CELERY_BEAT_SCHEDULER = 'celery.beat.PersistentScheduler'
 CELERY_BEAT_SCHEDULE_FILENAME = os.path.join(
     BASE_DIR,
@@ -380,37 +394,45 @@ CELERY_BEAT_SCHEDULE = {
     'cyborgbackup_notify_daily': {
         'task': 'cyborgbackup.main.tasks.cyborgbackup_notifier',
         'schedule': crontab(minute='55', hour='23'),
-        'args': ('daily',)
+        'args': ('daily',),
+        'options': main_tasks_route
     },
     'cyborgbackup_notify_weekly': {
         'task': 'cyborgbackup.main.tasks.cyborgbackup_notifier',
         'schedule': crontab(hour=0, minute=0, day_of_week=6),
-        'args': ('weekly',)
+        'args': ('weekly',),
+        'options': main_tasks_route
     },
     'cyborgbackup_notify_monthly': {
         'task': 'cyborgbackup.main.tasks.cyborgbackup_notifier',
         'schedule': crontab(hour=0, minute=0, day_of_month=1),
-        'args': ('monthly',)
+        'args': ('monthly',),
+        'options': main_tasks_route
     },
     'cyborgbackup_scheduler': {
         'task': 'cyborgbackup.main.tasks.cyborgbackup_periodic_scheduler',
         'schedule': timedelta(seconds=30),
-        'options': {'expires': 20}
+        'options': {'expires': 20} | main_tasks_route
     },
     'cyborgbackup_compute_Size': {
         'task': 'cyborgbackup.main.tasks.compute_borg_size',
         'schedule': timedelta(seconds=10),
-        'options': {'expires': 20}
+        'options': {'expires': 20} | main_tasks_route
     },
     'cyborgbackup_prune_catalog': {
         'task': 'cyborgbackup.main.tasks.prune_catalog',
         'schedule': crontab(minute='30'),
-        'options': {'expires': 20}
+        'options': {'expires': 20} | main_tasks_route
+    },
+    'cyborgbackup_check_new_version_borg': {
+        'task': 'cyborgbackup.main.tasks.check_borg_new_version',
+        'schedule': crontab(hour=1, minute=0, day_of_month=1),
+        'options': {'expires': 20} | main_tasks_route
     },
     'task_manager': {
         'task': 'cyborgbackup.main.utils.tasks.run_task_manager',
         'schedule': timedelta(seconds=20),
-        'options': {'expires': 20}
+        'options': {'expires': 20} | main_tasks_route
     },
 }
 

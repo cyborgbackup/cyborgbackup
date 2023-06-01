@@ -1,6 +1,11 @@
 import logging
+import pymongo
 
 from django.db import models
+from django.conf import settings
+
+from pkg_resources import parse_version
+
 from django.core.validators import MaxValueValidator, MinValueValidator
 from cyborgbackup.api.versioning import reverse
 from cyborgbackup.main.models.base import PrimordialModel
@@ -38,6 +43,10 @@ class Client(PrimordialModel):
     )
 
     ready = models.BooleanField(
+        default=False
+    )
+
+    mark_as_to_update = models.BooleanField(
         default=False
     )
 
@@ -107,10 +116,7 @@ class Client(PrimordialModel):
         job.description = "Client {} Borg Preparation".format(self.hostname)
         job.save()
 
-        from cyborgbackup.main.signals import disable_activity_stream
-        fields = ()
-        with disable_activity_stream():
-            copy_m2m_relationships(self, job, fields, kwargs=kwargs)
+        copy_m2m_relationships(self, job, (), kwargs=kwargs)
 
         return job
 
@@ -139,9 +145,13 @@ class Client(PrimordialModel):
         job.description = "Hypervisor of {} Borg Preparation".format(self.hostname)
         job.save()
 
-        from cyborgbackup.main.signals import disable_activity_stream
-        fields = ()
-        with disable_activity_stream():
-            copy_m2m_relationships(self, job, fields, kwargs=kwargs)
+        copy_m2m_relationships(self, job, (), kwargs=kwargs)
 
         return job
+
+    def can_be_updated(self):
+        db = pymongo.MongoClient(settings.MONGODB_URL).local
+        latest_versions = db.versions.find_one({}, sort=[("check_date",pymongo.DESCENDING)])
+        if not latest_versions:
+            return False
+        return parse_version(self.version) < parse_version(latest_versions['version'])

@@ -112,6 +112,7 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
         ('failed', 'Failed'),            # Job completed, but with failures.
         ('error', 'Error'),              # The job was unable to run.
         ('canceled', 'Canceled'),        # The job was canceled before completion.
+        ('starting', 'Starting'),        # The job is starting. Launched from Main queue but not yet on Job queue
     ]
 
     COMMON_STATUS_CHOICES = JOB_STATUS_CHOICES + [
@@ -119,7 +120,6 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
     ]
 
     DEPRECATED_STATUS_CHOICES = [
-        # No longer used for Project / Inventory Source:
         ('updating', 'Updating'),            # Same as running.
     ]
 
@@ -659,7 +659,7 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
 
     @property
     def can_start(self):
-        return bool(self.status in ('new', 'waiting'))
+        return bool(self.status in ('new', 'starting', 'waiting'))
 
     @property
     def can_update(self):
@@ -806,20 +806,27 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
 
         return (True, opts)
 
-    def start_celery_task(self, opts, error_callback, success_callback, queue):
+    def start_celery_task(self, opts, error_callback, success_callback):
+        if not self.celery_task_id:
+            raise RuntimeError("Expected celery_task_id to be set on model.")
         kwargs = {
             'link_error': error_callback,
             'link': success_callback,
-            'queue': None,
-            'task_id': None,
+            'queue': 'backup_job',
+            'task_id': self.celery_task_id,
         }
-        if not self.celery_task_id:
-            raise RuntimeError("Expected celery_task_id to be set on model.")
-        kwargs['task_id'] = self.celery_task_id
         task_class = self._get_task_class()
         args = [self.pk]
-        kwargs['queue'] = 'celery'
-        async_result = task_class().apply(args, opts, **kwargs)
+        from celery.app import app_or_default
+
+        app = app_or_default()
+        app.autodiscover_tasks()
+
+        with app.connection() as new_connection:
+            #runjob = app.tasks[task_class.name]
+            #async_result = runjob().apply_async(args, opts, connection=new_connection, **kwargs)
+
+            async_result = task_class().apply_async(args, opts, connection=new_connection, **kwargs)
         return async_result
 
     def start(self, error_callback, success_callback, **kwargs):

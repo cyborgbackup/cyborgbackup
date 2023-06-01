@@ -237,6 +237,7 @@ class Policy(PrimordialModel):
         for client in self.clients.filter(enabled=True):
             job = copy_model_by_class(self, job_class, fields, kwargs)
             job.policy_id = self.pk
+            job.repository_id = self.repository.pk
             job.client_id = client.pk
             job.status = 'pending'
             job.name = "Backup Job {} {}".format(self.name, client.hostname)
@@ -245,6 +246,7 @@ class Policy(PrimordialModel):
             if catalog_enabled:
                 catalog_job = copy_model_by_class(self, job_class, fields, kwargs)
                 catalog_job.policy_id = self.pk
+                catalog_job.repository_id = self.repository.pk
                 catalog_job.client_id = client.pk
                 catalog_job.status = 'waiting'
                 catalog_job.job_type = 'catalog'
@@ -258,6 +260,7 @@ class Policy(PrimordialModel):
                 if have_prune_info:
                     prune_job = copy_model_by_class(self, job_class, fields, kwargs)
                     prune_job.policy_id = self.pk
+                    prune_job.repository_id = self.repository.pk
                     prune_job.client_id = client.pk
                     prune_job.status = 'waiting'
                     prune_job.job_type = 'prune'

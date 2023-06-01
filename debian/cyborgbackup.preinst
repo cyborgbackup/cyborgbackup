@@ -18,5 +18,12 @@ case "$1" in
          rm /etc/supervisor/conf.d/cyborgbackup.conf
       fi
 
+      if test -f /lib/systemd/system/cyborgbackup-celery.service; then
+         systemctl stop cyborgbackup-celery
+         systemctl disable cyborgbackup-celery
+         rm /lib/systemd/system/cyborgbackup-celery.service
+         systemctl daemon-reload
+      fi
+
       ;;
 esac

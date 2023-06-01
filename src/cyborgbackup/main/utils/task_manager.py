@@ -85,10 +85,16 @@ class TaskManager:
         if not task.dependent_jobs_finished():
             return True
 
-        if Job.objects.filter(repository=task.policy.repository.pk, status__in=('pending', 'waiting', 'running')).count() > 0:
+        same_repo_jobs_count = Job.objects.filter(repository=task.policy.repository.pk, status__in=('starting', 'running',)).count()
+        same_client_jobs_count = Job.objects.filter(client=task.client.pk, status__in=('starting', 'running',)).count()
+
+        logger.info('Found %d jobs with same repository that task %s.', same_repo_jobs_count, task.log_format)
+        logger.info('Found %d jobs with same client that task %s.', same_client_jobs_count, task.log_format)
+
+        if same_repo_jobs_count > 0:
             return True
 
-        if task.client and Job.objects.filter(client=task.client.pk, status='running').count() > 0:
+        if task.client and same_client_jobs_count > 0:
             return True
 
         return False
@@ -109,9 +115,9 @@ class TaskManager:
         execution_nodes = {}
         waiting_jobs = []
         now = tz_now()
-        jobs = Job.objects.exclude(job_type='workflow').filter((Q(status='running') |
-                                                                Q(status='waiting',
-                                                                  modified__lte=now - timedelta(seconds=60))))
+        jobs = Job.objects.filter((Q(status='running') |
+                                   Q(status='waiting',
+                                   modified__lte=now - timedelta(seconds=60))))
         for j in jobs:
             waiting_jobs.append(j)
         return execution_nodes, waiting_jobs
@@ -146,26 +152,33 @@ class TaskManager:
             app.config_from_object('django.conf:settings')
             inspector = Inspect(app=app)
             active_task_queues = inspector.active()
+            max_concurrency_queues = inspector.stats()
         else:
             logger.warning("Ignoring celery task inspector")
             active_task_queues = None
 
         queues = None
+        concurrencies = None
         if active_task_queues is not None:
-            queues = {}
+            queues = []
+            concurrencies = ()
             for queue in active_task_queues:
-                active_tasks = set()
-                map(lambda at: active_tasks.add(at['id']), active_task_queues[queue])
+                if 'worker-job' in queue:
+                    active_tasks = set()
+                    map(lambda at: active_tasks.add(at['id']), active_task_queues[queue])
 
-                # celery worker name is of the form celery@myhost.com
-                queue_name = queue.split('@')
-                queue_name = queue_name[1 if len(queue_name) > 1 else 0]
-                queues[queue_name] = active_tasks
+                    max_concurrency = max_concurrency_queues[queue]['pool']['max-concurrency']
+
+                    # celery worker name is of the form celery@myhost.com
+                    queue_name = queue.split('@')
+                    queue_name = queue_name[1 if len(queue_name) > 1 else 0]
+                    queues = active_tasks
+                    concurrencies = (max_concurrency, len(active_tasks))
         else:
             if not hasattr(settings, 'CELERY_UNIT_TEST'):
                 return None, None
 
-        return active_task_queues, queues
+        return active_task_queues, queues, concurrencies
 
     def start_task(self, task, dependent_tasks=[]):
         from cyborgbackup.main.tasks import handle_work_error, handle_work_success
@@ -179,7 +192,7 @@ class TaskManager:
         error_handler = handle_work_error.s(subtasks=[task_actual] + dependencies)
         success_handler = handle_work_success.s(task_actual=task_actual)
 
-        task.status = 'waiting'
+        task.status = 'starting'
         (start_status, opts) = task.pre_start()
         if not start_status:
             task.status = 'failed'
@@ -198,8 +211,7 @@ class TaskManager:
             if task.status != 'failed':
                 task.start_celery_task(opts,
                                        error_callback=error_handler,
-                                       success_callback=success_handler,
-                                       queue='cyborgbackup')
+                                       success_callback=success_handler)
 
         connection.on_commit(post_commit)
 
@@ -254,7 +266,12 @@ class TaskManager:
         client_task.save()
         return client_task
 
-    def should_prepare_client(self, latest_prepare_client):
+    def should_prepare_client(self, latest_prepare_client, client):
+        if client.can_be_updated() and client.mark_as_to_update:
+            client.mark_as_to_update = False
+            client.save()
+            return True
+
         if latest_prepare_client is None:
             return True
 
@@ -330,7 +347,7 @@ class TaskManager:
                             dependencies.append(latest_hypervisor_preparation)
                 else:
                     latest_client_preparation = self.get_latest_client_preparation(task)
-                    if self.should_prepare_client(latest_client_preparation):
+                    if self.should_prepare_client(latest_client_preparation, task.client):
                         client_task = self.create_prepare_client(task)
                         dependencies.append(client_task)
                     else:
@@ -352,6 +369,8 @@ class TaskManager:
             self.start_task(task, tasks_to_fail)
 
     def process_pending_tasks(self, pending_tasks):
+        _, _, concurrencies = self.get_active_tasks()
+        i = 0
         for task in pending_tasks:
             self.process_dependencies(task, self.generate_dependencies(task))
             if self.is_job_blocked(task):
@@ -360,7 +379,9 @@ class TaskManager:
 
             self.graph['cyborgbackup']['graph'].add_job(task)
             self.start_task(task, [])
-            break
+            i+=1
+            if (concurrencies[1] + i) == concurrencies[0]:
+                break
 
     def fail_jobs_if_not_in_celery(self, node_jobs, active_tasks, celery_task_start_time,
                                    isolated=False):
@@ -402,7 +423,7 @@ class TaskManager:
 
         logger.debug("Failing inconsistent running jobs.")
         celery_task_start_time = tz_now()
-        active_task_queues, active_queues = self.get_active_tasks()
+        active_task_queues, active_queues, _ = self.get_active_tasks()
         cache.set('last_celery_task_cleanup', tz_now())
 
         if active_queues is None:
@@ -415,8 +436,7 @@ class TaskManager:
         '''
         running_tasks, waiting_tasks = self.get_running_tasks()
         all_celery_task_ids = []
-        for node, node_jobs in active_queues.items():
-            all_celery_task_ids.extend(node_jobs)
+        all_celery_task_ids.extend(active_queues)
 
         self.fail_jobs_if_not_in_celery(waiting_tasks, all_celery_task_ids, celery_task_start_time)
 

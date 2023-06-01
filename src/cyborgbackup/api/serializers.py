@@ -864,12 +864,13 @@ class SettingListSerializer(SettingSerializer):
 
 
 class ClientSerializer(BaseSerializer):
+    can_be_updated = serializers.SerializerMethodField()
     show_capabilities = ['edit', 'delete']
 
     class Meta:
         model = Client
         fields = ('*', '-name', '-description', 'hostname', 'ip', 'bandwidth_limit', 'port',
-                  'version', 'ready', 'hypervisor_ready', 'hypervisor_name', 'enabled', 'uuid')
+                  'version', 'ready', 'hypervisor_ready', 'hypervisor_name', 'can_be_updated', 'mark_as_to_update', 'enabled', 'uuid')
 
     def get_summary_fields(self, obj):
         summary_dict = super(ClientSerializer, self).get_summary_fields(obj)
@@ -880,6 +881,9 @@ class ClientSerializer(BaseSerializer):
                 summary_dict['policies'].append({'id': pol.id, 'name': pol.name})
 
         return summary_dict
+
+    def get_can_be_updated(self, obj):
+        return obj.can_be_updated()
 
 
 class ClientListSerializer(ClientSerializer):

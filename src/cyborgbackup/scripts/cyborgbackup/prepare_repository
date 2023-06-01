@@ -1,10 +1,10 @@
 #!/bin/bash
 
-###################################################
-##         CyBorgBackup Prepare Repository       ##
-##   Author : Gaëtan Ferez <gaetan@milkywan.fr>  ##
-##                 Version 0.1                   ##
-###################################################
+########################################################
+##          CyBorgBackup Prepare Repository           ##
+##   Author : Gaëtan Ferez <gaetan@cyborgbackup.dev>  ##
+##                 Version 0.1                        ##
+########################################################
 
 echo "Check Curl"
 curl -V 2>&1 1>/dev/null || (sudo apt-get -q update && sudo apt-get -q -y install curl)
