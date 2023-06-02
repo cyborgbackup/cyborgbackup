@@ -1322,7 +1322,7 @@ class RunJob(BaseTask):
                 if 'user' in vars['credential'] and vars['credential']['user']:
                     piped += " -u{}".format(vars['credential']['user'])
                 if 'password' in vars['credential'] and vars['credential']['password']:
-                    piped += " -p{}".format(vars['credential']['password'])
+                    piped += " -p'{}'".format(vars['credential']['password'].replace("'", r"\'"))
                 if 'databases' in vars and vars['databases']:
                     database_specify = True
                     piped += " --databases {}".format(' '.join(vars['databases']))
@@ -1330,7 +1330,7 @@ class RunJob(BaseTask):
                 if 'user' in mysql_json and mysql_json['user']:
                     piped += " -u{}".format(mysql_json['user'])
                 if 'password' in mysql_json and mysql_json['password']:
-                    piped += " -p{}".format(mysql_json['password'])
+                    piped += " -p'{}'".format(mysql_json['password'].replace("'", r"\'"))
                 if 'databases' in mysql_json and mysql_json['databases']:
                     database_specify = True
                     if isinstance(mysql_json['databases'], list):
