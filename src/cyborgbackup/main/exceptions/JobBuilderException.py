@@ -1,0 +1,2 @@
+class JobCommandBuilderException(Exception):
+    pass

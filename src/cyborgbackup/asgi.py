@@ -6,7 +6,7 @@ from asgiref.sync import sync_to_async
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.settings import api_settings
 from channels.sessions import SessionMiddlewareStack
-from channels.routing import ProtocolTypeRouter, URLRouter, ChannelNameRouter
+from channels.routing import ProtocolTypeRouter
 from django.core.asgi import get_asgi_application
 
 from cyborgbackup import prepare_env
@@ -20,6 +20,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "cyborgbackup.settings")
 django_asgi_app = get_asgi_application()
 
 from django.contrib.auth.models import AnonymousUser
+
 
 class EmptyRequest:
     _request = {}
@@ -63,7 +64,7 @@ class TokenAuthMiddleware:
                         scope['user'] = user
                     else:
                         scope['user'] = AnonymousUser()
-            except Exception as e:
+            except Exception as _:
                 scope['user'] = AnonymousUser()
         return await self.app(scope, receive, send)
 
@@ -74,9 +75,8 @@ application = ProtocolTypeRouter({
 
     # WebSocket handler
     "websocket": TokenAuthMiddleware(
-      SessionMiddlewareStack(
-        CyborgBackupConsumer.as_asgi()
-      )
+        SessionMiddlewareStack(
+            CyborgBackupConsumer.as_asgi()
+        )
     )
 })
-

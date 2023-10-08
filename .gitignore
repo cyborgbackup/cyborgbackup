@@ -2,8 +2,12 @@
 .vagrant
 *.deb
 .idea
+.scannerwork
+.tox
 deploy.sh
 src/secret.txt
+src/coverage.xml
+src/output_flake8.txt
 celerybeat.pid
 debian/cyborgbackup
 src/cyborgbackup/static

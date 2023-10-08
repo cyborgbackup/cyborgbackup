@@ -7,7 +7,7 @@ from rest_framework import permissions
 from rest_framework.permissions import IsAuthenticated
 
 # CyBorgBackup
-from cyborgbackup.main.models import * # noqa
+from cyborgbackup.main.models import *  # noqa
 
 logger = logging.getLogger('cyborgbackup.api.permissions')
 

@@ -2,7 +2,6 @@
 import inspect
 import logging
 import time
-import traceback
 
 # Django
 from django.conf import settings
@@ -119,7 +118,6 @@ def get_default_schema():
 
 
 class APIView(views.APIView):
-
     schema = get_default_schema()
     versioning_class = URLPathVersioning
 
@@ -319,9 +317,9 @@ class GenericAPIView(LoggingViewSetMixin, generics.GenericAPIView, APIView):
                 })
             serializer = self.get_serializer()
             for method, key in [
-                    ('GET', 'serializer_fields'),
-                    ('POST', 'serializer_create_fields'),
-                    ('PUT', 'serializer_update_fields')
+                ('GET', 'serializer_fields'),
+                ('POST', 'serializer_create_fields'),
+                ('PUT', 'serializer_update_fields')
             ]:
                 d[key] = self.metadata_class().get_serializer_info(serializer, method=method)
         d['settings'] = settings
@@ -367,9 +365,9 @@ class ListAPIView(generics.ListAPIView, GenericAPIView):
     def related_search_fields(self):
         def skip_related_name(name):
             return (
-                name is None or name.endswith('_role') or name.startswith('_') or
-                name.startswith('deprecated_') or name.endswith('_set') or
-                name == 'polymorphic_ctype')
+                    name is None or name.endswith('_role') or name.startswith('_') or
+                    name.startswith('deprecated_') or name.endswith('_set') or
+                    name == 'polymorphic_ctype')
 
         fields = set([])
         for field in self.model._meta.fields:
@@ -700,6 +698,7 @@ class DeleteLastUnattachLabelMixin(object):
     when the last disassociate is called should inherit from this class. Further,
     the model should implement is_detached()
     '''
+
     def unattach(self, request, *args, **kwargs):
         (sub_id, res) = super(DeleteLastUnattachLabelMixin, self).unattach_validate(request)
         if res:

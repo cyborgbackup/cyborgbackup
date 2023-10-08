@@ -18,6 +18,12 @@ from kombu import Queue, Exchange
 from kombu.common import Broadcast
 from corsheaders.defaults import default_headers
 
+
+class SecretKeyException(Exception):
+    """Missing Secret Key Exception"""
+    pass
+
+
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -30,25 +36,9 @@ PROVIDER_DIR = os.path.join(BASE_DIR, 'cyborgbackup', 'provider')
 # See https://docs.djangoproject.com/en/1.11/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-try:
-    SECRET_KEY = os.environ.get("SECRET_KEY", None)
-    if not SECRET_KEY:
-        raise Exception("SECRET_KEY not defined")
-except Exception:
-    SECRET_FILE = os.path.join(BASE_DIR, 'secret.txt')
-    try:
-        SECRET_KEY = open(SECRET_FILE).read().strip()
-    except IOError:
-        try:
-            import random
-            choices = 'abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)'
-            SECRET_KEY = ''.join([random.SystemRandom().choice(choices) for i in range(50)])
-            secret = open(SECRET_FILE, 'w')
-            secret.write(SECRET_KEY)
-            secret.close()
-        except IOError:
-            Exception('Please create a %s file with random characters \
-            to generate your secret key!' % SECRET_FILE)
+SECRET_KEY = os.environ.get("SECRET_KEY", None)
+if not SECRET_KEY:
+    raise SecretKeyException("SECRET_KEY not defined! Please generate your secret key!")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -161,7 +151,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'cyborgbackup.wsgi.application'
 
-#ASGI_APPLICATION = 'cyborgbackup.routing.application'
 ASGI_APPLICATION = 'cyborgbackup.asgi.application'
 
 ASGI_AMQP = {
@@ -173,16 +162,24 @@ ASGI_AMQP = {
 # Database
 # https://docs.djangoproject.com/en/1.11/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('POSTGRES_NAME', 'cyborgbackup'),
-        'USER': os.environ.get('POSTGRES_USER', 'postgres'),
-        'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'postgres'),
-        'HOST': os.environ.get('POSTGRES_HOST', 'localhost'),
-        'PORT': os.environ.get('POSTGRES_PORT', 5432),
+if os.environ.get('COVERAGE_RUN', None):
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'PATH': '../db.sqlite'
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.environ.get('POSTGRES_NAME', 'cyborgbackup'),
+            'USER': os.environ.get('POSTGRES_USER', 'postgres'),
+            'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'postgres'),
+            'HOST': os.environ.get('POSTGRES_HOST', 'localhost'),
+            'PORT': os.environ.get('POSTGRES_PORT', 5432),
+        }
+    }
 
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'cyborgbackup.api.pagination.Pagination',
@@ -210,6 +207,7 @@ REST_FRAMEWORK = {
         'rest_framework.renderers.JSONRenderer',
         'cyborgbackup.api.renderers.BrowsableAPIRenderer',
     ),
+    'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.coreapi.AutoSchema',
     'DEFAULT_METADATA_CLASS': 'cyborgbackup.api.metadata.Metadata',
     'EXCEPTION_HANDLER': 'cyborgbackup.api.views.api_exception_handler',
     'VIEW_NAME_FUNCTION': 'cyborgbackup.api.generics.get_view_name',
@@ -271,7 +269,6 @@ LOGGING = {
         },
     },
 }
-# LOGGING['handlers']['console']['()'] = 'cyborgbackup.main.utils.handlers.ColorHandler'
 LOGGING['handlers']['console'] = {
     '()': 'logging.StreamHandler',
     'level': 'DEBUG',

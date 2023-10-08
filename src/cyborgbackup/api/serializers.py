@@ -665,12 +665,6 @@ class JobSerializer(BaseSerializer):
 
     def to_representation(self, obj):
         ret = super(JobSerializer, self).to_representation(obj)
-        serializer_class = None
-        if serializer_class:
-            serializer = serializer_class(instance=obj, context=self.context)
-            ret = serializer.to_representation(obj)
-        else:
-            ret = super(JobSerializer, self).to_representation(obj)
 
         if 'elapsed' in ret:
             if obj and obj.pk and obj.started and not obj.finished:
@@ -870,7 +864,8 @@ class ClientSerializer(BaseSerializer):
     class Meta:
         model = Client
         fields = ('*', '-name', '-description', 'hostname', 'ip', 'bandwidth_limit', 'port',
-                  'version', 'ready', 'hypervisor_ready', 'hypervisor_name', 'can_be_updated', 'mark_as_to_update', 'enabled', 'uuid')
+                  'version', 'ready', 'hypervisor_ready', 'hypervisor_name', 'can_be_updated',
+                  'mark_as_to_update', 'enabled', 'uuid')
 
     def get_summary_fields(self, obj):
         summary_dict = super(ClientSerializer, self).get_summary_fields(obj)
@@ -1062,7 +1057,8 @@ class RestoreLaunchSerializer(BaseSerializer):
         fields = ('defaults', 'archive_name', 'destination', 'dest_folder', 'dry_run', 'item', 'verbosity')
 
     def get_defaults(self, obj):
-        defaults_dict = {'verbosity': 0, 'archive_name': '', 'destination': '', 'dest_folder': '', 'dry_run': False, 'item': ''}
+        defaults_dict = {'verbosity': 0, 'archive_name': '', 'destination': '',
+                         'dest_folder': '', 'dry_run': False, 'item': ''}
         return defaults_dict
 
     def get_job_template_data(self, obj):

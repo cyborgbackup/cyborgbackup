@@ -63,7 +63,6 @@ class BrowsableAPIRenderer(renderers.BrowsableAPIRenderer):
 
 
 class PlainTextRenderer(renderers.BaseRenderer):
-
     media_type = 'text/plain'
     format = 'txt'
 
@@ -74,16 +73,13 @@ class PlainTextRenderer(renderers.BaseRenderer):
 
 
 class DownloadTextRenderer(PlainTextRenderer):
-
     format = "txt_download"
 
 
 class AnsiTextRenderer(PlainTextRenderer):
-
     media_type = 'text/plain'
     format = 'ansi'
 
 
 class AnsiDownloadRenderer(PlainTextRenderer):
-
     format = "ansi_download"

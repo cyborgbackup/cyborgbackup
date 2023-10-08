@@ -17,7 +17,6 @@ from django.core.exceptions import FieldError
 from django.db import IntegrityError, transaction
 from django.utils.safestring import mark_safe
 from django.utils.timezone import now
-from django.views.decorators.csrf import csrf_exempt
 from django.template.loader import render_to_string
 from django.http import HttpResponse
 from django.utils.translation import gettext_lazy as _
@@ -87,6 +86,7 @@ class JobDeletionMixin(object):
     '''
     Special handling when deleting a running job object.
     '''
+
     def destroy(self, request, *args, **kwargs):
         obj = self.get_object()
         try:
@@ -112,7 +112,6 @@ class JobDeletionMixin(object):
 
 
 class ApiRootView(APIView):
-
     permission_classes = (AllowAny,)
     view_name = _('REST API')
     versioning_class = None
@@ -131,7 +130,6 @@ class ApiRootView(APIView):
 
 
 class ApiVersionRootView(APIView):
-
     permission_classes = (AllowAny,)
     swagger_topic = 'Versioning'
 
@@ -184,7 +182,6 @@ class ApiV1PingView(APIView):
 
 
 class ApiV1ConfigView(APIView):
-
     permission_classes = (IsAuthenticated,)
     view_name = _('Configuration')
     swagger_topic = 'System Configuration'
@@ -223,7 +220,6 @@ class AuthView(APIView):
 
 
 class UserList(ListCreateAPIView):
-
     model = User
     serializer_class = UserSerializer
     permission_classes = (UserPermission,)
@@ -234,7 +230,6 @@ class UserList(ListCreateAPIView):
 
 
 class UserMeList(ListAPIView):
-
     model = User
     serializer_class = UserSerializer
     view_name = _('Me')
@@ -244,7 +239,6 @@ class UserMeList(ListAPIView):
 
 
 class UserDetail(RetrieveUpdateDestroyAPIView):
-
     model = User
     serializer_class = UserSerializer
 
@@ -297,7 +291,6 @@ class StdoutANSIFilter(object):
 
 
 class JobList(ListCreateAPIView):
-
     model = Job
     serializer_class = JobListSerializer
 
@@ -312,7 +305,6 @@ class JobList(ListCreateAPIView):
 
 
 class JobDetail(JobDeletionMixin, RetrieveUpdateDestroyAPIView):
-
     model = Job
     serializer_class = JobSerializer
 
@@ -332,7 +324,6 @@ class StdoutMaxBytesExceeded(Exception):
 
 
 class JobStdout(RetrieveAPIView):
-
     model = Job
     authentication_classes = api_settings.DEFAULT_AUTHENTICATION_CLASSES
     serializer_class = JobStdoutSerializer
@@ -401,8 +392,8 @@ class JobStdout(RetrieveAPIView):
             response_message = _(
                 "Standard Output too large to display ({text_size} bytes), "
                 "only download supported for sizes over {supported_size} bytes.").format(
-                    text_size=e.total, supported_size=e.supported
-                )
+                text_size=e.total, supported_size=e.supported
+            )
             if request.accepted_renderer.format == 'json':
                 return Response({'range': {'start': 0, 'end': 1, 'absolute_end': 1}, 'content': response_message})
             else:
@@ -410,7 +401,6 @@ class JobStdout(RetrieveAPIView):
 
 
 class JobStart(GenericAPIView):
-
     model = Job
     obj_permission_type = 'start'
     serializer_class = EmptySerializer
@@ -436,7 +426,6 @@ class JobStart(GenericAPIView):
 
 
 class JobCancel(RetrieveAPIView):
-
     model = Job
     obj_permission_type = 'cancel'
     serializer_class = JobCancelSerializer
@@ -451,7 +440,6 @@ class JobCancel(RetrieveAPIView):
 
 
 class JobRelaunch(RetrieveAPIView):
-
     model = Job
     obj_permission_type = 'start'
     serializer_class = JobRelaunchSerializer
@@ -464,7 +452,6 @@ class JobRelaunch(RetrieveAPIView):
             return data
         return data
 
-    @csrf_exempt
     @transaction.non_atomic_requests
     def dispatch(self, *args, **kwargs):
         return super(JobRelaunch, self).dispatch(*args, **kwargs)
@@ -505,19 +492,16 @@ class JobRelaunch(RetrieveAPIView):
 
 
 class JobEventList(ListAPIView):
-
     model = JobEvent
     serializer_class = JobEventSerializer
 
 
 class JobEventDetail(RetrieveAPIView):
-
     model = JobEvent
     serializer_class = JobEventSerializer
 
 
 class BaseJobEventsList(SubListAPIView):
-
     model = JobEvent
     serializer_class = JobEventSerializer
     parent_model = None  # Subclasses must define this attribute.
@@ -531,7 +515,6 @@ class BaseJobEventsList(SubListAPIView):
 
 
 class JobJobEventsList(BaseJobEventsList):
-
     parent_model = Job
 
     def get_queryset(self):
@@ -542,7 +525,6 @@ class JobJobEventsList(BaseJobEventsList):
 
 
 class SettingList(ListAPIView):
-
     model = Setting
     serializer_class = SettingListSerializer
 
@@ -553,13 +535,11 @@ class SettingList(ListAPIView):
 
 
 class SettingDetail(RetrieveUpdateAPIView):
-
     model = Setting
     serializer_class = SettingSerializer
 
 
 class SettingGetPublicSsh(ListAPIView):
-
     model = Setting
     serializer_class = EmptySerializer
 
@@ -572,7 +552,6 @@ class SettingGetPublicSsh(ListAPIView):
 
 
 class SettingGenerateSsh(ListCreateAPIView):
-
     model = Setting
     serializer_class = EmptySerializer
 
@@ -610,7 +589,6 @@ class SettingGenerateSsh(ListCreateAPIView):
 
 
 class ClientList(ListCreateAPIView):
-
     model = Client
     serializer_class = ClientListSerializer
 
@@ -621,7 +599,6 @@ class ClientList(ListCreateAPIView):
 
 
 class ClientDetail(RetrieveUpdateDestroyAPIView):
-
     model = Client
     serializer_class = ClientSerializer
 
@@ -636,17 +613,17 @@ class ClientDetail(RetrieveUpdateDestroyAPIView):
         policies = Policy.objects.all()
         if policies.exists() and 'policies' in request.data.keys():
             for pol in policies:
-                if pol.id in request.data['policies'] and len([x for x in pol.clients.all() if x.id == obj.id]) == 0:
+                if (pol.id in request.data['policies'] and
+                        len([x for x in pol.clients.all() if x.id == obj.id]) == 0):
                     logger.debug('Add client to policy {}'.format(pol.name))
-                    pol.clients
-                if len([x for x in pol.clients.all() if x.id == obj.id]) > 0 and pol.id not in request.data['policies']:
+                if (len([x for x in pol.clients.all() if x.id == obj.id]) > 0
+                        and pol.id not in request.data['policies']):
                     logger.debug('Remove client from policy {}'.format(pol.name))
 
         return super(ClientDetail, self).patch(request, *args, **kwargs)
 
 
 class ScheduleList(ListCreateAPIView):
-
     model = Schedule
     serializer_class = ScheduleListSerializer
 
@@ -657,13 +634,11 @@ class ScheduleList(ListCreateAPIView):
 
 
 class ScheduleDetail(RetrieveUpdateDestroyAPIView):
-
     model = Schedule
     serializer_class = ScheduleSerializer
 
 
 class RepositoryList(ListCreateAPIView):
-
     model = Repository
     serializer_class = RepositoryListSerializer
 
@@ -674,25 +649,21 @@ class RepositoryList(ListCreateAPIView):
 
 
 class RepositoryDetail(RetrieveUpdateDestroyAPIView):
-
     model = Repository
     serializer_class = RepositorySerializer
 
 
 class PolicyList(ListCreateAPIView):
-
     model = Policy
     serializer_class = PolicySerializer
 
 
 class PolicyDetail(RetrieveUpdateDestroyAPIView):
-
     model = Policy
     serializer_class = PolicySerializer
 
 
 class PolicyVMModule(ListAPIView):
-
     model = Policy
     serializer_class = PolicyVMModuleSerializer
 
@@ -702,7 +673,6 @@ class PolicyVMModule(ListAPIView):
 
 
 class PolicyModule(ListCreateAPIView):
-
     model = Policy
     serializer_class = PolicyModuleSerializer
 
@@ -730,7 +700,6 @@ class PolicyModule(ListCreateAPIView):
 
 
 class PolicyCalendar(ListAPIView):
-
     model = Policy
     serializer_class = PolicyCalendarSerializer
 
@@ -749,7 +718,6 @@ class PolicyCalendar(ListAPIView):
 
 
 class PolicyLaunch(RetrieveAPIView):
-
     model = Policy
     serializer_class = PolicyLaunchSerializer
 
@@ -813,7 +781,6 @@ class PolicyLaunch(RetrieveAPIView):
 
 
 class RestoreLaunch(ListCreateAPIView):
-
     model = Job
     serializer_class = RestoreLaunchSerializer
 
@@ -863,7 +830,6 @@ class RestoreLaunch(ListCreateAPIView):
 
 
 class CatalogList(ListCreateAPIView):
-
     model = Catalog
     serializer_class = CatalogListSerializer
 
@@ -878,13 +844,11 @@ class CatalogList(ListCreateAPIView):
 
 
 class CatalogDetail(RetrieveUpdateDestroyAPIView):
-
     model = Catalog
     serializer_class = CatalogSerializer
 
 
 class MongoCatalog(ListAPIView):
-
     model = Catalog
     serializer_class = CatalogSerializer
 
@@ -895,7 +859,9 @@ class MongoCatalog(ListAPIView):
         path = request.GET.get('path__regexp', None)
         db = pymongo.MongoClient(dsettings.MONGODB_URL).local
         if path:
-            obj = db.catalog.find({'$and': [{'archive_name': archive_name}, {'path': {'$regex': '^{}$'.format(path)}}]}, {"_id": 0, "archive_name": 1, "path": 1, "type": 1, "size": 1, "healthy": 1, "mtime": 1, "owner": 1, "group": 1, "mode": 1})
+            obj = db.catalog.find({'$and': [{'archive_name': archive_name}, {'path': {'$regex': '^{}$'.format(path)}}]},
+                                  {"_id": 0, "archive_name": 1, "path": 1, "type": 1, "size": 1, "healthy": 1,
+                                   "mtime": 1, "owner": 1, "group": 1, "mode": 1})
             data = list(obj.sort('path', 1))
             return Response({'count': len(data), 'results': data})
         else:
@@ -904,7 +870,6 @@ class MongoCatalog(ListAPIView):
 
 
 class Stats(ListAPIView):
-
     model = Job
     serializer_class = StatsSerializer
 

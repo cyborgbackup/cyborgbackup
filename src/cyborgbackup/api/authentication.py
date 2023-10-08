@@ -17,8 +17,8 @@ class LoggedBasicAuthentication(authentication.BasicAuthentication):
         if ret:
             username = ret[0].username if ret[0] else '<none>'
             logger.debug(smart_str(u"User {} performed a {} to {} through the API".format(username,
-                                                                                           request.method,
-                                                                                           request.path)))
+                                                                                          request.method,
+                                                                                          request.path)))
         return ret
 
     def authenticate_header(self, request):

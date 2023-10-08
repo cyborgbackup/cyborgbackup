@@ -438,7 +438,7 @@ class TaskManager:
         all_celery_task_ids = []
         all_celery_task_ids.extend(active_queues)
 
-        self.fail_jobs_if_not_in_celery(waiting_tasks, all_celery_task_ids, celery_task_start_time)
+        # self.fail_jobs_if_not_in_celery(waiting_tasks, all_celery_task_ids, celery_task_start_time)
 
         for node, node_jobs in running_tasks.items():
             isolated = False

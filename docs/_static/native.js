@@ -74,7 +74,7 @@ var _native = (function () {
     pixel: pixel,
     sanitize: sanitize
   }
-})({})
+})()
 
 var _native_go = function (json) {
   let options = _native.options()

@@ -2,7 +2,7 @@
 {% load rest_framework %}
 
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     {% block head %}
 
@@ -77,6 +77,7 @@
           {% if 'GET' in allowed_methods %}
             <form id="get-form" class="pull-right">
               <fieldset>
+                <legend>Make GET Request</legend>
                 {% if api_settings.URL_FORMAT_OVERRIDE %}
                   <div class="btn-group format-selection">
                     <a class="btn btn-primary js-tooltip" href="{{ request.get_full_path }}" rel="nofollow" title="Make a GET request on the {{ name }} resource">GET</a>
@@ -183,6 +184,7 @@
                         {% with form=post_form %}
                           <form action="{{ request.get_full_path }}" method="POST" enctype="multipart/form-data" class="form-horizontal" novalidate>
                             <fieldset>
+                              <legend>Make POST Request</legend>
                               {% csrf_token %}
                               {{ post_form }}
                               <div class="form-actions">
@@ -198,6 +200,7 @@
                       {% with form=raw_data_post_form %}
                         <form action="{{ request.get_full_path }}" method="POST" class="form-horizontal">
                           <fieldset>
+                            <legend>Make POST Request</legend>
                             {% include "rest_framework/raw_data_form.html" %}
                             <div class="form-actions">
                               <button class="btn btn-primary" title="Make a POST request on the {{ name }} resource">POST</button>
@@ -228,6 +231,7 @@
                       <div class="tab-pane" id="put-object-form">
                         <form action="{{ request.get_full_path }}" data-method="PUT" enctype="multipart/form-data" class="form-horizontal" novalidate>
                           <fieldset>
+                            <legend>Make PUT Request</legend>
                             {{ put_form }}
                             <div class="form-actions">
                               <button class="btn btn-primary js-tooltip" title="Make a PUT request on the {{ name }} resource">PUT</button>
@@ -241,6 +245,7 @@
                       {% with form=raw_data_put_or_patch_form %}
                         <form action="{{ request.get_full_path }}" data-method="PUT" class="form-horizontal">
                           <fieldset>
+                            <legend>Make PUT Request</legend>
                             {% include "rest_framework/raw_data_form.html" %}
                             <div class="form-actions">
                               {% if raw_data_put_form %}

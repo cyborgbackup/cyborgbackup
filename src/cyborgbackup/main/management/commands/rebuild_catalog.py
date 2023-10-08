@@ -75,7 +75,7 @@ class Command(BaseCommand):
         '''
         Create a temporary directory for job-related files.
         '''
-        path = tempfile.mkdtemp(prefix='cyborgbackup_%s_' % instance.pk, dir='/tmp/')
+        path = tempfile.mkdtemp(prefix='cyborgbackup_%s_' % instance.pk, dir='/var/tmp/cyborgbackup')
         os.chmod(path, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
         self.cleanup_paths.append(path)
         return path
@@ -125,7 +125,7 @@ class Command(BaseCommand):
         return private_data_files
 
     def launch_command(self, cmd, instance, key, path, **kwargs):
-        cwd = '/tmp/'
+        cwd = '/var/tmp/cyborgbackup/'
         env = {}
         env['BORG_PASSPHRASE'] = key
         env['BORG_REPO'] = path

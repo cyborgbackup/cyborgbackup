@@ -77,7 +77,7 @@ class Querier:
     def querier_postgresql(self, args):
         cmd = ['psql', '-F\',\'', '-t', '-A', '-c', '\'SELECT datname FROM pg_database;\'']
         if self.client_user == 'root':
-            cmd = ['cd', '/tmp', '&&', 'sudo', '-u', 'postgres'] + cmd
+            cmd = ['cd', '/var/tmp/cyborgbackup', '&&', 'sudo', '-u', 'postgres'] + cmd
         output, rc = self._run(cmd)
         dbs = []
         if rc == 0:
@@ -103,7 +103,7 @@ class Querier:
                 if attr == attr.upper() and attr.startswith('CYBORGBACKUP_'):
                     env[attr] = str(getattr(settings, attr))
 
-            path = tempfile.mkdtemp(prefix='cyborgbackup_module', dir='/tmp/')
+            path = tempfile.mkdtemp(prefix='cyborgbackup_module', dir='/var/tmp/cyborgbackup/')
             os.chmod(path, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
             kwargs['private_data_dir'] = path
 
@@ -141,11 +141,9 @@ class Querier:
                 elif len(listpaths) == 1:
                     private_data_files['credentials']['ssh'] = listpaths[0]
 
-            kwargs['private_data_files'] = private_data_files
-
             # May have to serialize the value
             kwargs['private_data_files'] = private_data_files
-            cwd = '/tmp'
+            cwd = '/var/tmp/cyborgbackup'
 
             new_args = []
             new_args += ['ssh', '-Ao', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']

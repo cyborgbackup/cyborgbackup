@@ -26,6 +26,7 @@ class Fernet256(Fernet):
     '''
 
     def __init__(self, key, backend=None):
+        super().__init__(key, backend)
         if backend is None:
             backend = default_backend()
 
@@ -59,8 +60,8 @@ def get_encryption_key(field_name, pk=None):
 
 
 def encrypt_value(value, pk=None):
-    TransientField = namedtuple('TransientField', ['pk', 'value'])
-    return encrypt_field(TransientField(pk=pk, value=value), 'value')
+    transient_field = namedtuple('TransientField', ['pk', 'value'])
+    return encrypt_field(transient_field(pk=pk, value=value), 'value')
 
 
 def encrypt_field(instance, field_name, ask=False, subfield=None, skip_utf8=False):
@@ -166,17 +167,29 @@ class Keypair(object):
         self.public_key = {}
         self.passphrase = passphrase
 
+        self.check_type_rsa()
+        self.check_type_dsa()
+        self.check_type_ecdsa()
+        self.check_type_ed25519()
+
+        if not self.passphrase:
+            self.generate_passphrase()
+
+
+    def check_type_rsa(self):
         if self.type in 'rsa':
             self.size = 4096 if self.size is None else self.size
             if self.size < 1024:
                 raise KeypairError('For RSA keys, the minimum size is 1024 bits and the default is 4096 bits. '
                                    'Attempting to use bit lengths under 1024 will cause the module to fail.')
 
+    def check_type_dsa(self):
         if self.type == 'dsa':
             self.size = 1024 if self.size is None else self.size
             if self.size != 1024:
                 raise KeypairError('DSA keys must be exactly 1024 bits as specified by FIPS 186-2.')
 
+    def check_type_ecdsa(self):
         if self.type == 'ecdsa':
             self.size = 256 if self.size is None else self.size
             if self.size not in (256, 384, 521):
@@ -184,24 +197,23 @@ class Keypair(object):
                                    'one of three elliptic curve sizes: 256, 384 or 521 bits. '
                                    'Attempting to use bit lengths other than these three values for '
                                    'ECDSA keys will cause this module to fail. ')
+
+    def check_type_ed25519(self):
         if self.type == 'ed25519':
             self.size = 256
 
-        if not self.passphrase:
-            self.generate_passphrase()
-
     def generate_passphrase(self):
         import string
-        import random
+        import secrets
         letters_and_digits = string.ascii_letters + string.digits
-        self.passphrase = ''.join((random.choice(letters_and_digits) for i in range(40)))
+        self.passphrase = ''.join((secrets.choice(letters_and_digits) for _ in range(40)))
 
     @staticmethod
     def generate_temporary_filename():
         import string
-        import random
+        import secrets
         letters_and_digits = string.ascii_letters + string.digits
-        return '/tmp/tmpcyborg_'+''.join((random.choice(letters_and_digits) for i in range(15)))
+        return '/var/tmp/cyborgbackup/tmpcyborg_'+''.join((secrets.choice(letters_and_digits) for _ in range(15)))
 
     def generate(self):
         import subprocess
@@ -253,7 +265,7 @@ class Keypair(object):
             if exc.errno != errno.ENOENT:
                 raise KeypairError(exc)
             else:
-                pass
+                return True
 
         if os.path.exists(self.path + ".pub"):
             try:
@@ -262,4 +274,4 @@ class Keypair(object):
                 if exc.errno != errno.ENOENT:
                     raise KeypairError(exc)
                 else:
-                    pass
+                    return True

@@ -62,9 +62,7 @@ class TypeFilterBackend(BaseFilterBackend):
                 if 'polymorphic_ctype' in get_all_field_names(model):
                     types_pks = set([v for k, v in types_map.items() if k in types])
                     queryset = queryset.filter(polymorphic_ctype_id__in=types_pks)
-                elif model_type in types:
-                    queryset = queryset
-                else:
+                elif model_type not in types:
                     queryset = queryset.none()
             return queryset
         except FieldError as e:

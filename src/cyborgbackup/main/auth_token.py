@@ -23,6 +23,7 @@ def rest_auth(func):
     Does not allow a new session to be set; that must be done via a view. This
     is only an accessor for any existing session.
     """
+
     @functools.wraps(func)
     def inner(message, *args, **kwargs):
         # Make sure there's NOT a http_session already
@@ -62,6 +63,7 @@ def rest_auth(func):
         # Run the consumer
         result = func(message, *args, **kwargs)
         return result
+
     return inner
 
 
@@ -75,6 +77,7 @@ saf    Wraps a HTTP or WebSocket consumer (or any consumer of messages
     If the user does not have a session cookie set, both "session"
     and "user" will be None.
     """
+
     @rest_auth
     @functools.wraps(func)
     def inner(message, *args, **kwargs):
@@ -82,6 +85,7 @@ saf    Wraps a HTTP or WebSocket consumer (or any consumer of messages
         if not hasattr(message, "auth"):
             raise ValueError("Did not see a http session to get auth from")
         return func(message, *args, **kwargs)
+
     return inner
 
 
