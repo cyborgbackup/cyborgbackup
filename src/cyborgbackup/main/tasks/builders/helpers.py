@@ -17,6 +17,8 @@ logger = logging.getLogger('cyborgbackup.main.tasks.builders.helpers')
 def build_env(job, **kwargs):
     env = {}
 
+    token = None
+
     for attr in dir(settings):
         if attr == attr.upper() and attr.startswith('CYBORGBACKUP_'):
             env[attr] = str(getattr(settings, attr))
@@ -33,7 +35,7 @@ def build_env(job, **kwargs):
         agent_user.save()
     else:
         agent_user = agent_users.first()
-        token, created = Token.objects.get_or_create(user=agent_user)
+        token, _ = Token.objects.get_or_create(user=agent_user)
     if token and (job.job_type == 'check' or job.job_type == 'catalog'):
         env['CYBORG_AGENT_TOKEN'] = str(token)
         try:
@@ -94,11 +96,11 @@ def build_passwords():
         passwords['credential_{}'.format(setting.key)] = decrypt_field(set_parsed, 'value')
     return passwords
 
-def build_extra_vars_file(vars, **kwargs):
+def build_extra_vars_file(extra_vars, **kwargs):
     handle, path = tempfile.mkstemp(dir=kwargs.get('private_data_dir', None))
     f = os.fdopen(handle, 'w')
     f.write("# CyBorgBackup Extra Vars #\n")
-    f.write(json.dumps(vars))
+    f.write(json.dumps(extra_vars))
     f.close()
     os.chmod(path, stat.S_IRUSR)
     return path

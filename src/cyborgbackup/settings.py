@@ -21,7 +21,6 @@ from corsheaders.defaults import default_headers
 
 class SecretKeyException(Exception):
     """Missing Secret Key Exception"""
-    pass
 
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)

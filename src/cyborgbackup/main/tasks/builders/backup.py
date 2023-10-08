@@ -46,14 +46,14 @@ def _build_borg_cmd_for_piped_mysql(job):
     if job.policy.extra_vars != '':
         mysql_json = json.loads(job.policy.extra_vars)
         if 'extended_mysql' in mysql_json and str(job.client.pk) in mysql_json['extended_mysql'].keys():
-            vars = mysql_json['extended_mysql'][str(job.client.pk)]
-            if 'user' in vars['credential'] and vars['credential']['user']:
-                piped += " -u{}".format(vars['credential']['user'])
-            if 'password' in vars['credential'] and vars['credential']['password']:
-                piped += " -p'{}'".format(vars['credential']['password'].replace("'", r"\'"))
-            if 'databases' in vars and vars['databases']:
+            mysql_vars = mysql_json['extended_mysql'][str(job.client.pk)]
+            if 'user' in mysql_vars['credential'] and mysql_vars['credential']['user']:
+                piped += " -u{}".format(mysql_vars['credential']['user'])
+            if 'password' in mysql_vars['credential'] and mysql_vars['credential']['password']:
+                piped += " -p'{}'".format(mysql_vars['credential']['password'].replace("'", r"\'"))
+            if 'databases' in mysql_vars and mysql_vars['databases']:
                 database_specify = True
-                piped += " --databases {}".format(' '.join(vars['databases']))
+                piped += " --databases {}".format(' '.join(mysql_vars['databases']))
         else:
             if 'user' in mysql_json and mysql_json['user']:
                 piped += " -u{}".format(mysql_json['user'])
@@ -77,10 +77,10 @@ def _build_borg_cmd_for_piped_postgresql(job):
     if job.policy.extra_vars != '':
         pgsql_json = json.loads(job.policy.extra_vars)
         if 'extended_postgresql' in pgsql_json and str(job.client.pk) in pgsql_json['extended_postgresql'].keys():
-            vars = pgsql_json['extended_postgresql'][str(job.client.pk)]
-            if 'databases' in vars and vars['databases']:
+            pgsql_vars = pgsql_json['extended_postgresql'][str(job.client.pk)]
+            if 'databases' in pgsql_vars and pgsql_vars['databases']:
                 database_specify = True
-                piped += " --databases {}".format(' '.join(vars['databases']))
+                piped += " --databases {}".format(' '.join(pgsql_vars['databases']))
         else:
             if 'database' in pgsql_json and pgsql_json['database']:
                 database_specify = True
@@ -91,6 +91,7 @@ def _build_borg_cmd_for_piped_postgresql(job):
 
 
 def _build_borg_cmd_for_piped_vm(job):
+    """ @todo : Build backup system for RAW VM"""
     provider = load_module_provider(job.policy.vmprovider)
     client = provider.get_client(job.client.hostname)
     piped_list = ['/var/cache/cyborgbackup/borg_backup_vm']

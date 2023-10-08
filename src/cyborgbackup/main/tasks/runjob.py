@@ -51,7 +51,7 @@ class RunJob(BaseTask):
 
     def get_password_prompts(self, **kwargs):
         d = super(RunJob, self).get_password_prompts(**kwargs)
-        for k, v in kwargs['passwords'].items():
+        for k, _ in kwargs['passwords'].items():
             d[re.compile(r'Enter passphrase for .*'+k+r':\s*?$', re.M)] = k
             d[re.compile(r'Enter passphrase for .*'+k, re.M)] = k
         d[re.compile(r'Bad passphrase, try again for .*:\s*?$', re.M)] = ''

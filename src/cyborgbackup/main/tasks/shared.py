@@ -109,18 +109,18 @@ def random_restore_integrity(self):
                 print(selected_items)
 
 @shared_task(bind=True, base=LogErrorsTask)
-def cyborgbackup_notifier(self, type, *kwargs):
+def cyborgbackup_notifier(self, report_type, *kwargs):
     logger.debug('CyBorgBackup Notifier')
     users = None
-    if type in ('daily', 'weekly', 'monthly'):
-        if type == 'daily':
+    if report_type in ('daily', 'weekly', 'monthly'):
+        if report_type == 'daily':
             users = User.objects.filter(notify_backup_daily=True)
-        if type == 'weekly':
+        if report_type == 'weekly':
             users = User.objects.filter(notify_backup_weekly=True)
-        if type == 'monthly':
+        if report_type == 'monthly':
             users = User.objects.filter(notify_backup_monthly=True)
         if users and users.exists():
-            report = build_report(type)
+            report = build_report(report_type)
             report['columns'] = [
                 {'title': 'Hostname', 'key': 'client', 'minsize': 10},
                 {'title': 'Type', 'key': 'type', 'minsize': 6},
@@ -131,14 +131,14 @@ def cyborgbackup_notifier(self, type, *kwargs):
                 {'title': 'Deduplicated Size', 'key': 'deduplicated_size', 'minsize': 19}
             ]
             for user in users:
-                send_email(report, type, user.email)
+                send_email(report, report_type, user.email)
     else:
-        if type == 'summary':
+        if report_type == 'summary':
             report, users = _cyborgbackup_notifier_summary(kwargs[0])
-        if type == 'after':
+        if report_type == 'after':
             report, users = _cyborgbackup_notifier_after(kwargs[0])
         for user in users:
-            send_email(report, type, user.email)
+            send_email(report, report_type, user.email)
 
 
 @shared_task(bind=True, base=LogErrorsTask)
