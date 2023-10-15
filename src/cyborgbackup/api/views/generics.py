@@ -26,7 +26,6 @@ from rest_framework import views
 # CyBorgBackup
 from cyborgbackup.api.filters import FieldLookupBackend
 from cyborgbackup.api.helpers import get_default_schema
-from cyborgbackup.api.versioning import URLPathVersioning, get_request_version
 from cyborgbackup.main.utils.common import (get_object_or_400, camelcase_to_underscore,
                                             getattrd, get_all_field_names, get_search_fields)
 from cyborgbackup.api.metadata import SublistAttachDetatchMetadata
@@ -64,7 +63,6 @@ class LoggedLogoutView(auth_views.LogoutView):
 
 class APIView(views.APIView):
     schema = get_default_schema()
-    versioning_class = URLPathVersioning
 
     def initialize_request(self, request, *args, **kwargs):
         '''
@@ -159,11 +157,6 @@ class APIView(views.APIView):
             template_list.append('api/%s.md' % template_basename)
         context = self.get_description_context()
 
-        default_version = int(1)
-        request_version = get_request_version(self.request)
-        if request_version is not None and request_version < default_version:
-            context['deprecated'] = True
-
         description = render_to_string(template_list, context)
         if context.get('deprecated') and context.get('swagger_method') is None:
             # render deprecation messages at the very top
@@ -185,23 +178,6 @@ class APIView(views.APIView):
             return self.request.data.copy()
 
         return data
-
-    def determine_version(self, request, *args, **kwargs):
-        return (
-            getattr(request, 'version', None),
-            getattr(request, 'versioning_scheme', None),
-        )
-
-    def dispatch(self, request, *args, **kwargs):
-        if self.versioning_class is not None:
-            scheme = self.versioning_class()
-            request.version, request.versioning_scheme = (
-                scheme.determine_version(request, *args, **kwargs),
-                scheme
-            )
-            if 'version' in kwargs:
-                kwargs.pop('version')
-        return super(APIView, self).dispatch(request, *args, **kwargs)
 
 
 class GenericAPIView(LoggingViewSetMixin, generics.GenericAPIView, APIView):

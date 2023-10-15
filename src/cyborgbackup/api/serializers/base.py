@@ -17,7 +17,7 @@ from rest_framework import validators
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 # CyBorgBackup
-from cyborgbackup.api.versioning import reverse, get_request_version
+from cyborgbackup.api.versioning import reverse
 from cyborgbackup.main.validators import vars_validate_or_raise
 from cyborgbackup.main.models import User
 from cyborgbackup.main.utils.common import (
@@ -192,7 +192,7 @@ class BaseSerializer(serializers.ModelSerializer, metaclass=BaseSerializerMetacl
         """
         The request version component of the URL as an integer i.e., 1 or 2
         """
-        return get_request_version(self.context.get('request'))
+        return 1
 
     def get_type(self, obj):
         return get_type_for_model(self.Meta.model)

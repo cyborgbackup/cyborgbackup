@@ -31,7 +31,7 @@ class ApiRootView(APIView):
     def get(self, request, format=None):
         ''' List supported API versions '''
 
-        v1 = reverse('api:api_v1_root_view', kwargs={'version': 'v1'})
+        v1 = reverse('api:api_v1_root_view')
         data = dict(
             description=_('CyBorgBackup API Rest'),
             current_version=v1,

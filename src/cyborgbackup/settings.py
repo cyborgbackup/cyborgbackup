@@ -208,12 +208,10 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.coreapi.AutoSchema',
     'DEFAULT_METADATA_CLASS': 'cyborgbackup.api.metadata.Metadata',
-    #'EXCEPTION_HANDLER': 'cyborgbackup.api.views.api_exception_handler',
-    'VIEW_NAME_FUNCTION': 'cyborgbackup.api.generics.get_view_name',
-    'VIEW_DESCRIPTION_FUNCTION': 'cyborgbackup.api.generics.get_view_description',
+    'VIEW_NAME_FUNCTION': 'cyborgbackup.api.helpers.get_view_name',
+    'VIEW_DESCRIPTION_FUNCTION': 'cyborgbackup.api.helpers.get_view_description',
     'NON_FIELD_ERRORS_KEY': '__all__',
     'DEFAULT_VERSION': 'v1',
-    # 'URL_FORMAT_OVERRIDE': None,
 }
 
 # Absolute filesystem path to the directory to store logs
@@ -340,6 +338,13 @@ NAMED_URL_GRAPH = {}
 
 SWAGGER_SETTINGS = {
    'DEFAULT_AUTO_SCHEMA_CLASS': 'cyborgbackup.api.swagger.CyBorgBackupSwaggerAutoSchema',
+    'SECURITY_DEFINITIONS': {
+      'Bearer': {
+            'type': 'apiKey',
+            'name': 'Authorization',
+            'in': 'header'
+      }
+   }
 }
 
 JOB_RETENTION = 30

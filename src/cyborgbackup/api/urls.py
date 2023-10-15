@@ -87,7 +87,6 @@ v1_urls = [
     re_path(r'^$', ApiV1RootView.as_view(), name='api_v1_root_view'),
     re_path(r'^ping/$', ApiV1PingView.as_view(), name='api_v1_ping_view'),
     re_path(r'^config/$', ApiV1ConfigView.as_view(), name='api_v1_config_view'),
-    re_path(r'^auth/$', AuthView.as_view(), name="auth"),
     re_path(r'^me/$', UserMeList.as_view(), name='user_me_list'),
     re_path(r'^users/', include(user_urls)),
     re_path(r'^jobs/', include(job_urls)),
@@ -115,8 +114,5 @@ urlpatterns = [
     ), name='login'),
     re_path(r'^logout/$', LoggedLogoutView.as_view(
         next_page='/api/', redirect_field_name='next'
-    ), name='logout'),
-    path('doc/swagger<format>', CyBorgBackupSchemaView.without_ui(cache_timeout=0), name='schema_json'),
-    path('doc/swagger/', CyBorgBackupSchemaView.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
-    path('doc/redoc/', CyBorgBackupSchemaView.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
+    ), name='logout')
 ]
