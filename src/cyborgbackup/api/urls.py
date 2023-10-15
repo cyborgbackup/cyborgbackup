@@ -105,7 +105,7 @@ v1_urls = [
 
 urlpatterns = [
     re_path(r'^$', ApiRootView.as_view(), name='api_root_view'),
-    re_path(r'^(?P<version>(v1))/', include(v1_urls)),
+    re_path(r'^v1/', include(v1_urls)),
     re_path(r'^token/obtain/$', CyborgTokenObtainPairView.as_view(), name='token_create'),  # override sjwt stock token
     re_path(r'^token/refresh/$', jwt_views.TokenRefreshView.as_view(), name='token_refresh'),
     re_path(r'^password_reset/', include('django_rest_passwordreset.urls', namespace='password_reset')),
