@@ -35,7 +35,4 @@ class RepositoryListSerializer(RepositorySerializer):
         return tuple(x for x in field_names)
 
     def get_types(self):
-        if type(self) is RepositoryListSerializer:
-            return ['repository']
-        else:
-            return super(RepositoryListSerializer, self).get_types()
+        return ['repository']

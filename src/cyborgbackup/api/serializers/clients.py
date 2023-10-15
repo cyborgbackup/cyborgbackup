@@ -46,7 +46,4 @@ class ClientListSerializer(ClientSerializer):
         return tuple(x for x in field_names)
 
     def get_types(self):
-        if type(self) is ClientListSerializer:
-            return ['client']
-        else:
-            return super(ClientListSerializer, self).get_types()
+        return ['client']

@@ -35,7 +35,4 @@ class ScheduleListSerializer(ScheduleSerializer):
         return tuple(x for x in field_names)
 
     def get_types(self):
-        if type(self) is ScheduleListSerializer:
-            return ['schedule']
-        else:
-            return super(ScheduleListSerializer, self).get_types()
+        return ['schedule']

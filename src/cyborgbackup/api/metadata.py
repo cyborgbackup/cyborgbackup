@@ -153,7 +153,6 @@ class Metadata(metadata.SimpleMetadata):
 
     def determine_metadata(self, request, view):
         # store request on self so we can use it to generate field defaults
-        # (such as TOWER_URL_BASE)
         self.request = request
 
         try:

@@ -52,10 +52,7 @@ class PolicyListSerializer(PolicySerializer):
         return tuple(x for x in field_names)
 
     def get_types(self):
-        if type(self) is PolicyListSerializer:
-            return ['policy']
-        else:
-            return super(PolicyListSerializer, self).get_types()
+        return ['policy']
 
 
 class PolicyLaunchSerializer(BaseSerializer):

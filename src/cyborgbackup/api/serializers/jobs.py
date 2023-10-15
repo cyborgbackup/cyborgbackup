@@ -34,10 +34,7 @@ class JobSerializer(BaseSerializer):
                   'dependent_jobs', 'result_traceback', 'event_processing_finished', 'job_type')
 
     def get_types(self):
-        if type(self) is JobSerializer:
-            return ['job', ]
-        else:
-            return super(JobSerializer, self).get_types()
+        return ['job']
 
     def get_summary_fields(self, obj):
         summary_dict = super(JobSerializer, self).get_summary_fields(obj)
@@ -98,10 +95,7 @@ class JobStdoutSerializer(JobSerializer):
         fields = ('result_stdout',)
 
     def get_types(self):
-        if type(self) is JobStdoutSerializer:
-            return ['job']
-        else:
-            return super(JobStdoutSerializer, self).get_types()
+        return ['job']
 
 
 class JobCancelSerializer(JobSerializer):
@@ -150,10 +144,7 @@ class JobListSerializer(DynamicFieldsSerializerMixin, JobSerializer):
         ))
 
     def get_types(self):
-        if type(self) is JobListSerializer:
-            return ['job', ]
-        else:
-            return super(JobListSerializer, self).get_types()
+        return ['job']
 
     def to_representation(self, obj):
         serializer_class = None

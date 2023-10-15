@@ -39,7 +39,4 @@ class SettingListSerializer(SettingSerializer):
         return tuple(x for x in field_names)
 
     def get_types(self):
-        if type(self) is SettingListSerializer:
-            return ['setting']
-        else:
-            return super(SettingListSerializer, self).get_types()
+        return ['setting']
