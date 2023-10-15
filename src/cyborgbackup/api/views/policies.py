@@ -27,16 +27,19 @@ logger = logging.getLogger('cyborgbackups.api.views.policies')
 class PolicyList(ListCreateAPIView):
     model = Policy
     serializer_class = PolicySerializer
+    tags = ['Policy']
 
 
 class PolicyDetail(RetrieveUpdateDestroyAPIView):
     model = Policy
     serializer_class = PolicySerializer
+    tags = ['Policy']
 
 
 class PolicyVMModule(ListAPIView):
     model = Policy
     serializer_class = PolicyVMModuleSerializer
+    tags = ['Policy']
 
     def list(self, request, *args, **kwargs):
         data = get_module_provider()
@@ -46,6 +49,7 @@ class PolicyVMModule(ListAPIView):
 class PolicyModule(ListCreateAPIView):
     model = Policy
     serializer_class = PolicyModuleSerializer
+    tags = ['Policy']
 
     def callModule(self, request, args, kwargs):
         module = kwargs['module']
@@ -73,6 +77,7 @@ class PolicyModule(ListCreateAPIView):
 class PolicyCalendar(ListAPIView):
     model = Policy
     serializer_class = PolicyCalendarSerializer
+    tags = ['Policy']
 
     def list(self, request, *args, **kwargs):
         obj = self.get_object()
@@ -91,6 +96,7 @@ class PolicyCalendar(ListAPIView):
 class PolicyLaunch(RetrieveAPIView):
     model = Policy
     serializer_class = PolicyLaunchSerializer
+    tags = ['Policy']
 
     def update_raw_data(self, data):
         obj = self.get_object()

@@ -20,6 +20,7 @@ class UserList(ListCreateAPIView):
     model = User
     serializer_class = UserSerializer
     permission_classes = (UserPermission,)
+    tags = ['User']
 
     def post(self, request, *args, **kwargs):
         ret = super(UserList, self).post(request, *args, **kwargs)
@@ -30,6 +31,7 @@ class UserMeList(ListAPIView):
     model = User
     serializer_class = UserSerializer
     view_name = _('Me')
+    tags = ['User']
 
     def get_queryset(self):
         return self.model.objects.filter(pk=self.request.user.pk)
@@ -38,6 +40,7 @@ class UserMeList(ListAPIView):
 class UserDetail(RetrieveUpdateDestroyAPIView):
     model = User
     serializer_class = UserSerializer
+    tags = ['User']
 
     def update_filter(self, request, *args, **kwargs):
         ''' make sure non-read-only fields that can only be edited by admins, are only edited by admins '''

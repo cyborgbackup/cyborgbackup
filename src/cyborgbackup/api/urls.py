@@ -1,8 +1,8 @@
 from django.conf.urls import include
-from django.urls import re_path
+from django.urls import re_path, path
 from rest_framework_simplejwt import views as jwt_views
 
-from cyborgbackup.api.swagger import SwaggerSchemaView
+from cyborgbackup.api.swagger import CyBorgBackupSchemaView
 
 from .views.api import ApiRootView, ApiV1RootView, ApiV1PingView, ApiV1ConfigView, AuthView, CyborgTokenObtainPairView
 from .views.generics import LoggedLoginView, LoggedLogoutView
@@ -116,5 +116,7 @@ urlpatterns = [
     re_path(r'^logout/$', LoggedLogoutView.as_view(
         next_page='/api/', redirect_field_name='next'
     ), name='logout'),
-    re_path(r'^swagger/$', SwaggerSchemaView.as_view(), name='swagger_view'),
+    path('doc/swagger<format>', CyBorgBackupSchemaView.without_ui(cache_timeout=0), name='schema_json'),
+    path('doc/swagger/', CyBorgBackupSchemaView.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
+    path('doc/redoc/', CyBorgBackupSchemaView.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
 ]

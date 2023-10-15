@@ -17,6 +17,7 @@ logger = logging.getLogger('cyborgbackups.api.views.clients')
 class ClientList(ListCreateAPIView):
     model = Client
     serializer_class = ClientListSerializer
+    tags = ['Client']
 
     @property
     def allowed_methods(self):
@@ -27,6 +28,7 @@ class ClientList(ListCreateAPIView):
 class ClientDetail(RetrieveUpdateDestroyAPIView):
     model = Client
     serializer_class = ClientSerializer
+    tags = ['Client']
 
     def patch(self, request, *args, **kwargs):
         obj = self.get_object()

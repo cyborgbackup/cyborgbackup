@@ -96,6 +96,7 @@ class StdoutANSIFilter(object):
 class JobList(ListCreateAPIView):
     model = Job
     serializer_class = JobListSerializer
+    tags = ['Job']
 
     @property
     def allowed_methods(self):
@@ -110,6 +111,7 @@ class JobList(ListCreateAPIView):
 class JobDetail(JobDeletionMixin, RetrieveUpdateDestroyAPIView):
     model = Job
     serializer_class = JobSerializer
+    tags = ['Job']
 
     def update(self, request, *args, **kwargs):
         obj = self.get_object()
@@ -134,6 +136,7 @@ class JobStdout(RetrieveAPIView):
                         PlainTextRenderer, AnsiTextRenderer,
                         renderers.JSONRenderer, DownloadTextRenderer, AnsiDownloadRenderer]
     filter_backends = ()
+    tags = ['Job']
 
     def retrieve(self, request, *args, **kwargs):
         job = self.get_object()
@@ -208,6 +211,7 @@ class JobStart(GenericAPIView):
     obj_permission_type = 'start'
     serializer_class = EmptySerializer
     deprecated = True
+    tags = ['Job']
 
     def get(self, request, *args, **kwargs):
         obj = self.get_object()
@@ -232,6 +236,7 @@ class JobCancel(RetrieveAPIView):
     model = Job
     obj_permission_type = 'cancel'
     serializer_class = JobCancelSerializer
+    tags = ['Job']
 
     def post(self, request, *args, **kwargs):
         obj = self.get_object()
@@ -246,6 +251,7 @@ class JobRelaunch(RetrieveAPIView):
     model = Job
     obj_permission_type = 'start'
     serializer_class = JobRelaunchSerializer
+    tags = ['Job']
 
     def update_raw_data(self, data):
         data = super(JobRelaunch, self).update_raw_data(data)
@@ -297,11 +303,13 @@ class JobRelaunch(RetrieveAPIView):
 class JobEventList(ListAPIView):
     model = JobEvent
     serializer_class = JobEventSerializer
+    tags = ['Job']
 
 
 class JobEventDetail(RetrieveAPIView):
     model = JobEvent
     serializer_class = JobEventSerializer
+    tags = ['Job']
 
 
 class BaseJobEventsList(SubListAPIView):
@@ -311,6 +319,7 @@ class BaseJobEventsList(SubListAPIView):
     relationship = 'job_events'
     view_name = _('Job Events List')
     search_fields = ('stdout',)
+    tags = ['Job']
 
     def finalize_response(self, request, response, *args, **kwargs):
         response['X-UI-Max-Events'] = 4000

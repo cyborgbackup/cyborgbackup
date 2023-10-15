@@ -19,6 +19,7 @@ logger = logging.getLogger('cyborgbackups.api.views.settings')
 class SettingList(ListAPIView):
     model = Setting
     serializer_class = SettingListSerializer
+    tags = ['Setting']
 
     @property
     def allowed_methods(self):
@@ -29,11 +30,13 @@ class SettingList(ListAPIView):
 class SettingDetail(RetrieveUpdateAPIView):
     model = Setting
     serializer_class = SettingSerializer
+    tags = ['Setting']
 
 
 class SettingGetPublicSsh(ListAPIView):
     model = Setting
     serializer_class = EmptySerializer
+    tags = ['Setting']
 
     def list(self, request, *args, **kwargs):
         set = Setting.get_value(name='cyborgbackup_ssh_key')
@@ -46,6 +49,7 @@ class SettingGetPublicSsh(ListAPIView):
 class SettingGenerateSsh(ListCreateAPIView):
     model = Setting
     serializer_class = EmptySerializer
+    tags = ['Setting']
 
     def list(self, request, *args, **kwargs):
         set = Setting.objects.get(key='cyborgbackup_ssh_key')

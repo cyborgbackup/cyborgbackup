@@ -23,6 +23,7 @@ logger = logging.getLogger('cyborgbackups.api.views.catalogs')
 class RestoreLaunch(ListCreateAPIView):
     model = Job
     serializer_class = RestoreLaunchSerializer
+    tags = ['Catalog']
 
     def list(self, request, *args, **kwargs):
         data = []
@@ -72,6 +73,7 @@ class RestoreLaunch(ListCreateAPIView):
 class CatalogList(ListCreateAPIView):
     model = Catalog
     serializer_class = CatalogListSerializer
+    tags = ['Catalog']
 
     def create(self, request, *args, **kwargs):
         data = request.data
@@ -86,11 +88,13 @@ class CatalogList(ListCreateAPIView):
 class CatalogDetail(RetrieveUpdateDestroyAPIView):
     model = Catalog
     serializer_class = CatalogSerializer
+    tags = ['Catalog']
 
 
 class MongoCatalog(ListAPIView):
     model = Catalog
     serializer_class = CatalogSerializer
+    tags = ['Catalog']
 
     def list(self, request, *args, **kwargs):
         logger.debug(request.data)

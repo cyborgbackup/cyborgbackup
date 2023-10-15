@@ -2,8 +2,11 @@ import json
 import warnings
 
 from coreapi.document import Object, Link
+from drf_yasg import openapi
+from drf_yasg.inspectors import SwaggerAutoSchema
+from drf_yasg.views import get_schema_view
 
-from rest_framework import exceptions
+from rest_framework import exceptions, permissions
 from rest_framework.permissions import AllowAny
 from rest_framework.renderers import CoreJSONRenderer
 from rest_framework.response import Response
@@ -103,3 +106,25 @@ class SwaggerSchemaView(APIView):
             schema,
             headers={'X-Deprecated-Paths': json.dumps(_deprecated)}
         )
+
+
+class CyBorgBackupSwaggerAutoSchema(SwaggerAutoSchema):
+    def get_tags(self, operation_keys=None):
+        tags = self.overrides.get('tags', None) or getattr(self.view, 'tags', [])
+        if not tags:
+            tags = [operation_keys[0]]
+
+        return tags
+
+
+CyBorgBackupSchemaView = get_schema_view(
+    openapi.Info(
+        title="CyBorgBackup API",
+        default_version='v1',
+        description="CyBorgBackup API Documentation",
+        contact=openapi.Contact(email="gaetan@cyborgbackup.dev"),
+        license=openapi.License(name="BSD License"),
+    ),
+    public=True,
+    permission_classes=(permissions.AllowAny,),
+)

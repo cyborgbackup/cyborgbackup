@@ -216,7 +216,7 @@ class GenericAPIView(LoggingViewSetMixin, generics.GenericAPIView, APIView):
         serializer_class = self.get_serializer_class()
 
         fields = None
-        if self.request.method == 'GET':
+        if self.request and self.request.method == 'GET':
             query_fields = self.request.query_params.get("fields", None)
 
             if query_fields:

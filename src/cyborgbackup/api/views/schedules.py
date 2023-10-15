@@ -12,6 +12,7 @@ logger = logging.getLogger('cyborgbackups.api.views.schedules')
 class ScheduleList(ListCreateAPIView):
     model = Schedule
     serializer_class = ScheduleListSerializer
+    tags = ['Schedule']
 
     @property
     def allowed_methods(self):
@@ -22,3 +23,4 @@ class ScheduleList(ListCreateAPIView):
 class ScheduleDetail(RetrieveUpdateDestroyAPIView):
     model = Schedule
     serializer_class = ScheduleSerializer
+    tags = ['Schedule']

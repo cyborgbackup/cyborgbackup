@@ -58,7 +58,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework',
     'rest_framework.authtoken',
-    'rest_framework_swagger',
+    'drf_yasg',
     'channels',
     'auditlog',
     'django_rest_passwordreset',
@@ -208,7 +208,7 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.coreapi.AutoSchema',
     'DEFAULT_METADATA_CLASS': 'cyborgbackup.api.metadata.Metadata',
-    'EXCEPTION_HANDLER': 'cyborgbackup.api.views.api_exception_handler',
+    #'EXCEPTION_HANDLER': 'cyborgbackup.api.views.api_exception_handler',
     'VIEW_NAME_FUNCTION': 'cyborgbackup.api.generics.get_view_name',
     'VIEW_DESCRIPTION_FUNCTION': 'cyborgbackup.api.generics.get_view_description',
     'NON_FIELD_ERRORS_KEY': '__all__',
@@ -334,8 +334,13 @@ STATICFILES_DIRS = (
 )
 
 STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'cyborgbackup', 'var', 'static')
 
 NAMED_URL_GRAPH = {}
+
+SWAGGER_SETTINGS = {
+   'DEFAULT_AUTO_SCHEMA_CLASS': 'cyborgbackup.api.swagger.CyBorgBackupSwaggerAutoSchema',
+}
 
 JOB_RETENTION = 30
 

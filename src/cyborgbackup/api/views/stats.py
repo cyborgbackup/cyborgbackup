@@ -17,6 +17,7 @@ logger = logging.getLogger('cyborgbackups.api.views.stats')
 class Stats(ListAPIView):
     model = Job
     serializer_class = StatsSerializer
+    tags = ['Stats']
 
     def list(self, request, *args, **kwargs):
         data = []
