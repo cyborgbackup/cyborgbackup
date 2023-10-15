@@ -8,8 +8,8 @@ COPY ./requirements.txt /cyborgbackup/requirements.txt
 RUN pip install -r /cyborgbackup/requirements.txt
 RUN apt-get update && apt-get install -y --no-install-recommends borgbackup
 
-RUN groupadd -r cyborgbackup -g 101 && \
-    useradd -u 101 -r -g cyborgbackup -s /bin/sh -c "CyBorgBackup Worker user" cyborgbackup
+RUN groupadd -r cyborgbackup -g 1001 && \
+    useradd -u 1001 -r -g cyborgbackup -s /bin/sh -c "CyBorgBackup Worker user" cyborgbackup
 
 COPY ./src/ /cyborgbackup/
 
