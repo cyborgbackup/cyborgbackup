@@ -1,11 +1,7 @@
 # Python
-import contextlib
 import logging
-import threading
-import json
 
 # Django
-from django.conf import settings
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
@@ -14,10 +10,8 @@ from crum import get_current_request, get_current_user
 from crum.signals import current_user_getter
 
 # CyBorgBackup
-from cyborgbackup.main.models import User, JobEvent, Client, Policy, Schedule, Job, Repository
-from cyborgbackup.api.serializers import (JobEventWebSocketSerializer, JobSerializer, ClientSerializer,
-                                          RepositorySerializer, ScheduleSerializer, PolicySerializer)
-from cyborgbackup.main.utils.common import model_instance_diff, model_to_dict, camelcase_to_underscore
+from cyborgbackup.main.models import User, JobEvent
+from cyborgbackup.api.serializers.jobs import JobEventWebSocketSerializer
 
 from cyborgbackup.main import consumers
 
@@ -48,14 +42,6 @@ def emit_event_detail(serializer, relation, **kwargs):
 def emit_job_event_detail(sender, **kwargs):
     emit_event_detail(JobEventWebSocketSerializer, 'job_id', **kwargs)
 
-
-model_serializer_mapping = {
-    Job: JobSerializer,
-    Client: ClientSerializer,
-    Policy: PolicySerializer,
-    Repository: RepositorySerializer,
-    Schedule: ScheduleSerializer,
-}
 
 @receiver(current_user_getter)
 def get_current_user_from_drf_request(sender, **kwargs):

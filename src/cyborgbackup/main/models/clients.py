@@ -72,6 +72,10 @@ class Client(PrimordialModel):
         blank=True
     )
 
+    behind_firewall = models.BooleanField(
+        default=False
+    )
+
     def get_absolute_url(self, request=None):
         return reverse('api:client_detail', kwargs={'pk': self.pk}, request=request)
 

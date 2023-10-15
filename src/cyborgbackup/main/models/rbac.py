@@ -6,7 +6,7 @@ import re
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 # CyBorgBackup
 from cyborgbackup.api.versioning import reverse
@@ -15,7 +15,6 @@ from cyborgbackup.main.models.base import * # noqa
 
 __all__ = [
     'Role',
-    'batch_role_ancestor_rebuilding',
     'get_roles_on_resource',
     'ROLE_SINGLETON_SYSTEM_ADMINISTRATOR',
     'ROLE_SINGLETON_SYSTEM_AUDITOR',

@@ -30,7 +30,7 @@ from cyborgbackup.main.utils.encryption import decrypt_field
 from cyborgbackup.main.constants import ACTIVE_STATES, CAN_CANCEL
 from cyborgbackup.main.utils.string import UriCleaner
 from cyborgbackup.main.consumers import emit_channel_notification
-from cyborgbackup.main.fields import JSONField, AskForField
+from cyborgbackup.main.fields import JSONField
 
 
 __all__ = ['Job', 'StdoutMaxBytesExceeded']
@@ -342,7 +342,7 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
 
     @classmethod
     def _get_task_class(cls):
-        from cyborgbackup.main.tasks import RunJob
+        from cyborgbackup.main.tasks.runjob import RunJob
         return RunJob
 
     def _global_timeout_setting(self):
@@ -473,7 +473,7 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
             return None
         JobLaunchConfig = self._meta.get_field('launch_config').related_model
         config = JobLaunchConfig(job=self)
-        valid_fields = self.job_template.get_ask_mapping().keys()
+        valid_fields = []
         # Special cases allowed for workflows
         kwargs.pop('survey_passwords', None)
         for field_name, value in kwargs.items():
@@ -696,9 +696,7 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
 
         job.save()
 
-        from cyborgbackup.main.signals import disable_activity_stream
-        with disable_activity_stream():
-            copy_m2m_relationships(self, job, fields, kwargs=kwargs)
+        copy_m2m_relationships(self, job, fields, kwargs=kwargs)
 
         job.create_config_from_prompts(kwargs)
 
@@ -706,9 +704,7 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
 
     @classmethod
     def _get_job_field_names(cls):
-        return set(
-            ['name', 'description', 'policy', 'client', 'repository', 'job_type', 'master_job']
-        )
+        return {'name', 'description', 'policy', 'client', 'repository', 'job_type', 'master_job'}
 
     def copy_job(self, limit=None):
         '''
@@ -717,7 +713,7 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
         '''
         job_class = self.__class__
         parent_field_name = 'job'
-        fields = job_class._get_job_field_names() | set([parent_field_name])
+        fields = job_class._get_job_field_names() | {parent_field_name}
 
         create_data = {"launch_type": "relaunch"}
         if limit:
@@ -732,18 +728,6 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
         # Labels coppied here
         copy_m2m_relationships(self, copy_job, fields)
         return copy_job
-
-    @classmethod
-    def get_ask_mapping(cls):
-        '''
-        Creates dictionary that maps the unified job field (keys)
-        to the field that enables prompting for the field (values)
-        '''
-        mapping = {}
-        for field in cls._meta.fields:
-            if isinstance(field, AskForField):
-                mapping[field.allows_field] = field.name
-        return mapping
 
     @property
     def task_impact(self):

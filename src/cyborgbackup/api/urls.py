@@ -4,53 +4,18 @@ from rest_framework_simplejwt import views as jwt_views
 
 from cyborgbackup.api.swagger import SwaggerSchemaView
 
-from cyborgbackup.api.views import (
-    UserList,
-    UserDetail,
-    ClientList,
-    ClientDetail,
-    ScheduleList,
-    ScheduleDetail,
-    RepositoryList,
-    RepositoryDetail,
-    CatalogList,
-    CatalogDetail,
-    MongoCatalog,
-    PolicyList,
-    PolicyDetail,
-    PolicyLaunch,
-    PolicyCalendar,
-    PolicyModule,
-    PolicyVMModule,
-    Stats,
-    JobEventList,
-    JobEventDetail,
-    JobList,
-    JobDetail,
-    JobStart,
-    JobCancel,
-    JobRelaunch,
-    JobJobEventsList,
-    JobStdout,
-    SettingList,
-    SettingGetPublicSsh,
-    SettingGenerateSsh,
-    SettingDetail,
-    ApiRootView,
-    ApiV1RootView,
-    ApiV1PingView,
-    ApiV1ConfigView,
-    AuthView,
-    UserMeList,
-    CyborgTokenObtainPairView,
-    RestoreLaunch
-)
-
-from cyborgbackup.api.generics import (
-    LoggedLoginView,
-    LoggedLogoutView,
-)
-
+from .views.api import ApiRootView, ApiV1RootView, ApiV1PingView, ApiV1ConfigView, AuthView, CyborgTokenObtainPairView
+from .views.generics import LoggedLoginView, LoggedLogoutView
+from .views.users import UserList, UserDetail, UserMeList
+from .views.clients import ClientList, ClientDetail
+from .views.repositories import RepositoryList, RepositoryDetail
+from .views.schedules import ScheduleList, ScheduleDetail
+from .views.policies import PolicyList, PolicyModule, PolicyDetail, PolicyLaunch, PolicyCalendar, PolicyVMModule
+from .views.stats import Stats
+from .views.settings import SettingList, SettingGetPublicSsh, SettingDetail, SettingGenerateSsh
+from .views.jobs import JobStart, JobCancel, JobRelaunch, JobJobEventsList, JobStdout, JobList, JobEventDetail, \
+    JobEventList, JobDetail
+from .views.catalogs import CatalogList, CatalogDetail, MongoCatalog, RestoreLaunch
 
 user_urls = [
     re_path(r'^$', UserList.as_view(), name='user_list'),

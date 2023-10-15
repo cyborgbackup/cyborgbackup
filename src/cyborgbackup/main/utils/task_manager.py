@@ -181,7 +181,7 @@ class TaskManager:
         return active_task_queues, queues, concurrencies
 
     def start_task(self, task, dependent_tasks=[]):
-        from cyborgbackup.main.tasks import handle_work_error, handle_work_success
+        from cyborgbackup.main.tasks.shared import handle_work_error, handle_work_success
 
         task_actual = {
             'type': get_type_for_model(type(task)),
