@@ -40,7 +40,7 @@ To install CyBorgBackup under Docker, run this command in your terminal of choic
     SECRET_KEY=$(openssl rand -base64 47|sed 's/=//g')
     EOF
     $ docker-compose up
-    $ docker-compose exec web /bin/bash
+    $ docker-compose exec api /bin/bash
     web$ python3 /cyborgbackup/manage.py loaddata settings
     web$ echo "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.create_superuser('admin@cyborg.local', 'admin')" | python3 /cyborgbackup/manage.py shell
     web$ exit
