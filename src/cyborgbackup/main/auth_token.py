@@ -1,68 +1,15 @@
 import functools
 
-<<<<<<< Updated upstream
-from channels.handler import AsgiRequest
+#from channels.handler import AsgiRequest
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.settings import api_settings
-=======
 # from channels.handler import AsgiRequest
->>>>>>> Stashed changes
 
 
 # print(api_settings.DEFAULT_AUTHENTICATION_CLASSES)
 # authenticators = [auth() for auth in api_settings.DEFAULT_AUTHENTICATION_CLASSES]
 
 
-<<<<<<< Updated upstream
-    If a message does not have a session we can inflate, the "session" attribute
-    will be None, rather than an empty session you can write to.
-
-    Does not allow a new session to be set; that must be done via a view. This
-    is only an accessor for any existing session.
-    """
-
-    @functools.wraps(func)
-    def inner(message, *args, **kwargs):
-        # Make sure there's NOT a http_session already
-        try:
-            # We want to parse the WebSocket (or similar HTTP-lite) message
-            # to get cookies and GET, but we need to add in a few things that
-            # might not have been there.
-            if "method" not in message.content:
-                message.content['method'] = "FAKE"
-            request = AsgiRequest(message)
-
-        except Exception as e:
-            raise ValueError("Cannot parse HTTP message - are you sure this is a HTTP consumer? %s" % e)
-        # Make sure there's a session key
-        user = None
-        auth = None
-        auth_token = request.GET.get("token", None)
-        print('NEW TOKEN : {}'.format(auth_token))
-        if auth_token:
-            # comptatibility with rest framework
-            request._request = {}
-            request.META["HTTP_AUTHORIZATION"] = "Bearer {}".format(auth_token)
-            authenticators = [auth() for auth in api_settings.DEFAULT_AUTHENTICATION_CLASSES]
-            print('Try Auth with {}'.format(request.META['HTTP_AUTHORIZATION']))
-            for authenticator in authenticators:
-                try:
-                    user_auth_tuple = authenticator.authenticate(request)
-                except AuthenticationFailed:
-                    pass
-
-                if user_auth_tuple is not None:
-                    message._authenticator = authenticator
-                    user, auth = user_auth_tuple
-                    break
-        message.user, message.auth = user, auth
-        # Make sure there's a session key
-        # Run the consumer
-        result = func(message, *args, **kwargs)
-        return result
-
-    return inner
-=======
 # def rest_auth(func):
 #     """
 #     Wraps a HTTP or WebSocket connect consumer (or any consumer of messages
@@ -121,7 +68,6 @@ from rest_framework.settings import api_settings
 #         result = func(message, *args, **kwargs)
 #         return result
 #     return inner
->>>>>>> Stashed changes
 
 
 def rest_token_user(func):
@@ -135,10 +81,6 @@ saf    Wraps a HTTP or WebSocket consumer (or any consumer of messages
     and "user" will be None.
     """
 
-<<<<<<< Updated upstream
-    @rest_auth
-=======
->>>>>>> Stashed changes
     @functools.wraps(func)
     def inner(message, *args, **kwargs):
         # If we didn't get a session, then we don't get a user

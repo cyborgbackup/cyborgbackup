@@ -2,15 +2,12 @@ import logging
 import pymongo
 
 from django.db import models
-<<<<<<< Updated upstream
 from django.conf import settings
 
 from pkg_resources import parse_version
 
 from django.core.validators import MaxValueValidator, MinValueValidator
-=======
 
->>>>>>> Stashed changes
 from cyborgbackup.api.versioning import reverse
 from cyborgbackup.main.models.base import PrimordialModel
 from cyborgbackup.main.utils.common import copy_model_by_class, copy_m2m_relationships

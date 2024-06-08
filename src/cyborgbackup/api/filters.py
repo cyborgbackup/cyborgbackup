@@ -10,16 +10,8 @@ from django.core.exceptions import FieldError, ValidationError, FieldDoesNotExis
 from django.db import models
 from django.db.models import Q
 from django.db.models.fields.related import ForeignObjectRel, ManyToManyField, ForeignKey
-<<<<<<< Updated upstream
-from django.contrib.contenttypes.models import ContentType
-from django.contrib.contenttypes.fields import GenericForeignKey
 from django.utils.encoding import force_str
 from django.utils.translation import gettext_lazy as _
-
-=======
-from django.utils.encoding import force_str
-from django.utils.translation import gettext_lazy as _
->>>>>>> Stashed changes
 # Django REST Framework
 from rest_framework.exceptions import ParseError, PermissionDenied
 from rest_framework.filters import BaseFilterBackend

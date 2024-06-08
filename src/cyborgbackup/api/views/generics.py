@@ -5,66 +5,34 @@ import time
 
 # Django
 from django.conf import settings
-from django.contrib.auth import views as auth_views
-from django.core.exceptions import FieldDoesNotExist
 from django.db import connection
-<<<<<<< Updated upstream:src/cyborgbackup/api/views/generics.py
 from django.core.exceptions import FieldDoesNotExist
-=======
->>>>>>> Stashed changes:src/cyborgbackup/api/generics.py
 from django.db.models.fields.related import OneToOneRel
 from django.http import QueryDict
 from django.shortcuts import get_object_or_404
 from django.template.loader import render_to_string
 from django.utils.encoding import smart_str
-<<<<<<< Updated upstream:src/cyborgbackup/api/views/generics.py
 from django.utils.translation import gettext_lazy as _
 from django.contrib.auth import views as auth_views
 
-=======
-from django.utils.safestring import mark_safe
-from django.utils.translation import gettext_lazy as _
-from rest_framework import generics
-from rest_framework import status
-from rest_framework import views
->>>>>>> Stashed changes:src/cyborgbackup/api/generics.py
 # Django REST Framework
 from rest_framework.authentication import get_authorization_header
 from rest_framework.exceptions import PermissionDenied, AuthenticationFailed
 from rest_framework.response import Response
+from django.utils.safestring import mark_safe
+from rest_framework import generics
+from rest_framework import status
+from rest_framework import views
 
 # CyBorgBackup
 from cyborgbackup.api.filters import FieldLookupBackend
-<<<<<<< Updated upstream:src/cyborgbackup/api/views/generics.py
 from cyborgbackup.api.helpers import get_default_schema
-from cyborgbackup.main.utils.common import (get_object_or_400, camelcase_to_underscore,
-                                            getattrd, get_all_field_names, get_search_fields)
-=======
->>>>>>> Stashed changes:src/cyborgbackup/api/generics.py
 from cyborgbackup.api.metadata import SublistAttachDetatchMetadata
 from cyborgbackup.api.mixins import LoggingViewSetMixin
-from cyborgbackup.api.versioning import URLPathVersioning, get_request_version
 from cyborgbackup.main.utils.common import (get_object_or_400, camelcase_to_underscore,
                                             getattrd, get_all_field_names, get_search_fields)
 
-<<<<<<< Updated upstream:src/cyborgbackup/api/views/generics.py
 logger = logging.getLogger('cyborgbackup.api.views.generics')
-=======
-__all__ = ['APIView', 'GenericAPIView', 'ListAPIView', 'SimpleListAPIView',
-           'ListCreateAPIView', 'SubListAPIView', 'SubListCreateAPIView',
-           'SubListDestroyAPIView',
-           'SubListCreateAttachDetachAPIView', 'RetrieveAPIView',
-           'RetrieveUpdateAPIView', 'RetrieveDestroyAPIView',
-           'RetrieveUpdateDestroyAPIView',
-           'SubDetailAPIView',
-           'ParentMixin', 'SubListLoopAPIView',
-           'DeleteLastUnattachLabelMixin',
-           'SubListAttachDetachAPIView', 'get_view_description', 'get_view_name',
-           'LoggedLoginView', 'LoggedLogoutView']
-
-logger = logging.getLogger('cyborgbackup.api.generics')
-analytics_logger = logging.getLogger('cyborgbackup.analytics.performance')
->>>>>>> Stashed changes:src/cyborgbackup/api/generics.py
 
 
 class LoggedLoginView(auth_views.LoginView):
@@ -94,52 +62,6 @@ class LoggedLogoutView(auth_views.LogoutView):
         return ret
 
 
-<<<<<<< Updated upstream:src/cyborgbackup/api/views/generics.py
-=======
-def get_view_name(cls, suffix=None):
-    '''
-    Wrapper around REST framework get_view_name() to support get_name() method
-    and view_name property on a view class.
-    '''
-    name = ''
-    if hasattr(cls, 'get_name') and callable(cls.get_name):
-        name = cls().get_name()
-    elif hasattr(cls, 'view_name'):
-        if callable(cls.view_name):
-            name = cls.view_name()
-        else:
-            name = cls.view_name
-    if name:
-        return ('%s %s' % (name, suffix)) if suffix else name
-    return views.get_view_name(cls)
-
-
-def get_view_description(cls, request, html=False):
-    """
-    Wrapper around REST framework get_view_description() to support
-    get_description() method and view_description property on a view class.
-    """
-    if hasattr(cls, 'get_description') and callable(cls.get_description):
-        desc = cls().get_description(request, html=html)
-        cls = type(cls.__name__, (object,), {'__doc__': desc})
-    elif hasattr(cls, 'view_description'):
-        if callable(cls.view_description):
-            view_desc = cls.view_description()
-        else:
-            view_desc = cls.view_description
-        cls = type(cls.__name__, (object,), {'__doc__': view_desc})
-    desc = views.get_view_description(cls, html=html)
-    if html:
-        desc = '<div class="description">%s</div>' % desc
-    return mark_safe(desc)
-
-
-def get_default_schema():
-    from cyborgbackup.api.swagger import AutoSchema
-    return AutoSchema()
-
-
->>>>>>> Stashed changes:src/cyborgbackup/api/generics.py
 class APIView(views.APIView):
     schema = get_default_schema()
 
@@ -699,11 +621,7 @@ class DeleteLastUnattachLabelMixin(object):
     Models for which you want the last instance to be deleted from the database
     when the last disassociate is called should inherit from this class. Further,
     the model should implement is_detached()
-<<<<<<< Updated upstream:src/cyborgbackup/api/views/generics.py
-    '''
-=======
     """
->>>>>>> Stashed changes:src/cyborgbackup/api/generics.py
 
     def unattach(self, request, *args, **kwargs):
         (sub_id, res) = super(DeleteLastUnattachLabelMixin, self).unattach_validate(request)

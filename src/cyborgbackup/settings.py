@@ -36,11 +36,6 @@ PROVIDER_DIR = os.path.join(BASE_DIR, 'cyborgbackup', 'provider')
 # See https://docs.djangoproject.com/en/1.11/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-<<<<<<< Updated upstream
-SECRET_KEY = os.environ.get("SECRET_KEY", None)
-if not SECRET_KEY:
-    raise SecretKeyException("SECRET_KEY not defined! Please generate your secret key!")
-=======
 SECRET_KEY = None
 try:
     SECRET_KEY = os.environ.get("SECRET_KEY", None)
@@ -62,7 +57,6 @@ except Exception:
         except IOError:
             Exception('Please create a %s file with random characters \
             to generate your secret key!' % SECRET_FILE)
->>>>>>> Stashed changes
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -127,20 +121,12 @@ BROKER_URL = "amqp://{}:{}@{}/{}".format(os.environ.get("RABBITMQ_DEFAULT_USER",
 MONGODB_URL = "mongodb://{}/".format(os.environ.get("MONGODB_HOST", "127.0.0.1"))
 
 CHANNEL_LAYERS = {
-<<<<<<< Updated upstream
-    'default': {'BACKEND': 'channels_rabbitmq.core.RabbitmqChannelLayer',
-                'CONFIG': {
-                    'host': BROKER_URL
-                }
-    }
-=======
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
             "hosts": [(os.environ.get("REDIS_HOST", "127.0.0.1"), os.environ.get("REDIS_POST", 6379))],
         },
     },
->>>>>>> Stashed changes
 }
 
 MIDDLEWARE = [
@@ -408,12 +394,9 @@ CELERY_QUEUES = (
     Queue('backup_job', routing_key='backup_job'),
     Broadcast('cyborgbackup_broadcast_all')
 )
-<<<<<<< Updated upstream
 CELERY_DEFAULT_QUEUE='backup_job'
 CELERY_DEFAULT_ROUTING_KEY='backup.job'
 CELERY_ACCEPT_CONTENT = ['application/json']
-=======
->>>>>>> Stashed changes
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 
@@ -446,17 +429,6 @@ CELERY_BEAT_SCHEDULE = {
     },
     'cyborgbackup_notify_weekly': {
         'task': 'cyborgbackup.main.tasks.cyborgbackup_notifier',
-<<<<<<< Updated upstream
-        'schedule': crontab(hour=0, minute=0, day_of_week=6),
-        'args': ('weekly',),
-        'options': main_tasks_route
-    },
-    'cyborgbackup_notify_monthly': {
-        'task': 'cyborgbackup.main.tasks.cyborgbackup_notifier',
-        'schedule': crontab(hour=0, minute=0, day_of_month=1),
-        'args': ('monthly',),
-        'options': main_tasks_route
-=======
         'schedule': crontab(hour='0', minute='0', day_of_week='6'),
         'args': ('weekly',)
     },
@@ -464,7 +436,6 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'cyborgbackup.main.tasks.cyborgbackup_notifier',
         'schedule': crontab(hour='0', minute='0', day_of_month='1'),
         'args': ('monthly',)
->>>>>>> Stashed changes
     },
     'cyborgbackup_scheduler': {
         'task': 'cyborgbackup.main.tasks.cyborgbackup_periodic_scheduler',

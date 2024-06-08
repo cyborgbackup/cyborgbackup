@@ -5,17 +5,12 @@ import shutil
 import stat
 import tempfile
 from collections import OrderedDict
-<<<<<<< Updated upstream
-from django.conf import settings
 from django.utils import timezone
-from distutils.version import LooseVersion as Version
 from cyborgbackup.main.expect import run
 from cyborgbackup.main.models.settings import Setting
 from cyborgbackup.main.utils.common import get_ssh_version
 from cyborgbackup.main.utils.encryption import decrypt_field
-=======
 from io import StringIO
->>>>>>> Stashed changes
 
 import pymongo
 from distutils.version import LooseVersion as Version
@@ -152,18 +147,8 @@ class Command(BaseCommand):
         return private_data_files
 
     def launch_command(self, cmd, instance, key, path, **kwargs):
-<<<<<<< Updated upstream
-        cwd = '/var/tmp/cyborgbackup'
-        env = {}
-        env['BORG_PASSPHRASE'] = key
-        env['BORG_REPO'] = path
-        env['BORG_RELOCATED_REPO_ACCESS_IS_OK'] = 'yes'
-        env['BORG_RSH'] = 'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
-=======
         cwd = '/tmp/'
         env = {'BORG_PASSPHRASE': key, 'BORG_REPO': path, 'BORG_RELOCATED_REPO_ACCESS_IS_OK': 'yes',
-               'BORG_RSH': 'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'}
->>>>>>> Stashed changes
         args = cmd
         safe_args = args
 

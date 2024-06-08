@@ -8,24 +8,6 @@ from django.core.exceptions import ObjectDoesNotExist, ValidationError as Django
 from django.db import models
 from django.utils.encoding import force_str
 from django.utils.text import capfirst
-<<<<<<< Updated upstream:src/cyborgbackup/api/serializers/base.py
-
-# Django REST Framework
-from rest_framework.exceptions import ValidationError
-from rest_framework import fields
-from rest_framework import serializers
-from rest_framework import validators
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-
-# CyBorgBackup
-from cyborgbackup.api.versioning import reverse
-from cyborgbackup.main.validators import vars_validate_or_raise
-from cyborgbackup.main.models import User
-from cyborgbackup.main.utils.common import (
-    get_type_for_model, get_model_for_type, camelcase_to_underscore,
-    has_model_field_prefetched, prefetch_page_capabilities)
-from cyborgbackup.api.fields import BooleanNullField, CharNullField, ChoiceNullField, VerbatimField
-=======
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 # Django-Polymorphic
@@ -39,7 +21,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from cyborgbackup.api.fields import BooleanNullField, CharNullField, ChoiceNullField, VerbatimField
-from cyborgbackup.api.versioning import reverse, get_request_version
+from cyborgbackup.api.versioning import reverse
 from cyborgbackup.main.constants import ACTIVE_STATES
 from cyborgbackup.main.constants import ANSI_SGR_PATTERN
 from cyborgbackup.main.models.catalogs import Catalog
@@ -55,7 +37,6 @@ from cyborgbackup.main.utils.common import (
     get_type_for_model, get_model_for_type, camelcase_to_underscore,
     has_model_field_prefetched, prefetch_page_capabilities)
 from cyborgbackup.main.validators import vars_validate_or_raise
->>>>>>> Stashed changes:src/cyborgbackup/api/serializers.py
 
 
 logger = logging.getLogger('cyborgbackup.api.serializers.base')
@@ -97,8 +78,6 @@ def reverse_gfk(content_object, request):
     }
 
 
-<<<<<<< Updated upstream:src/cyborgbackup/api/serializers/base.py
-=======
 class DynamicFieldsSerializerMixin(object):
     """
     A serializer mixin that takes an additional `fields` argument that controls
@@ -119,7 +98,6 @@ class DynamicFieldsSerializerMixin(object):
                 self.fields.pop(field_name)
 
 
->>>>>>> Stashed changes:src/cyborgbackup/api/serializers.py
 class BaseSerializerMetaclass(serializers.SerializerMetaclass):
     """
     Custom metaclass to enable attribute inheritance from Meta objects on
@@ -541,20 +519,6 @@ class BaseSerializer(serializers.ModelSerializer, metaclass=BaseSerializerMetacl
 class EmptySerializer(serializers.Serializer):
     pass
 
-class DynamicFieldsSerializerMixin(object):
-    """
-    A serializer mixin that takes an additional `fields` argument that controls
-    which fields should be displayed.
-    """
-
-<<<<<<< Updated upstream:src/cyborgbackup/api/serializers/base.py
-    def __init__(self, *args, **kwargs):
-        # Don't pass the 'fields' arg up to the superclass
-        fields = kwargs.pop('fields', None)
-
-        # Instantiate the superclass normally
-        super(DynamicFieldsSerializerMixin, self).__init__(*args, **kwargs)
-=======
 class UserSerializer(BaseSerializer):
     password = serializers.CharField(required=False, default='', write_only=True,
                                      help_text=_('Write-only field used to change the password.'))
@@ -605,14 +569,6 @@ class UserSerializer(BaseSerializer):
         obj = super(UserSerializer, self).update(obj, validated_data)
         self._update_password(obj, new_password)
         return obj
->>>>>>> Stashed changes:src/cyborgbackup/api/serializers.py
-
-        if fields is not None:
-            # Drop any fields that are not specified in the `fields` argument.
-            allowed = set(fields)
-            existing = set(self.fields.keys())
-            for field_name in existing - allowed:
-                self.fields.pop(field_name)
 
 class BaseSerializerWithVariables(BaseSerializer):
 
@@ -638,8 +594,6 @@ class LabelsListMixin(object):
         res['labels'] = self._summary_field_labels(obj)
         return res
 
-<<<<<<< Updated upstream:src/cyborgbackup/api/serializers/base.py
-=======
 
 class JobSerializer(BaseSerializer):
     show_capabilities = ['start', 'delete']
@@ -1119,7 +1073,6 @@ class StatsSerializer(EmptySerializer):
     stats = serializers.ListField()
 
 
->>>>>>> Stashed changes:src/cyborgbackup/api/serializers.py
 class CyborgTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):

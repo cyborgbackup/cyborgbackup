@@ -2,15 +2,14 @@ import json
 import warnings
 
 from coreapi.document import Object, Link
-<<<<<<< Updated upstream
 from drf_yasg import openapi
+
 from drf_yasg.inspectors import SwaggerAutoSchema
 from drf_yasg.views import get_schema_view
 
 from rest_framework import exceptions, permissions
-=======
 from rest_framework import exceptions
->>>>>>> Stashed changes
+
 from rest_framework.permissions import AllowAny
 from rest_framework.renderers import CoreJSONRenderer
 from rest_framework.response import Response

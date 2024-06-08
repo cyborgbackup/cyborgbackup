@@ -2,11 +2,8 @@
 import base64
 import re
 
-<<<<<<< Updated upstream
 # Django
 from django.utils.translation import gettext_lazy as _
-=======
->>>>>>> Stashed changes
 from django.core.exceptions import ValidationError
 # Django
 from django.utils.translation import gettext_lazy as _

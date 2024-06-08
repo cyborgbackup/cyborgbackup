@@ -214,11 +214,7 @@ class Keypair(object):
         import string
         import secrets
         letters_and_digits = string.ascii_letters + string.digits
-<<<<<<< Updated upstream
         return '/var/tmp/cyborgbackup/tmpcyborg_'+''.join((secrets.choice(letters_and_digits) for _ in range(15)))
-=======
-        return '/tmp/tmpcyborg_' + ''.join((random.choice(letters_and_digits) for i in range(15)))
->>>>>>> Stashed changes
 
     def generate(self):
         import subprocess
@@ -279,8 +275,4 @@ class Keypair(object):
                 if exc.errno != errno.ENOENT:
                     raise KeypairError(exc)
                 else:
-<<<<<<< Updated upstream
                     return True
-=======
-                    pass
->>>>>>> Stashed changes

@@ -3,11 +3,6 @@ import os
 import socket
 
 import prometheus_client
-<<<<<<< Updated upstream
-from prometheus_client import multiprocess
-from django.views.generic.base import TemplateView
-=======
->>>>>>> Stashed changes
 from django.contrib.staticfiles import views
 from django.http import HttpResponse
 from django.urls import re_path
@@ -191,10 +186,6 @@ index = IndexView.as_view()
 
 urlpatterns = [
     re_path(r'^$', index, name='index'),
-<<<<<<< Updated upstream
     re_path(r'^metrics$', metrics_prometheus),
-=======
-    re_path(r'^metrics$', MetricsPrometheus),
->>>>>>> Stashed changes
     re_path(r'^(?P<path>.*)$', views.serve),
 ]

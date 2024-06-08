@@ -4,10 +4,6 @@ import logging
 import pytz
 from django.db import models
 from django.utils.dateparse import parse_datetime
-<<<<<<< Updated upstream
-from django.utils.timezone import utc
-=======
->>>>>>> Stashed changes
 from django.utils.translation import gettext_lazy as _
 
 from cyborgbackup.api.versioning import reverse

@@ -12,24 +12,18 @@ from django.apps import apps
 # Django
 from django.conf import settings
 from django.db import models, connection
-<<<<<<< Updated upstream
 from django.utils.translation import gettext_lazy as _
 from django.utils.timezone import now
 from django.utils.encoding import smart_str
 from django.apps import apps
 
-=======
-from django.utils.encoding import smart_bytes
-from django.utils.timezone import now
-from django.utils.translation import gettext_lazy as _
->>>>>>> Stashed changes
 from django_celery_results.models import TaskResult
 
 # CyBorgBackup
 from cyborgbackup.api.versioning import reverse
 from cyborgbackup.main.constants import ACTIVE_STATES, CAN_CANCEL
 from cyborgbackup.main.consumers import emit_channel_notification
-from cyborgbackup.main.fields import JSONField, AskForField
+from cyborgbackup.main.fields import JSONField
 from cyborgbackup.main.models.base import prevent_search, VarsDictProperty, CommonModelNameNotUnique
 from cyborgbackup.main.models.events import JobEvent
 from cyborgbackup.main.utils.common import (
@@ -38,12 +32,9 @@ from cyborgbackup.main.utils.common import (
 )
 from cyborgbackup.main.utils.encryption import decrypt_field
 from cyborgbackup.main.utils.string import UriCleaner
-<<<<<<< Updated upstream
 from cyborgbackup.main.consumers import emit_channel_notification
 from cyborgbackup.main.fields import JSONField
 
-=======
->>>>>>> Stashed changes
 
 __all__ = ['Job', 'StdoutMaxBytesExceeded']
 
@@ -116,7 +107,6 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
     # status inherits from related jobs.
     # Thus, status must be able to be set to any status that a job status is settable to.
     JOB_STATUS_CHOICES = [
-<<<<<<< Updated upstream
         ('new', 'New'),                  # Job has been created, but not started.
         ('pending', 'Pending'),          # Job has been queued, but is not yet running.
         ('waiting', 'Waiting'),          # Job is waiting on an update/dependency.
@@ -126,16 +116,6 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
         ('error', 'Error'),              # The job was unable to run.
         ('canceled', 'Canceled'),        # The job was canceled before completion.
         ('starting', 'Starting'),        # The job is starting. Launched from Main queue but not yet on Job queue
-=======
-        ('new', 'New'),  # Job has been created, but not started.
-        ('pending', 'Pending'),  # Job has been queued, but is not yet running.
-        ('waiting', 'Waiting'),  # Job is waiting on an update/dependency.
-        ('running', 'Running'),  # Job is currently running.
-        ('successful', 'Successful'),  # Job completed successfully.
-        ('failed', 'Failed'),  # Job completed, but with failures.
-        ('error', 'Error'),  # The job was unable to run.
-        ('canceled', 'Canceled'),  # The job was canceled before completion.
->>>>>>> Stashed changes
     ]
 
     COMMON_STATUS_CHOICES = JOB_STATUS_CHOICES + [
@@ -143,12 +123,7 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
     ]
 
     DEPRECATED_STATUS_CHOICES = [
-<<<<<<< Updated upstream
         ('updating', 'Updating'),            # Same as running.
-=======
-        # No longer used for Project / Inventory Source:
-        ('updating', 'Updating'),  # Same as running.
->>>>>>> Stashed changes
     ]
 
     ALL_STATUS_CHOICES = OrderedDict(DEPRECATED_STATUS_CHOICES).items()
@@ -734,12 +709,7 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
 
     @classmethod
     def _get_job_field_names(cls):
-<<<<<<< Updated upstream
         return {'name', 'description', 'policy', 'client', 'repository', 'job_type', 'master_job'}
-=======
-        return {'name', 'description', 'policy', 'client', 'repository', 'job_type'}
->>>>>>> Stashed changes
-
     def copy_job(self, limit=None):
         '''
         Returns saved object, including related fields.
@@ -791,11 +761,7 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
         return dict(id=self.id,
                     name=self.name,
                     url=self.get_ui_url(),
-<<<<<<< Updated upstream
                     created_by=smart_str(self.created_by),
-=======
-                    created_by=smart_bytes(self.created_by),
->>>>>>> Stashed changes
                     started=self.started.isoformat() if self.started is not None else None,
                     finished=self.finished.isoformat() if self.finished is not None else None,
                     status=self.status,
@@ -829,11 +795,8 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
         return True, opts
 
     def start_celery_task(self, opts, error_callback, success_callback):
-<<<<<<< Updated upstream
         if not self.celery_task_id:
             raise RuntimeError("Expected celery_task_id to be set on model.")
-=======
->>>>>>> Stashed changes
         kwargs = {
             'link_error': error_callback,
             'link': success_callback,

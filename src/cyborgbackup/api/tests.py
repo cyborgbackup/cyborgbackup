@@ -1,10 +1,6 @@
 import logging
 from unittest.mock import patch
 
-<<<<<<< Updated upstream
-=======
-# from django.urls import reverse
->>>>>>> Stashed changes
 from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.reverse import reverse
@@ -14,10 +10,7 @@ logger = logging.getLogger('cyborgbackup')
 logger.setLevel(logging.CRITICAL)
 
 
-<<<<<<< Updated upstream
 @patch('cyborgbackup.main.models.clients.Client.can_be_updated', return_value=False)
-=======
->>>>>>> Stashed changes
 class CyborgbackupApiTest(APITestCase):
     fixtures = ["settings.json", "tests.json"]
     user_login = 'admin@cyborg.local'

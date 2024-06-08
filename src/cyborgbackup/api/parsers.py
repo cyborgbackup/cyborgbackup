@@ -6,10 +6,7 @@ import yaml
 # Django
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
-<<<<<<< Updated upstream
 
-=======
->>>>>>> Stashed changes
 # Django REST Framework
 from rest_framework import parsers
 from rest_framework.exceptions import ParseError

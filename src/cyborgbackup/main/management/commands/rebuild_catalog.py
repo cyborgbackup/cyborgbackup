@@ -127,18 +127,15 @@ class Command(BaseCommand):
         return private_data_files
 
     def launch_command(self, cmd, instance, key, path, **kwargs):
-<<<<<<< Updated upstream
         cwd = '/var/tmp/cyborgbackup/'
         env = {}
         env['BORG_PASSPHRASE'] = key
         env['BORG_REPO'] = path
         env['BORG_RELOCATED_REPO_ACCESS_IS_OK'] = 'yes'
         env['BORG_RSH'] = 'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
-=======
         cwd = '/tmp/'
         env = {'BORG_PASSPHRASE': key, 'BORG_REPO': path, 'BORG_RELOCATED_REPO_ACCESS_IS_OK': 'yes',
                'BORG_RSH': 'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'}
->>>>>>> Stashed changes
         args = cmd
         safe_args = args
 

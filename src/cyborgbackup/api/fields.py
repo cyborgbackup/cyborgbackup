@@ -21,11 +21,7 @@ class NullFieldMixin(object):
 
 
 class BooleanNullField(NullFieldMixin, serializers.BooleanField):
-<<<<<<< Updated upstream
-    '''
-=======
     """
->>>>>>> Stashed changes
     Custom boolean field that allows null and empty string as False values.
     """
 

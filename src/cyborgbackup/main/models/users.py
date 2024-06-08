@@ -1,12 +1,9 @@
 from __future__ import unicode_literals
 
 from django.contrib.auth.base_user import AbstractBaseUser
-<<<<<<< Updated upstream
-=======
 from django.contrib.auth.models import PermissionsMixin
 from django.core.mail import send_mail
 from django.db import models
->>>>>>> Stashed changes
 from django.utils.translation import gettext_lazy as _
 
 from cyborgbackup.main.managers import UserManager
