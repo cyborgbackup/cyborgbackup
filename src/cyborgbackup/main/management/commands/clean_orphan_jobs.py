@@ -7,9 +7,9 @@ from cyborgbackup.main.models import Job
 
 
 class Command(BaseCommand):
-    '''
+    """
     Management command to clean orphan running jobs.
-    '''
+    """
 
     help = 'Remove old jobs from the database.'
 

@@ -8,7 +8,6 @@ import time
 import traceback
 from collections import OrderedDict
 
-import six
 from celery import Task
 from django.conf import settings
 from django.core.cache import cache
@@ -28,17 +27,19 @@ logger = logging.getLogger('cyborgbackup.main.tasks.bastask')
 
 CyBorgBackupTaskError = _CyBorgBackupTaskError()
 
+
 class LogErrorsTask(Task):
     def on_failure(self, exc, task_id, args, kwargs, einfo):
         if getattr(exc, 'is_cyborgbackup_task_error', False):
-            logger.warning(six.text_type("{}").format(exc))
+            logger.warning(str("{}").format(exc))
         elif isinstance(self, BaseTask):
-            logger.exception(six.text_type(
+            logger.exception(str(
                 '{!s} {!s} execution encountered exception.')
                              .format(get_type_for_model(self.model), args[0]))
         else:
-            logger.exception(six.text_type('Task {} encountered exception.').format(self.name), exc_info=exc)
+            logger.exception(str('Task {} encountered exception.').format(self.name), exc_info=exc)
         super(LogErrorsTask, self).on_failure(exc, task_id, args, kwargs, einfo)
+
 
 class BaseTask(LogErrorsTask):
     name = None
@@ -65,7 +66,7 @@ class BaseTask(LogErrorsTask):
                 if updates:
                     update_fields = ['modified']
                     for field, value in updates.items():
-                        if field in ('result_traceback'):
+                        if field in ('result_traceback',):
                             for srch, repl in output_replacements:
                                 value = value.replace(srch, repl)
                         setattr(instance, field, value)
@@ -95,16 +96,16 @@ class BaseTask(LogErrorsTask):
                              self.model._meta.object_name, _attempt)
 
     def get_path_to(self, *args):
-        '''
+        """
         Return absolute path relative to this file.
-        '''
+        """
         return os.path.abspath(os.path.join(os.path.dirname(__file__), *args))
 
     def build_private_data(self, instance, **kwargs):
-        '''
+        """
         Return SSH private key data (only if stored in DB as ssh_key_data).
         Return structure is a dict of the form:
-        '''
+        """
         private_data = {'credentials': {}}
         for sets in Setting.objects.filter(key__contains='ssh_key'):
             # If we were sent SSH credentials, decrypt them and send them
@@ -114,16 +115,16 @@ class BaseTask(LogErrorsTask):
         return private_data
 
     def build_private_data_dir(self, instance, **kwargs):
-        '''
+        """
         Create a temporary directory for job-related files.
-        '''
+        """
         path = tempfile.mkdtemp(prefix='cyborgbackup_%s_' % instance.pk, dir='/var/tmp/cyborgbackup')
         os.chmod(path, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
         self.cleanup_paths.append(path)
         return path
 
     def build_private_data_files(self, instance, **kwargs):
-        '''
+        """
         Creates temporary files containing the private data.
         Returns a dictionary i.e.,
 
@@ -134,7 +135,7 @@ class BaseTask(LogErrorsTask):
                 <cyborgbackup.main.models.Credential>: '/path/to/decrypted/data',
             }
         }
-        '''
+        """
         private_data = self.build_private_data(instance, **kwargs)
         private_data_files = {'credentials': {}}
         if private_data is not None:
@@ -183,17 +184,17 @@ class BaseTask(LogErrorsTask):
         return job_timeout
 
     def get_password_prompts(self, **kwargs):
-        '''
+        """
         Return a dictionary where keys are strings or regular expressions for
         prompts, and values are password lookup keys (keys that are returned
         from build_passwords).
-        '''
+        """
         return OrderedDict()
 
     def get_stdout_handle(self, instance):
-        '''
+        """
         Return an virtual file object for capturing stdout and events.
-        '''
+        """
         dispatcher = CallbackQueueDispatcher()
 
         def event_callback(event_data):
@@ -207,25 +208,25 @@ class BaseTask(LogErrorsTask):
         return OutputEventFilter(event_callback)
 
     def pre_run_hook(self, instance, **kwargs):
-        '''
+        """
         Hook for any steps to run before the job/task starts
-        '''
+        """
 
     def post_run_hook(self, instance, status, **kwargs):
-        '''
+        """
         Hook for any steps to run before job/task is marked as complete.
-        '''
+        """
 
     def final_run_hook(self, instance, status, **kwargs):
-        '''
+        """
         Hook for any steps to run after job/task is marked as complete.
-        '''
+        """
 
     @with_path_cleanup
     def run(self, pk, isolated_host=None, **kwargs):
-        '''
+        """
         Run the job/task and capture its output.
-        '''
+        """
         instance = self.update_model(pk, status='running', start_args='')
 
         instance.websocket_emit_status("running")
@@ -306,7 +307,7 @@ class BaseTask(LogErrorsTask):
         try:
             self.post_run_hook(instance, status, **kwargs)
         except JobHookException:
-            logger.exception(six.text_type('{} Post run hook errored.').format(instance.log_format))
+            logger.exception(str('{} Post run hook errored.').format(instance.log_format))
         instance = self.update_model(pk)
         if instance.cancel_flag:
             status = 'canceled'
@@ -318,7 +319,7 @@ class BaseTask(LogErrorsTask):
         try:
             self.final_run_hook(instance, status, **kwargs)
         except JobHookException:
-            logger.exception(six.text_type('{} Final run hook errored.').format(instance.log_format))
+            logger.exception(str('{} Final run hook errored.').format(instance.log_format))
         instance.websocket_emit_status(status)
         if status != 'successful' and not hasattr(settings, 'CELERY_UNIT_TEST'):
             # Raising an exception will mark the job as 'failed' in celery
@@ -329,12 +330,11 @@ class BaseTask(LogErrorsTask):
                 raise CyBorgBackupTaskError.TaskError(instance, rc)
 
     def get_ssh_key_path(self, instance, **kwargs):
-        '''
+        """
         If using an SSH key, return the path for use by ssh-agent.
-        '''
+        """
         private_data_files = kwargs.get('private_data_files', {})
         if 'ssh' in private_data_files.get('credentials', {}):
             return private_data_files['credentials']['ssh']
 
         return ''
-

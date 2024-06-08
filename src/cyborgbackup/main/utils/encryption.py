@@ -7,7 +7,6 @@ import stat
 import tempfile
 from collections import namedtuple
 
-import six
 from cryptography.fernet import Fernet, InvalidToken
 from cryptography.hazmat.backends import default_backend
 from django.utils.encoding import smart_str
@@ -21,9 +20,9 @@ logger = logging.getLogger('cyborgbackup.main.utils.encryption')
 
 
 class Fernet256(Fernet):
-    '''Not techincally Fernet, but uses the base of the Fernet spec and uses AES-256-CBC
+    """Not techincally Fernet, but uses the base of the Fernet spec and uses AES-256-CBC
     instead of AES-128-CBC. All other functionality remain identical.
-    '''
+    """
 
     def __init__(self, key, backend=None):
         super().__init__(key, backend)
@@ -42,7 +41,7 @@ class Fernet256(Fernet):
 
 
 def get_encryption_key(field_name, pk=None):
-    '''
+    """
     Generate key for encrypted password based on field name,
     ``settings.SECRET_KEY``, and instance pk (if available).
 
@@ -50,7 +49,7 @@ def get_encryption_key(field_name, pk=None):
     :param pk: (optional) the primary key of the model object;
                can be omitted in situations where you're encrypting a setting
                that is not database-persistent (like a read-only setting)
-    '''
+    """
     from django.conf import settings
     h = hashlib.sha512()
     h.update(settings.SECRET_KEY.encode('utf-8'))
@@ -66,9 +65,9 @@ def encrypt_value(value, pk=None):
 
 
 def encrypt_field(instance, field_name, ask=False, subfield=None, skip_utf8=False):
-    '''
+    """
     Return content of the given instance and field name encrypted.
-    '''
+    """
     value = getattr(instance, field_name)
     if isinstance(value, dict) and subfield is not None:
         value = value[subfield]
@@ -110,9 +109,9 @@ def decrypt_value(encryption_key, value):
 
 
 def decrypt_field(instance, field_name, subfield=None):
-    '''
+    """
     Return content of the given instance and field name decrypted.
-    '''
+    """
     value = getattr(instance, field_name)
     if isinstance(value, dict) and subfield is not None:
         value = value[subfield]
@@ -136,10 +135,10 @@ def decrypt_field(instance, field_name, subfield=None):
 
 
 def encrypt_dict(data, fields):
-    '''
+    """
     Encrypts all of the dictionary values in `data` under the keys in `fields`
     in-place operation on `data`
-    '''
+    """
     encrypt_fields = set(data.keys()).intersection(fields)
     for key in encrypt_fields:
         data[key] = encrypt_value(data[key])
@@ -175,7 +174,6 @@ class Keypair(object):
 
         if not self.passphrase:
             self.generate_passphrase()
-
 
     def check_type_rsa(self):
         if self.type in 'rsa':
@@ -214,7 +212,7 @@ class Keypair(object):
         import string
         import secrets
         letters_and_digits = string.ascii_letters + string.digits
-        return '/var/tmp/cyborgbackup/tmpcyborg_'+''.join((secrets.choice(letters_and_digits) for _ in range(15)))
+        return '/var/tmp/cyborgbackup/tmpcyborg_' + ''.join((secrets.choice(letters_and_digits) for _ in range(15)))
 
     def generate(self):
         import subprocess

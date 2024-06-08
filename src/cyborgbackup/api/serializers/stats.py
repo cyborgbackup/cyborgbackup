@@ -9,5 +9,6 @@ from .base import EmptySerializer
 
 logger = logging.getLogger('cyborgbackup.api.serializers.stats')
 
+
 class StatsSerializer(EmptySerializer):
     stats = serializers.ListField()

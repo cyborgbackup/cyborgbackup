@@ -14,9 +14,9 @@ logger = logging.getLogger('cyborgbackup.main.tasks.runjob')
 
 
 class RunJob(BaseTask):
-    '''
+    """
     Celery task to run a job.
-    '''
+    """
 
     name = 'cyborgbackup.main.tasks.run_job'
     model = Job
@@ -24,17 +24,17 @@ class RunJob(BaseTask):
     event_data_key = 'job_id'
 
     def final_run_hook(self, instance, status, **kwargs):
-        '''
+        """
         Hook for any steps to run after job/task is marked as complete.
-        '''
+        """
         if instance.job_type == 'job':
             cyborgbackup_notifier.apply_async(args=('after', instance.pk))
 
     def build_args(self, job, **kwargs):
-        '''
+        """
         Build command line argument list for running the task,
         optionally using ssh-agent for public/private key authentication.
-        '''
+        """
         if job.job_type == 'check':
             return _build_args_for_check(job, **kwargs)
         elif job.job_type == 'catalog':
@@ -52,7 +52,7 @@ class RunJob(BaseTask):
     def get_password_prompts(self, **kwargs):
         d = super(RunJob, self).get_password_prompts(**kwargs)
         for k, _ in kwargs['passwords'].items():
-            d[re.compile(r'Enter passphrase for .*'+k+r':\s*?$', re.M)] = k
-            d[re.compile(r'Enter passphrase for .*'+k, re.M)] = k
-        d[re.compile(r'Bad passphrase, try again for .*:\s*?$', re.M)] = ''
+            d[re.compile(r'Enter passphrase for .*' + k + r':\s*?$', re.M)] = k
+            d[re.compile(r'Enter passphrase for .*' + k, re.M)] = k
+        d[re.compile(r'Bad passphrase, try again for .*:\s*$', re.M)] = ''
         return d

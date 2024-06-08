@@ -4,13 +4,14 @@ import logging
 # Django REST Framework
 from rest_framework import serializers
 
-# CyBorgBackup
-from .base import BaseSerializer, DynamicFieldsSerializerMixin
 from cyborgbackup.main.models.catalogs import Catalog
 from cyborgbackup.main.models.jobs import Job
 from cyborgbackup.main.validators import vars_validate_or_raise
+# CyBorgBackup
+from .base import BaseSerializer, DynamicFieldsSerializerMixin
 
 logger = logging.getLogger('cyborgbackup.api.serializers.catalogs')
+
 
 class RestoreLaunchSerializer(BaseSerializer):
     defaults = serializers.SerializerMethodField()
@@ -38,7 +39,6 @@ class RestoreLaunchSerializer(BaseSerializer):
 
 
 class CatalogSerializer(BaseSerializer):
-
     class Meta:
         model = Catalog
         fields = ('id', 'url', 'archive_name', 'path', 'job', 'mode', 'mtime', 'owner', 'group', 'size', 'healthy')
@@ -57,7 +57,6 @@ class CatalogSerializer(BaseSerializer):
 
 
 class CatalogListSerializer(DynamicFieldsSerializerMixin, CatalogSerializer):
-
     class Meta:
         model = Catalog
         fields = ('id', 'url', 'archive_name', 'path', 'job', 'mode', 'mtime', 'owner', 'group', 'size', 'healthy')

@@ -8,7 +8,6 @@ from functools import reduce
 from io import StringIO
 from itertools import chain
 
-import six
 import yaml
 # Django
 from django.conf import settings
@@ -144,7 +143,7 @@ def _convert_model_field_for_display(obj, field_name, password_fields=None):
     if password_fields is None:
         password_fields = set(getattr(type(obj), 'PASSWORD_FIELDS', [])) | {'password'}
     if field_name in password_fields or (
-            isinstance(field_val, six.string_types) and
+            isinstance(field_val, str) and
             field_val.startswith('$encrypted$')
     ):
         return u'hidden'
@@ -180,10 +179,10 @@ def model_to_dict(obj, serializer_mapping=None):
 
 
 def get_object_or_400(klass, *args, **kwargs):
-    '''
+    """
     Return a single object from the given model or queryset based on the query
     params, otherwise raise an exception that will return in a 400 response.
-    '''
+    """
     from django.shortcuts import _get_queryset
     queryset = _get_queryset(klass)
     try:
@@ -195,10 +194,10 @@ def get_object_or_400(klass, *args, **kwargs):
 
 
 def get_object_or_403(klass, *args, **kwargs):
-    '''
+    """
     Return a single object from the given model or queryset based on the query
     params, otherwise raise an exception that will return in a 403 response.
-    '''
+    """
     from django.shortcuts import _get_queryset
     queryset = _get_queryset(klass)
     try:
@@ -210,7 +209,7 @@ def get_object_or_403(klass, *args, **kwargs):
 
 
 def to_python_boolean(value, allow_none=False):
-    value = six.text_type(value)
+    value = str(value)
     if value.lower() in ('true', '1', 't'):
         return True
     elif value.lower() in ('false', '0', 'f'):
@@ -218,21 +217,21 @@ def to_python_boolean(value, allow_none=False):
     elif allow_none and value.lower() in ('none', 'null'):
         return None
     else:
-        raise ValueError(_(u'Unable to convert "%s" to boolean') % six.text_type(value))
+        raise ValueError(_(u'Unable to convert "%s" to boolean') % str(value))
 
 
 def camelcase_to_underscore(s):
-    '''
+    """
     Convert CamelCase names to lowercase_with_underscore.
-    '''
+    """
     s = re.sub(r'(((?<=[a-z])[A-Z])|([A-Z](?![A-Z]|$)))', '_\\1', s)
     return s.lower().strip('_')
 
 
 def get_type_for_model(model):
-    '''
+    """
     Return type name for a given model class.
-    '''
+    """
     opts = model._meta.concrete_model._meta
     return camelcase_to_underscore(opts.object_name)
 
@@ -272,15 +271,15 @@ def validate_vars_type(vars_obj):
 
 
 def parse_yaml_or_json(vars_str, silent_failure=True):
-    '''
+    """
     Attempt to parse a string of variables.
     First, with JSON parser, if that fails, then with PyYAML.
     If both attempts fail, return an empty dictionary if `silent_failure`
     is True, re-raise combination error if `silent_failure` if False.
-    '''
+    """
     if isinstance(vars_str, dict):
         return vars_str
-    elif isinstance(vars_str, six.string_types) and vars_str == '""':
+    elif isinstance(vars_str, str) and vars_str == '""':
         return {}
 
     try:
@@ -304,9 +303,9 @@ def parse_yaml_or_json(vars_str, silent_failure=True):
 
 
 def get_cyborgbackup_version():
-    '''
+    """
     Return CyBorgBackup version as reported by setuptools.
-    '''
+    """
     from cyborgbackup import __version__
     try:
         from importlib.metadata import version
@@ -367,9 +366,9 @@ def filter_insights_api_response(json):
 
 
 def get_model_for_type(type):
-    '''
+    """
     Return model class for a given type name.
-    '''
+    """
     from django.contrib.contenttypes.models import ContentType
     for ct in ContentType.objects.filter(Q(app_label='main') | Q(app_label='auth', model='user')):
         ct_model = ct.model_class()
@@ -415,7 +414,7 @@ def has_model_field_prefetched(model_obj, field_name):
 
 
 def prefetch_page_capabilities(model, page, prefetch_list, user):
-    '''
+    """
     Given a `page` list of objects, a nested dictionary of user_capabilities
     are returned by id, ex.
     {
@@ -434,7 +433,7 @@ def prefetch_page_capabilities(model, page, prefetch_list, user):
     prefetch_list = [{'copy': ['inventory.admin', 'project.admin']}]
       --> prefetch logical combination of admin permission to inventory AND
           project, put into cache dictionary as "copy"
-    '''
+    """
     page_ids = [obj.id for obj in page]
     mapping = {}
     for obj in page:
@@ -489,10 +488,10 @@ def prefetch_page_capabilities(model, page, prefetch_list, user):
 
 
 def copy_model_by_class(obj1, Class2, fields, kwargs):
-    '''
+    """
     Creates a new unsaved object of type Class2 using the fields from obj1
     values in kwargs can override obj1
-    '''
+    """
     create_kwargs = {}
     for field_name in fields:
         # Foreign keys can be specified as field_name or field_name_id.
@@ -527,11 +526,11 @@ def copy_model_by_class(obj1, Class2, fields, kwargs):
 
 
 def copy_m2m_relationships(obj1, obj2, fields, kwargs=None):
-    '''
+    """
     In-place operation.
     Given two saved objects, copies related objects from obj1
     to obj2 to field of same name, if field occurs in `fields`
-    '''
+    """
     for field_name in fields:
         if hasattr(obj1, field_name):
             field_obj = obj1._meta.get_field(field_name)
@@ -571,9 +570,9 @@ def could_be_script(scripts_path, dir_path, filename):
 
 
 class OutputEventFilter(object):
-    '''
+    """
     File-like object that looks for encoded job events in stdout data.
-    '''
+    """
 
     EVENT_DATA_RE = re.compile(r'\x1b\[K((?:[A-Za-z0-9+/=]+\x1b\[\d+D)+)\x1b\[K')
 
@@ -636,9 +635,9 @@ class OutputEventFilter(object):
 
 
 def get_ssh_version():
-    '''
+    """
     Return SSH version installed.
-    '''
+    """
     try:
         proc = subprocess.Popen(['ssh', '-V'],
                                 stderr=subprocess.PIPE)

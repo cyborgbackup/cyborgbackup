@@ -14,8 +14,9 @@ from cyborgbackup.main.tasks.helpers import humanbytes
 
 logger = logging.getLogger('cyborgbackup.main.tasks.reports')
 
+
 def build_report(type):
-    since = 24*60*60
+    since = 24 * 60 * 60
     if type == 'daily':
         since *= 1
     elif type == 'weekly':
@@ -59,34 +60,34 @@ def build_report(type):
 def generate_ascii_table(elements):
     for elt in elements['lines']:
         for col in elements['columns']:
-            if len(elt[col['key']]) > col['minsize']-2:
-                col['minsize'] = len(elt[col['key']])+2
+            if len(elt[col['key']]) > col['minsize'] - 2:
+                col['minsize'] = len(elt[col['key']]) + 2
     line = '+'
     for col in elements['columns']:
-        line += '-'*col['minsize']+'+'
+        line += '-' * col['minsize'] + '+'
     header = line + '\n'
     for col in elements['columns']:
-        header += '| ' + col['title'].ljust(col['minsize']-1)
+        header += '| ' + col['title'].ljust(col['minsize'] - 1)
     header += '|' + '\n' + line
     table = header
     for elt in elements['lines']:
         table += '\n'
         for col in elements['columns']:
-            table += '| ' + elt[col['key']].ljust(col['minsize']-1)
+            table += '| ' + elt[col['key']].ljust(col['minsize'] - 1)
         table += '|'
-    table += '\n'+line
+    table += '\n' + line
     return table
 
 
 def generate_html_table(elements):
     table = '<table>\n<thead><tr>'
     for col in elements['columns']:
-        table += '<th>'+col['title']+'</th>\n'
+        table += '<th>' + col['title'] + '</th>\n'
     table += '</tr></thead>\n<tbody>'
     for elt in elements['lines']:
         table += '<tr>'
         for col in elements['columns']:
-            table += '<td>'+elt[col['key']]+'</td>\n'
+            table += '<td>' + elt[col['key']] + '</td>\n'
         table += '</tr>\n'
     table += '</tbody></table>\n'
     return table
@@ -109,6 +110,7 @@ def generate_html_joboutput(elements):
       </div>
     </div>"""
     return output
+
 
 def send_email(elements, type, mail_to):
     try:

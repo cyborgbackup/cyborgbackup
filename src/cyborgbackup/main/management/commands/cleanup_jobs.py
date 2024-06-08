@@ -5,19 +5,15 @@ import shutil
 import stat
 import tempfile
 from collections import OrderedDict
-from django.utils import timezone
-from cyborgbackup.main.expect import run
-from cyborgbackup.main.models.settings import Setting
-from cyborgbackup.main.utils.common import get_ssh_version
-from cyborgbackup.main.utils.encryption import decrypt_field
 from io import StringIO
 
 import pymongo
-from distutils.version import LooseVersion as Version
 from django.conf import settings
 # Django
 from django.core.management.base import BaseCommand
 from django.db import transaction
+from django.utils import timezone
+from packaging.version import parse, Version
 
 from cyborgbackup.main.expect import run
 # CyBorgBackup
@@ -36,9 +32,9 @@ Try upgrading OpenSSH or providing your private key in an different format. \
 
 
 class Command(BaseCommand):
-    '''
+    """
     Management command to cleanup old jobs.
-    '''
+    """
 
     help = 'Remove old jobs from the database.'
 
@@ -57,13 +53,13 @@ class Command(BaseCommand):
         for k, v in kwargs['passwords'].items():
             d[re.compile(r'Enter passphrase for .*' + k + r':\s*?$', re.M)] = k
             d[re.compile(r'Enter passphrase for .*' + k, re.M)] = k
-        d[re.compile(r'Bad passphrase, try again for .*:\s*?$', re.M)] = ''
+        d[re.compile(r'Bad passphrase, try again for .*:\s*$', re.M)] = ''
         return d
 
     def get_ssh_key_path(self, instance, **kwargs):
-        '''
+        """
         If using an SSH key, return the path for use by ssh-agent.
-        '''
+        """
         private_data_files = kwargs.get('private_data_files', {})
         if 'ssh' in private_data_files.get('credentials', {}):
             return private_data_files['credentials']['ssh']
@@ -71,9 +67,9 @@ class Command(BaseCommand):
         return ''
 
     def build_passwords(self, job, **kwargs):
-        '''
+        """
         Build a dictionary of passwords for SSH private key, SSH user, sudo/su.
-        '''
+        """
         passwords = {}
         for setting in Setting.objects.filter(key__contains='ssh_key'):
             set = Setting.objects.get(key=setting.key.replace('ssh_key', 'ssh_password'))
@@ -81,10 +77,10 @@ class Command(BaseCommand):
         return passwords
 
     def build_private_data(self, instance, **kwargs):
-        '''
+        """
         Return SSH private key data (only if stored in DB as ssh_key_data).
         Return structure is a dict of the form:
-        '''
+        """
         private_data = {'credentials': {}}
         for sets in Setting.objects.filter(key__contains='ssh_key'):
             # If we were sent SSH credentials, decrypt them and send them
@@ -94,16 +90,16 @@ class Command(BaseCommand):
         return private_data
 
     def build_private_data_dir(self, instance, **kwargs):
-        '''
+        """
         Create a temporary directory for job-related files.
-        '''
+        """
         path = tempfile.mkdtemp(prefix='cyborgbackup_%s_' % instance.pk, dir='/var/tmp/cyborgbackup')
         os.chmod(path, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
         self.cleanup_paths.append(path)
         return path
 
     def build_private_data_files(self, instance, **kwargs):
-        '''
+        """
         Creates temporary files containing the private data.
         Returns a dictionary i.e.,
 
@@ -114,13 +110,13 @@ class Command(BaseCommand):
                 <cyborgbackup.main.models.Credential>: '/path/to/decrypted/data',
             }
         }
-        '''
+        """
         private_data = self.build_private_data(instance, **kwargs)
         private_data_files = {'credentials': {}}
         if private_data is not None:
             ssh_ver = get_ssh_version()
-            ssh_too_old = True if ssh_ver == "unknown" else Version(ssh_ver) < Version("6.0")
-            openssh_keys_supported = ssh_ver != "unknown" and Version(ssh_ver) >= Version("6.5")
+            ssh_too_old = True if ssh_ver == "unknown" else parse(ssh_ver) < Version("6.0")
+            openssh_keys_supported = ssh_ver != "unknown" and parse(ssh_ver) >= Version("6.5")
             for sets, data in private_data.get('credentials', {}).items():
                 # Bail out now if a private key was provided in OpenSSH format
                 # and we're running an earlier version (<6.5).
@@ -149,6 +145,7 @@ class Command(BaseCommand):
     def launch_command(self, cmd, instance, key, path, **kwargs):
         cwd = '/tmp/'
         env = {'BORG_PASSPHRASE': key, 'BORG_REPO': path, 'BORG_RELOCATED_REPO_ACCESS_IS_OK': 'yes',
+               'BORG_RSH': 'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'}
         args = cmd
         safe_args = args
 
@@ -217,17 +214,18 @@ class Command(BaseCommand):
                             deletedJobs.append(entry)
                             entry.delete()
                     else:
-                        if entry.archive_name is None and entry.created < ( timezone.now() - datetime.timedelta(days=settings.JOB_RETENTION)):
+                        if entry.archive_name is None and entry.created < (
+                                timezone.now() - datetime.timedelta(days=settings.JOB_RETENTION)):
                             action_text = 'would delete' if self.dry_run else 'deleting'
                             print('{} orphan JobID={} => {}'.format(action_text, entry.pk, entry.name))
                             if not self.dry_run:
                                 entry.delete()
 
             if not self.dry_run:
-                Job.objects.exclude(job_type='job')\
+                Job.objects.exclude(job_type='job') \
                     .filter(dependent_jobs_id__isnull=True,
                             master_job_id__isnull=True,
-                            created__lt=(timezone.now() - datetime.timedelta(days=settings.JOB_RETENTION)))\
+                            created__lt=(timezone.now() - datetime.timedelta(days=settings.JOB_RETENTION))) \
                     .delete()
 
         return 0, 0

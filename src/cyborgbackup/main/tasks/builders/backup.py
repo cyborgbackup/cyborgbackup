@@ -10,6 +10,7 @@ from cyborgbackup.main.utils.common import load_module_provider
 
 logger = logging.getLogger('cyborgbackup.main.tasks.builders.backup')
 
+
 def _build_borg_cmd_for_rootfs():
     path = '/'
     excluded_dirs = ['/media',
@@ -129,6 +130,7 @@ def _build_borg_cmd_for_piped(policy_type, job):
             raise JobCommandBuilderException('Command for piped backup not defined')
     return piped
 
+
 ########
 # Backup host => backupHost
 # Client => client
@@ -175,6 +177,7 @@ def build_borg_cmd(job):
     excluded_dirs = []
     args = []
     piped = ''
+    path = ''
     client = job.client.hostname
     client_hostname = client
     try:
@@ -183,7 +186,7 @@ def build_borg_cmd(job):
     except Exception:
         client_user = 'root'
     if client_user != 'root':
-        args = ['sudo', '-E']+args
+        args = ['sudo', '-E'] + args
     args += ['borg']
     args += ['create']
     repository_path = ''
@@ -209,19 +212,19 @@ def build_borg_cmd(job):
         path = '-'
         piped = _build_borg_cmd_for_piped(policy_type, job)
         if not job.policy.mode_pull:
-            args = [piped, '|']+args
+            args = [piped, '|'] + args
 
     args += ['{}::{}-{}-{}'.format(repository_path, policy_type, archive_client_name, job_date_string)]
 
     if job.policy.mode_pull and policy_type in ('rootfs', 'config', 'mail'):
-        path = '.'+path
+        path = '.' + path
     args += [path]
 
     if len(excluded_dirs) > 0:
         keyword = '--exclude '
         if job.policy.mode_pull:
             keyword += '.'
-        args += (keyword + (' '+keyword).join(excluded_dirs)).split(' ')
+        args += (keyword + (' ' + keyword).join(excluded_dirs)).split(' ')
 
     if job.policy.mode_pull:
         (client_uri, repository_path) = job.policy.repository.path.split(':')
@@ -232,16 +235,17 @@ def build_borg_cmd(job):
             pull_cmd = ['mkdir', '-p', sshfs_directory]
             pull_cmd += ['&&', 'sshfs', 'root@{}:{}'.format(client_hostname, path[1::]), sshfs_directory]
             pull_cmd += ['&&', 'cd', sshfs_directory]
-            pull_cmd += ['&&']+args
+            pull_cmd += ['&&'] + args
             args = pull_cmd
         if policy_type in ('mysql', 'postgresql', 'piped', 'vm'):
             pull_cmd = ['ssh', '{}@{}'.format(client_user, client_hostname)]
             if client_user != 'root':
-                piped = 'sudo -E '+piped
-            pull_cmd += ["'"+piped+"'|"+' '.join(args)]
+                piped = 'sudo -E ' + piped
+            pull_cmd += ["'" + piped + "'|" + ' '.join(args)]
             args = pull_cmd
 
     return client, client_user, args
+
 
 def _build_args_for_backup(self, job, **kwargs):
     env = build_env(job, **kwargs)

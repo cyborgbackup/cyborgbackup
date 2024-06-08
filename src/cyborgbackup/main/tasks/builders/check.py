@@ -12,7 +12,9 @@ from cyborgbackup.main.utils.common import load_module_provider
 
 logger = logging.getLogger('cyborgbackup.main.tasks.builders.check')
 
+
 def _build_args_for_check(job, **kwargs):
+    args = []
     agent_users = User.objects.filter(is_agent=True)
     env = build_env(job, **kwargs)
     if not agent_users.exists():

@@ -26,7 +26,7 @@ psycopg2-binary>=2.9.9
 python-daemon==3.0.1
 python-dateutil==2.9.0post0
 prometheus-client
-pymongo
+pymongo~=4.7.3
 pytz==2024.1
 PyYAML>=6.0.1
 PyJWT>=2.8.0
@@ -46,3 +46,11 @@ django-debug-toolbar==4.4.2
 django-debug-toolbar-force==0.2
 djangorestframework-simplejwt==5.3.1
 django-cors-headers==4.3.1
+prometheus_client~=0.20.0
+coreapi~=2.3.3
+six~=1.16.0
+Jinja2~=3.1.4
+cryptography~=42.0.8
+packaging~=24.0
+asgiref~=3.8.1
+setuptools~=70.0.0

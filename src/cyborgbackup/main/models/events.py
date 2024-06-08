@@ -16,9 +16,9 @@ __all__ = ['JobEvent']
 
 
 class JobEvent(CreatedModifiedModel):
-    '''
+    """
     An event/message logged from the callback when running a job.
-    '''
+    """
 
     EVENT_TYPES = [
         (0, 'debug', _('Debug'), False),

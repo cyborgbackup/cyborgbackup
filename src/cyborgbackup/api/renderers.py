@@ -1,5 +1,4 @@
 # Django REST Framework
-import six
 from rest_framework import renderers
 from rest_framework.request import override_method
 
@@ -67,7 +66,7 @@ class PlainTextRenderer(renderers.BaseRenderer):
 
     def render(self, data, media_type=None, renderer_context=None):
         if not isinstance(data, six.string_types):
-            data = six.text_type(data)
+            data = str(data)
         return data.encode(self.charset)
 
 

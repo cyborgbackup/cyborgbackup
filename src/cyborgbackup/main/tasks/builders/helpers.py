@@ -14,6 +14,7 @@ from cyborgbackup.main.utils.encryption import decrypt_field
 
 logger = logging.getLogger('cyborgbackup.main.tasks.builders.helpers')
 
+
 def build_env(job, **kwargs):
     env = {}
 
@@ -79,22 +80,26 @@ def build_env(job, **kwargs):
     env['BORG_RSH'] = 'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
     return env
 
+
 def build_cwd(job, **kwargs):
     cwd = '/var/tmp/cyborgbackup/'
     return cwd
 
+
 def get_idle_timeout():
     return getattr(settings, 'JOB_RUN_IDLE_TIMEOUT', None)
 
+
 def build_passwords():
-    '''
+    """
     Build a dictionary of passwords for SSH private key, SSH user, sudo/su.
-    '''
+    """
     passwords = {}
     for setting in Setting.objects.filter(key__contains='ssh_key'):
         set_parsed = Setting.objects.get(key=setting.key.replace('ssh_key', 'ssh_password'))
         passwords['credential_{}'.format(setting.key)] = decrypt_field(set_parsed, 'value')
     return passwords
+
 
 def build_extra_vars_file(extra_vars, **kwargs):
     handle, path = tempfile.mkstemp(dir=kwargs.get('private_data_dir', None))

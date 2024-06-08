@@ -1,8 +1,8 @@
 import functools
 
-#from channels.handler import AsgiRequest
-from rest_framework.exceptions import AuthenticationFailed
-from rest_framework.settings import api_settings
+# from channels.handler import AsgiRequest
+
+
 # from channels.handler import AsgiRequest
 
 

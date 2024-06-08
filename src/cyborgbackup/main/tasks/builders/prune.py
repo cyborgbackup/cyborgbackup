@@ -2,6 +2,7 @@ import logging
 
 logger = logging.getLogger('cyborgbackup.main.tasks.builders.prune')
 
+
 def _build_args_for_prune(job, **kwargs):
     args = []
     if job.client_id:

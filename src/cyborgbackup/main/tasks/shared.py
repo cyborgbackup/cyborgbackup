@@ -7,7 +7,6 @@ from random import random
 
 import pymongo
 import requests
-import six
 from celery import shared_task
 from django.conf import settings
 from django.core import management
@@ -24,6 +23,7 @@ from cyborgbackup.main.tasks.reports import send_email, build_report
 
 logger = logging.getLogger('cyborgbackup.main.tasks.shared')
 
+
 @shared_task(bind=True, base=LogErrorsTask)
 def compute_borg_size(self):
     logger.debug('Compute Borg Size Report')
@@ -36,7 +36,8 @@ def compute_borg_size(self):
         for job in jobs:
             events = JobEvent.objects.filter(job_id=job.pk, stdout__contains='This archive:').order_by('-counter')
             for event in events:
-                prg = re.compile(r"This archive:\s{1,40}([0-9.]{1,10}\s.B)\s{1,40}([0-9.]{1,10}\s.B)\s{1,40}([0-9.]{1,10}\s.B)\s{0,40}")
+                prg = re.compile(
+                    r"This archive:\s{1,40}([0-9.]{1,10}\s.B)\s{1,40}([0-9.]{1,10}\s.B)\s{1,40}([0-9.]{1,10}\s.B)\s{0,40}")
                 m = prg.match(event.stdout)
                 if m:
                     job.original_size = parseSize(m.group(1))
@@ -52,9 +53,11 @@ def compute_borg_size(self):
                                       job_type='job').order_by('-finished')
             if jobs.exists():
                 last_running_job = jobs.first()
-                events = JobEvent.objects.filter(job_id=last_running_job.pk, stdout__contains='All archives:').order_by('-counter')
+                events = JobEvent.objects.filter(job_id=last_running_job.pk, stdout__contains='All archives:').order_by(
+                    '-counter')
                 for event in events:
-                    prg = re.compile(r"All archives:\s{1,40}([0-9.]{1,10}\s.B)\s{1,40}([0-9.]{1,10}\s.B)\s{1,40}([0-9.]{1,10}\s.B)\s{0,40}")
+                    prg = re.compile(
+                        r"All archives:\s{1,40}([0-9.]{1,10}\s.B)\s{1,40}([0-9.]{1,10}\s.B)\s{1,40}([0-9.]{1,10}\s.B)\s{0,40}")
                     m = prg.match(event.stdout)
                     if m:
                         repo.original_size = parseSize(m.group(1))
@@ -63,6 +66,7 @@ def compute_borg_size(self):
                         repo.save()
                         break
 
+
 @shared_task(bind=True, base=LogErrorsTask)
 def check_borg_new_version(self):
     logger.debug('Check New Release of Borg binary')
@@ -70,10 +74,11 @@ def check_borg_new_version(self):
     data = r.json()
     latest_version = data['tag_name']
     db = pymongo.MongoClient(settings.MONGODB_URL).local
-    db.versions.replace_one({'version': latest_version},{
+    db.versions.replace_one({'version': latest_version}, {
         'version': latest_version,
         'check_date': datetime.datetime.now()
     }, upsert=True)
+
 
 @shared_task(bind=True, base=LogErrorsTask)
 def random_restore_integrity(self):
@@ -108,10 +113,12 @@ def random_restore_integrity(self):
             if len(selected_items) == 1:
                 print(selected_items)
 
+
 @shared_task(bind=True, base=LogErrorsTask)
 def cyborgbackup_notifier(self, report_type, *kwargs):
     logger.debug('CyBorgBackup Notifier')
     users = None
+    report = None
     if report_type in ('daily', 'weekly', 'monthly'):
         if report_type == 'daily':
             users = User.objects.filter(notify_backup_daily=True)
@@ -183,7 +190,8 @@ def purge_old_stdout_files(self):
     for f in os.listdir(settings.JOBOUTPUT_ROOT):
         if os.path.getctime(os.path.join(settings.JOBOUTPUT_ROOT, f)) < nowtime - settings.LOCAL_STDOUT_EXPIRE_TIME:
             os.unlink(os.path.join(settings.JOBOUTPUT_ROOT, f))
-            logger.info(six.text_type("Removing {}").format(os.path.join(settings.JOBOUTPUT_ROOT, f)))
+            logger.info(str("Removing {}").format(os.path.join(settings.JOBOUTPUT_ROOT, f)))
+
 
 @shared_task(bind=True, base=LogErrorsTask)
 def cyborgbackup_periodic_scheduler(self):
@@ -235,7 +243,7 @@ def handle_work_success(self, result, task_actual):
 
 @shared_task(base=LogErrorsTask)
 def handle_work_error(self, task_id, *args, **kwargs):
-    subtasks = kwargs.get('subtasks', None)
+    subtasks: list | None = kwargs.get('subtasks', None)
     logger.debug('Executing error task id %s, subtasks: %s' % (task_id, str(subtasks)))
     first_instance = None
     first_instance_type = ''

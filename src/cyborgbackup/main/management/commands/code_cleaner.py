@@ -1,20 +1,19 @@
-
 # Django
 from django.core.management.base import BaseCommand
 from django.db import transaction, connection
 
 
 class Command(BaseCommand):
-    '''
+    """
     Management command to clean orphan running jobs.
-    '''
+    """
 
     help = 'Clean old unecessary model in DB.'
 
     def add_arguments(self, parser):
         parser.add_argument('--dry-run', dest='dry_run', action='store_true',
                             default=False, help='Dry run mode (show items that would '
-                            'be removed)')
+                                                'be removed)')
 
     @transaction.atomic
     def handle(self, *args, **options):

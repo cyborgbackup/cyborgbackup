@@ -1,10 +1,10 @@
 # Python
 import logging
 
+from cyborgbackup.main.models.schedules import Schedule
 # CyBorgBackup
 from .generics import RetrieveUpdateDestroyAPIView, ListCreateAPIView
 from ..serializers.schedules import ScheduleSerializer, ScheduleListSerializer
-from cyborgbackup.main.models.schedules import Schedule
 
 logger = logging.getLogger('cyborgbackups.api.views.schedules')
 

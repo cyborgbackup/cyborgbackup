@@ -4,13 +4,13 @@ import logging
 # Django REST Framework
 from rest_framework import serializers
 
-# CyBorgBackup
-from .base import BaseSerializer
 from cyborgbackup.main.models.clients import Client
 from cyborgbackup.main.models.policies import Policy
-
+# CyBorgBackup
+from .base import BaseSerializer
 
 logger = logging.getLogger('cyborgbackup.api.serializers.clients')
+
 
 class ClientSerializer(BaseSerializer):
     can_be_updated = serializers.SerializerMethodField()
@@ -37,7 +37,6 @@ class ClientSerializer(BaseSerializer):
 
 
 class ClientListSerializer(ClientSerializer):
-
     class Meta:
         fields = ('*',)
 

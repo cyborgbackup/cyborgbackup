@@ -1,16 +1,16 @@
+import datetime
 import json
 import os
 import re
 import stat
 import tempfile
 from collections import OrderedDict
-import datetime
 from io import StringIO
 
-from packaging.version import Version, parse
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db import transaction
+from packaging.version import Version, parse
 
 from cyborgbackup.main.expect import run
 from cyborgbackup.main.models import Job, Repository, Catalog
@@ -41,9 +41,9 @@ class Command(BaseCommand):
         return d
 
     def get_ssh_key_path(self, instance, **kwargs):
-        '''
+        """
         If using an SSH key, return the path for use by ssh-agent.
-        '''
+        """
         private_data_files = kwargs.get('private_data_files', {})
         if 'ssh' in private_data_files.get('credentials', {}):
             return private_data_files['credentials']['ssh']
@@ -51,9 +51,9 @@ class Command(BaseCommand):
         return ''
 
     def build_passwords(self, job, **kwargs):
-        '''
+        """
         Build a dictionary of passwords for SSH private key, SSH user, sudo/su.
-        '''
+        """
         passwords = {}
         for setting in Setting.objects.filter(key__contains='ssh_key'):
             set = Setting.objects.get(key=setting.key.replace('ssh_key', 'ssh_password'))
@@ -61,10 +61,10 @@ class Command(BaseCommand):
         return passwords
 
     def build_private_data(self, instance, **kwargs):
-        '''
+        """
         Return SSH private key data (only if stored in DB as ssh_key_data).
         Return structure is a dict of the form:
-        '''
+        """
         private_data = {'credentials': {}}
         for sets in Setting.objects.filter(key__contains='ssh_key'):
             # If we were sent SSH credentials, decrypt them and send them
@@ -74,16 +74,16 @@ class Command(BaseCommand):
         return private_data
 
     def build_private_data_dir(self, instance, **kwargs):
-        '''
+        """
         Create a temporary directory for job-related files.
-        '''
+        """
         path = tempfile.mkdtemp(prefix='cyborgbackup_%s_' % instance.pk, dir='/var/tmp/cyborgbackup')
         os.chmod(path, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
         self.cleanup_paths.append(path)
         return path
 
     def build_private_data_files(self, instance, **kwargs):
-        '''
+        """
         Creates temporary files containing the private data.
         Returns a dictionary i.e.,
 
@@ -94,7 +94,7 @@ class Command(BaseCommand):
                 <cyborgbackup.main.models.Credential>: '/path/to/decrypted/data',
             }
         }
-        '''
+        """
         private_data = self.build_private_data(instance, **kwargs)
         private_data_files = {'credentials': {}}
         if private_data is not None:
@@ -128,12 +128,6 @@ class Command(BaseCommand):
 
     def launch_command(self, cmd, instance, key, path, **kwargs):
         cwd = '/var/tmp/cyborgbackup/'
-        env = {}
-        env['BORG_PASSPHRASE'] = key
-        env['BORG_REPO'] = path
-        env['BORG_RELOCATED_REPO_ACCESS_IS_OK'] = 'yes'
-        env['BORG_RSH'] = 'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
-        cwd = '/tmp/'
         env = {'BORG_PASSPHRASE': key, 'BORG_REPO': path, 'BORG_RELOCATED_REPO_ACCESS_IS_OK': 'yes',
                'BORG_RSH': 'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'}
         args = cmd
@@ -229,7 +223,8 @@ class Command(BaseCommand):
                                                         repo.path,
                                                         **kwargs)
                             hours_timezone = round(
-                                (round((datetime.datetime.now() - datetime.datetime.now(datetime.UTC)).total_seconds()) / 1800) / 2)
+                                (round((datetime.datetime.now() - datetime.datetime.now(
+                                    datetime.UTC)).total_seconds()) / 1800) / 2)
                             with transaction.atomic():
                                 for line in lines:
                                     try:

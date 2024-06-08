@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('main', '0014_fix_clientport_validation'),
     ]
@@ -13,6 +12,9 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='job',
             name='job_type',
-            field=models.CharField(choices=[('job', 'Default Backup Job'), ('check', 'Prepare Client or Repository'), ('catalog', 'Catalog Job'), ('prune', 'Prune Job'), ('restore', 'Restore Job'), ('integrity', 'Integrity Check Job')], default='job', max_length=64),
+            field=models.CharField(choices=[('job', 'Default Backup Job'), ('check', 'Prepare Client or Repository'),
+                                            ('catalog', 'Catalog Job'), ('prune', 'Prune Job'),
+                                            ('restore', 'Restore Job'), ('integrity', 'Integrity Check Job')],
+                                   default='job', max_length=64),
         ),
     ]

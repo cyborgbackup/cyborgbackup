@@ -3,15 +3,15 @@ import logging
 
 # Django
 from django.utils.translation import gettext_lazy as _
-
 # Django REST Framework
 from rest_framework.exceptions import PermissionDenied
 
+from cyborgbackup.main.models.users import User
 # CyBorgBackup
 from .generics import ListAPIView, RetrieveUpdateDestroyAPIView, ListCreateAPIView
 from ..permissions import UserPermission
+from ..serializers.base import CyborgTokenObtainPairSerializer
 from ..serializers.users import UserSerializer
-from cyborgbackup.main.models.users import User
 
 logger = logging.getLogger('cyborgbackups.api.views.users')
 
@@ -43,11 +43,10 @@ class UserDetail(RetrieveUpdateDestroyAPIView):
     tags = ['User']
 
     def update_filter(self, request, *args, **kwargs):
-        ''' make sure non-read-only fields that can only be edited by admins, are only edited by admins '''
+        """ make sure non-read-only fields that can only be edited by admins, are only edited by admins """
         obj = self.get_object()
 
-        su_only_edit_fields = ('is_superuser')
-        # admin_only_edit_fields = ('username', 'is_active')
+        su_only_edit_fields = ('is_superuser',)
 
         fields_to_check = ()
         if not request.user.is_superuser:
@@ -61,3 +60,11 @@ class UserDetail(RetrieveUpdateDestroyAPIView):
                 bad_changes[field] = (left, right)
         if bad_changes:
             raise PermissionDenied(_('Cannot change %s.') % ', '.join(bad_changes.keys()))
+
+    def update(self, request, *args, **kwargs):
+        output = super(UserDetail, self).update(request, *args, **kwargs)
+        if self.request and hasattr(self.request, "user") and self.request.user.pk == output.data['id']:
+            user = User.objects.get(pk=output.data['id'])
+            refresh = CyborgTokenObtainPairSerializer.get_token(user)
+            output.headers['X-Token'] = refresh.access_token
+        return output

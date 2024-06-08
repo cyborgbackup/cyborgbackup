@@ -3,7 +3,7 @@
 
 <!DOCTYPE html>
 <html lang="en">
-  <head>
+<head>
     {% block head %}
 
         {% block meta %}
@@ -173,11 +173,12 @@
 
                         <div class="response-info" aria-label="response info">
                 <pre class="prettyprint"><span
-                        class="meta nocode"><b>HTTP {{ response.status_code }} {{ response.status_text }}</b>{% autoescape off %}
-                    {% for key, val in response_headers|items %}
-                        <b>{{ key }}:</b> <span class="lit">{{ val|break_long_headers|urlize }}</span>{% endfor %}
-                    {# Original line below had the side effect of also escaping content: #}
-                    </span>{{ content|urlize }}</pre>{% endautoescape %}
+                        class="meta nocode"><b>HTTP {{ response.status_code }} {{ response.status_text }}</b>
+                    {% autoescape off %}
+                        {% for key, val in response_headers|items %}
+                            <b>{{ key }}:</b> <span class="lit">{{ val|break_long_headers|urlize }}</span>{% endfor %}
+                        {# Original line below had the side effect of also escaping content: #}
+                        </span>{{ content|urlize }}</pre>{% endautoescape %}
                             {# {% endautoescape %}</span>{{ content }}</pre> #}
                         </div>
                     </div>

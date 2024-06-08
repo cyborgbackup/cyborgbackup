@@ -2,25 +2,27 @@
 import cgi
 import logging
 import re
-import ansiconv
-import dateutil
 from base64 import b64encode
 from wsgiref.util import FileWrapper
 
+import ansiconv
+import dateutil
 # Django
 from django.db import transaction
-from django.utils.timezone import now
-from django.utils.translation import gettext_lazy as _
 from django.http import HttpResponse
 from django.template.loader import render_to_string
-
+from django.utils.safestring import mark_safe
+from django.utils.timezone import now
+from django.utils.translation import gettext_lazy as _
 # Django REST Framework
 from rest_framework import status, renderers
-from django.utils.safestring import mark_safe
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.settings import api_settings
 
+from cyborgbackup.main.constants import ACTIVE_STATES
+from cyborgbackup.main.models.jobs import Job, JobEvent
+from cyborgbackup.main.utils.common import camelcase_to_underscore
 # CyBorgBackup
 from .generics import RetrieveUpdateDestroyAPIView, ListCreateAPIView, RetrieveAPIView, GenericAPIView, ListAPIView, \
     SubListAPIView
@@ -30,17 +32,14 @@ from ..renderers import BrowsableAPIRenderer, PlainTextRenderer, AnsiTextRendere
 from ..serializers.base import EmptySerializer
 from ..serializers.jobs import JobSerializer, JobEventSerializer, JobListSerializer, JobCancelSerializer, \
     JobStdoutSerializer, JobRelaunchSerializer
-from cyborgbackup.main.models.jobs import Job, JobEvent
-from cyborgbackup.main.constants import ACTIVE_STATES
-from cyborgbackup.main.utils.common import camelcase_to_underscore
 
 logger = logging.getLogger('cyborgbackups.api.views.jobs')
 
 
 class JobDeletionMixin(object):
-    '''
+    """
     Special handling when deleting a running job object.
-    '''
+    """
 
     def destroy(self, request, *args, **kwargs):
         obj = self.get_object()
@@ -85,7 +84,7 @@ class StdoutANSIFilter(object):
             # Remove ANSI color escape sequences.
             line = re.sub(r'\x1b[^m]*m', '', line)
             data += line
-        if size > 0 and len(data) > size:
+        if 0 < size < len(data):
             self.extra_data = data[size:]
             data = data[:size]
         else:

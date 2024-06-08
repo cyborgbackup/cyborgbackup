@@ -3,18 +3,17 @@ import logging
 
 # Django
 from django.utils.translation import gettext_lazy as _
-
 # Django REST Framework
 from rest_framework import serializers
 
+from cyborgbackup.main.models.users import User
 # CyBorgBackup
 from .base import BaseSerializer
-from cyborgbackup.main.models.users import User
 
 logger = logging.getLogger('cyborgbackup.api.serializers.stats')
 
-class UserSerializer(BaseSerializer):
 
+class UserSerializer(BaseSerializer):
     password = serializers.CharField(required=False, default='', write_only=True,
                                      help_text=_('Write-only field used to change the password.'))
     show_capabilities = ['edit', 'delete']

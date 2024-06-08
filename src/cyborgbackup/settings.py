@@ -361,14 +361,14 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'cyborgbackup', 'var', 'static')
 NAMED_URL_GRAPH = {}
 
 SWAGGER_SETTINGS = {
-   'DEFAULT_AUTO_SCHEMA_CLASS': 'cyborgbackup.api.swagger.CyBorgBackupSwaggerAutoSchema',
+    'DEFAULT_AUTO_SCHEMA_CLASS': 'cyborgbackup.api.swagger.CyBorgBackupSwaggerAutoSchema',
     'SECURITY_DEFINITIONS': {
-      'Bearer': {
+        'Bearer': {
             'type': 'apiKey',
             'name': 'Authorization',
             'in': 'header'
-      }
-   }
+        }
+    }
 }
 
 JOB_RETENTION = 30
@@ -394,8 +394,8 @@ CELERY_QUEUES = (
     Queue('backup_job', routing_key='backup_job'),
     Broadcast('cyborgbackup_broadcast_all')
 )
-CELERY_DEFAULT_QUEUE='backup_job'
-CELERY_DEFAULT_ROUTING_KEY='backup.job'
+CELERY_DEFAULT_QUEUE = 'backup_job'
+CELERY_DEFAULT_ROUTING_KEY = 'backup.job'
 CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
@@ -454,7 +454,7 @@ CELERY_BEAT_SCHEDULE = {
     },
     'cyborgbackup_check_new_version_borg': {
         'task': 'cyborgbackup.main.tasks.check_borg_new_version',
-        'schedule': crontab(hour=1, minute=0, day_of_month=1),
+        'schedule': crontab(hour='1', minute='0', day_of_month='1'),
         'options': {'expires': 20} | main_tasks_route
     },
     'task_manager': {

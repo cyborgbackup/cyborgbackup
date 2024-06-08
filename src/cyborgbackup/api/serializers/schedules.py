@@ -1,12 +1,12 @@
 # Python
 import logging
 
+from cyborgbackup.main.models.schedules import Schedule
 # CyBorgBackup
 from .base import BaseSerializer
-from cyborgbackup.main.models.schedules import Schedule
-
 
 logger = logging.getLogger('cyborgbackup.api.serializers.schedules')
+
 
 class ScheduleSerializer(BaseSerializer):
     """Read-only serializer for activity stream."""
@@ -24,7 +24,6 @@ class ScheduleSerializer(BaseSerializer):
 
 
 class ScheduleListSerializer(ScheduleSerializer):
-
     class Meta:
         fields = ('*',)
 

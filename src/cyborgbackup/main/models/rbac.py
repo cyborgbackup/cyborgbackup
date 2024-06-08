@@ -7,8 +7,6 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 # Django
 from django.db import models
-from django.contrib.contenttypes.models import ContentType
-from django.contrib.contenttypes.fields import GenericForeignKey
 from django.utils.translation import gettext_lazy as _
 
 # CyBorgBackup
@@ -63,11 +61,11 @@ tls = threading.local()  # thread local storage
 
 
 def check_singleton(func):
-    '''
+    """
     check_singleton is a decorator that checks if a user given
     to a `visible_roles` method is in either of our singleton roles (Admin, Auditor)
     and if so, returns their full list of roles without filtering.
-    '''
+    """
 
     def wrapper(*args, **kwargs):
         sys_admin = Role.singleton(ROLE_SINGLETON_SYSTEM_ADMINISTRATOR)
@@ -83,9 +81,9 @@ def check_singleton(func):
 
 
 class Role(models.Model):
-    '''
+    """
     Role model
-    '''
+    """
 
     class Meta:
         app_label = 'main'
@@ -202,11 +200,11 @@ def role_summary_fields_generator(content_object, role_field):
 
 
 def get_roles_on_resource(resource, accessor):
-    '''
+    """
     Returns a string list of the roles a accessor has for a given resource.
     An accessor can be either a User, Role, or an arbitrary resource that
     contains one or more Roles associated with it.
-    '''
+    """
 
     if type(accessor) == User:
         roles = accessor.roles.all()

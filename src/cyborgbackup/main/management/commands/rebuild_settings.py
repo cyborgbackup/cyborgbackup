@@ -10,9 +10,9 @@ from cyborgbackup.main.models.settings import Setting
 
 
 class Command(BaseCommand):
-    '''
+    """
     Management command to rebuild settings with group and order.
-    '''
+    """
 
     help = 'Rebuild settings with group and order.'
 

@@ -3,18 +3,17 @@ import logging
 import os
 import shutil
 
-import six
-
 from cyborgbackup.main.models import User, Policy, Job, JobEvent
 from cyborgbackup.main.models.settings import Setting
 
 logger = logging.getLogger('cyborgbackup.main.tasks.helpers')
 
-units = {"B": 1, "kB": 10**3, "MB": 10**6, "GB": 10**9, "TB": 10**12}
+units = {"B": 1, "kB": 10 ** 3, "MB": 10 ** 6, "GB": 10 ** 9, "TB": 10 ** 12}
+
 
 def parseSize(size):
     number, unit = [string.strip() for string in size.split()]
-    return int(float(number)*units[unit])
+    return int(float(number) * units[unit])
 
 
 def _cyborgbackup_notifier_summary(policy_pk):
@@ -90,6 +89,7 @@ def _cyborgbackup_notifier_summary(policy_pk):
     ]
     return report, users
 
+
 def _cyborgbackup_notifier_after(job_pk):
     logger.debug('After Backup')
     job = Job.objects.get(pk=job_pk)
@@ -104,6 +104,7 @@ def _cyborgbackup_notifier_after(job_pk):
         lines.append(event.stdout)
     return {'state': job.status, 'title': job.name, 'lines': lines, 'job': job}, users
 
+
 def with_path_cleanup(f):
     @functools.wraps(f)
     def _wrapped(self, *args, **kwargs):
@@ -117,12 +118,14 @@ def with_path_cleanup(f):
                     elif os.path.exists(p):
                         os.remove(p)
                 except OSError:
-                    logger.exception(six.text_type("Failed to remove tmp file: {}").format(p))
+                    logger.exception(str("Failed to remove tmp file: {}").format(p))
             self.cleanup_paths = []
+
     return _wrapped
 
+
 def humanbytes(B):
-    '  Return the given bytes as a human friendly KB, MB, GB, or TB string'
+    """  Return the given bytes as a human friendly KB, MB, GB, or TB string"""
     B = float(B)
     KB = float(1024)
     MB = float(KB ** 2)  # 1,048,576
@@ -132,10 +135,10 @@ def humanbytes(B):
     if B < KB:
         return '{0} {1}'.format(B, 'Bytes' if 0 == B > 1 else 'Byte')
     elif KB <= B < MB:
-        return '{0:.2f} KB'.format(B/KB)
+        return '{0:.2f} KB'.format(B / KB)
     elif MB <= B < GB:
-        return '{0:.2f} MB'.format(B/MB)
+        return '{0:.2f} MB'.format(B / MB)
     elif GB <= B < TB:
-        return '{0:.2f} GB'.format(B/GB)
+        return '{0:.2f} GB'.format(B / GB)
     elif TB <= B:
-        return '{0:.2f} TB'.format(B/TB)
+        return '{0:.2f} TB'.format(B / TB)

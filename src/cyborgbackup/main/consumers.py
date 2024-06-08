@@ -5,17 +5,17 @@ from urllib.parse import parse_qs
 from asgiref.sync import async_to_sync
 from channels.auth import AuthMiddlewareStack
 from channels.db import database_sync_to_async
-from channels.generic.websocket import AsyncWebsocketConsumer, WebsocketConsumer
+from channels.generic.websocket import WebsocketConsumer
 from channels.layers import get_channel_layer
 from channels.middleware import BaseMiddleware
-from django.db import close_old_connections
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser, User
 from django.core.serializers.json import DjangoJSONEncoder
+from django.db import close_old_connections
+from jwt import decode as jwt_decode
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from rest_framework_simplejwt.tokens import UntypedToken
-from jwt import decode as jwt_decode
 
 logger = logging.getLogger('cyborgbackup.main.consumers')
 
@@ -30,16 +30,14 @@ def get_user(validated_token):
     except User.DoesNotExist:
         return AnonymousUser()
 
-    def connect(self):
-        self.user = self.scope["user"]
-        self.accept()
 
 class JwtAuthMiddleware(BaseMiddleware):
     def __init__(self, inner):
+        super().__init__(inner)
         self.inner = inner
 
     async def __call__(self, scope, receive, send):
-       # Close old database connections to prevent usage of timed out connections
+        # Close old database connections to prevent usage of timed out connections
         close_old_connections()
 
         # Get the token
@@ -71,6 +69,7 @@ class JwtAuthMiddleware(BaseMiddleware):
 
     def send(self, data):
         super().send(data['text'])
+
 
 def JwtAuthMiddlewareStack(inner):
     return JwtAuthMiddleware(AuthMiddlewareStack(inner))
@@ -108,7 +107,7 @@ class CyBorgBackupConsumer(WebsocketConsumer):
 
     def disconnect(self, close_code):
         print(close_code)
-        #self.channel_layer.group_discard()
+        # self.channel_layer.group_discard()
 
 
 # def discard_groups(message):

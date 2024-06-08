@@ -2,7 +2,6 @@ import re
 from functools import reduce
 
 import django
-import six
 from pyparsing import (
     infixNotation,
     opAssoc,
@@ -55,12 +54,12 @@ class SmartFilter(object):
                 self.result = Host.objects.filter(**kwargs)
 
         def strip_quotes_traditional_logic(self, v):
-            if type(v) is six.text_type and v.startswith('"') and v.endswith('"'):
+            if type(v) is str and v.startswith('"') and v.endswith('"'):
                 return v[1:-1]
             return v
 
         def strip_quotes_json_logic(self, v):
-            if type(v) is six.text_type and v.startswith('"') and v.endswith('"') and v != u'"null"':
+            if type(v) is str and v.startswith('"') and v.endswith('"') and v != u'"null"':
                 return v[1:-1]
             return v
 
@@ -87,7 +86,7 @@ class SmartFilter(object):
             # value
             # ="something"
             if t_len > (v_offset + 2) and t[v_offset] == "\"" and t[v_offset + 2] == "\"":
-                v = u'"' + six.text_type(t[v_offset + 1]) + u'"'
+                v = u'"' + str(t[v_offset + 1]) + u'"'
             # empty ""
             elif t_len > (v_offset + 1):
                 v = u""
@@ -145,9 +144,9 @@ class SmartFilter(object):
     def query_from_string(cls, filter_string):
 
         filter_string_raw = filter_string
-        filter_string = six.text_type(filter_string)
+        filter_string = str(filter_string)
 
-        unicode_spaces = list(set(six.text_type(c) for c in filter_string if c.isspace()))
+        unicode_spaces = list(set(str(c) for c in filter_string if c.isspace()))
         unicode_spaces_other = unicode_spaces + [u'(', u')', u'=', u'"']
         atom = CharsNotIn(''.join(unicode_spaces_other))
         atom_inside_quotes = CharsNotIn(u'"')

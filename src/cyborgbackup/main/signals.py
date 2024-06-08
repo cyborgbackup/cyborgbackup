@@ -4,17 +4,14 @@ import logging
 # Django-CRUM
 from crum import get_current_request, get_current_user
 from crum.signals import current_user_getter
+# Django-CRUM
 # Django
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-# Django-CRUM
-from crum import get_current_request, get_current_user
-from crum.signals import current_user_getter
-
+from cyborgbackup.api.serializers.jobs import JobEventWebSocketSerializer
 # CyBorgBackup
 from cyborgbackup.main.models import User, JobEvent
-from cyborgbackup.api.serializers.jobs import JobEventWebSocketSerializer
 
 __all__ = []
 
@@ -46,18 +43,18 @@ def emit_job_event_detail(sender, **kwargs):
 
 @receiver(current_user_getter)
 def get_current_user_from_drf_request(sender, **kwargs):
-    '''
+    """
     Provider a signal handler to return the current user from the current
     request when using Django REST Framework. Requires that the APIView set
     drf_request on the underlying Django Request object.
-    '''
+    """
     request = get_current_request()
     drf_request_user = getattr(request, 'drf_request_user', False)
     return drf_request_user, 0
 
 
 def sync_superuser_status_to_rbac(instance, **kwargs):
-    'When the is_superuser flag is changed on a user, reflect that in the membership of the System Admnistrator role'
+    """When the is_superuser flag is changed on a user, reflect that in the membership of the System Admnistrator role"""
     update_fields = kwargs.get('update_fields', None)
     if update_fields and 'is_superuser' not in update_fields:
         return

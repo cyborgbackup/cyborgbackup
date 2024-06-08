@@ -258,8 +258,7 @@
       "order": 4,
       "group": "5 - Metrics"
     }
-  }
-  ,
+  },
   {
     "model": "main.setting",
     "pk": 21,
@@ -272,8 +271,7 @@
       "order": 4,
       "group": "2 - Backup"
     }
-  }
-  ,
+  },
   {
     "model": "main.setting",
     "pk": 22,

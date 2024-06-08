@@ -1,12 +1,13 @@
 # Python
 import logging
 
+from cyborgbackup.main.models.settings import Setting
 # CyBorgBackup
 from .base import BaseSerializer
-from cyborgbackup.main.models.settings import Setting
 from ..fields import VerbatimField
 
 logger = logging.getLogger('cyborgbackup.api.serializers.settings')
+
 
 class SettingSerializer(BaseSerializer):
     """Read-only serializer for activity stream."""
@@ -28,7 +29,6 @@ class SettingSerializer(BaseSerializer):
 
 
 class SettingListSerializer(SettingSerializer):
-
     class Meta:
         fields = ('*',)
 

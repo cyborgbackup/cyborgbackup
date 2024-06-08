@@ -3,12 +3,11 @@ import logging
 
 # Django
 from django.core.exceptions import FieldError
-from django.utils.safestring import mark_safe
 from django.db import IntegrityError
-
+from django.utils.safestring import mark_safe
+from rest_framework import views
 # Django REST Framework
 from rest_framework.exceptions import ParseError
-from rest_framework import views
 
 __all__ = ['get_view_description', 'get_view_name']
 
@@ -17,10 +16,10 @@ analytics_logger = logging.getLogger('cyborgbackup.analytics.performance')
 
 
 def get_view_name(cls, suffix=None):
-    '''
+    """
     Wrapper around REST framework get_view_name() to support get_name() method
     and view_name property on a view class.
-    '''
+    """
     name = ''
     if hasattr(cls, 'get_name') and callable(cls.get_name):
         name = cls().get_name()
@@ -35,10 +34,10 @@ def get_view_name(cls, suffix=None):
 
 
 def get_view_description(cls, request, html=False):
-    '''
+    """
     Wrapper around REST framework get_view_description() to support
     get_description() method and view_description property on a view class.
-    '''
+    """
     if hasattr(cls, 'get_description') and callable(cls.get_description):
         desc = cls().get_description(request, html=html)
         cls = type(cls.__name__, (object,), {'__doc__': desc})
@@ -60,9 +59,9 @@ def get_default_schema():
 
 
 def api_exception_handler(exc, context):
-    '''
+    """
     Override default API exception handler to catch IntegrityError exceptions.
-    '''
+    """
     if isinstance(exc, IntegrityError):
         exc = ParseError(exc.args[0])
     if isinstance(exc, FieldError):

@@ -42,13 +42,6 @@ def prepare_env():
     # Fixup sys.modules reference to django.utils.six to allow jsonfield to
     # work when using Django 1.4.
     import django.utils
-    try:
-        import django.utils.six
-    except ImportError:
-        import six
-        sys.modules['django.utils.six'] = sys.modules['six']
-        django.utils.six = sys.modules['django.utils.six']
-        from django.utils import six  # noqa
     # Disable capturing all SQL queries in memory when in DEBUG mode.
     if settings.DEBUG and not getattr(settings, 'SQL_DEBUG', True):
         from django.db.backends.base.base import BaseDatabaseWrapper as b

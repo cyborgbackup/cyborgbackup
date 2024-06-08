@@ -1,15 +1,15 @@
 # Python
 import logging
 
+from rest_framework import status
 # Django REST Framework
 from rest_framework.response import Response
-from rest_framework import status
 
+from cyborgbackup.main.models.clients import Client
+from cyborgbackup.main.models.policies import Policy
 # CyBorgBackup
 from .generics import RetrieveUpdateDestroyAPIView, ListCreateAPIView
 from ..serializers.clients import ClientSerializer, ClientListSerializer
-from cyborgbackup.main.models.clients import Client
-from cyborgbackup.main.models.policies import Policy
 
 logger = logging.getLogger('cyborgbackups.api.views.clients')
 

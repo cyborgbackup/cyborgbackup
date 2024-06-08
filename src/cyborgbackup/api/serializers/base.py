@@ -11,7 +11,6 @@ from django.utils.text import capfirst
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 # Django-Polymorphic
-from polymorphic.models import PolymorphicModel
 from rest_framework import fields
 from rest_framework import serializers
 from rest_framework import validators
@@ -37,7 +36,6 @@ from cyborgbackup.main.utils.common import (
     get_type_for_model, get_model_for_type, camelcase_to_underscore,
     has_model_field_prefetched, prefetch_page_capabilities)
 from cyborgbackup.main.validators import vars_validate_or_raise
-
 
 logger = logging.getLogger('cyborgbackup.api.serializers.base')
 
@@ -516,8 +514,10 @@ class BaseSerializer(serializers.ModelSerializer, metaclass=BaseSerializerMetacl
                 return True
         return False
 
+
 class EmptySerializer(serializers.Serializer):
     pass
+
 
 class UserSerializer(BaseSerializer):
     password = serializers.CharField(required=False, default='', write_only=True,
@@ -570,6 +570,7 @@ class UserSerializer(BaseSerializer):
         self._update_password(obj, new_password)
         return obj
 
+
 class BaseSerializerWithVariables(BaseSerializer):
 
     def validate_variables(self, value):
@@ -621,15 +622,15 @@ class JobSerializer(BaseSerializer):
         summary_dict = super(JobSerializer, self).get_summary_fields(obj)
         if obj.policy and obj.policy.repository_id:
             summary_dict['repository'] = OrderedDict({
-                'id': obj.policy.repository_id,
-                'name': obj.policy.repository.name
-            }.items())
+                                                         'id': obj.policy.repository_id,
+                                                         'name': obj.policy.repository.name
+                                                     }.items())
 
         if obj.policy and obj.policy.schedule_id:
             summary_dict['schedule'] = OrderedDict({
-                'id': obj.policy.schedule_id,
-                'name': obj.policy.schedule.name
-            }.items())
+                                                       'id': obj.policy.schedule_id,
+                                                       'name': obj.policy.schedule.name
+                                                   }.items())
 
         return summary_dict
 
@@ -775,7 +776,7 @@ class JobEventSerializer(BaseSerializer):
         if obj and obj.event.startswith('playbook_on'):
             return ret
         max_bytes = 1024
-        if max_bytes > 0 and 'stdout' in ret and len(ret['stdout']) >= max_bytes:
+        if 0 < max_bytes <= len(ret['stdout']) and 'stdout' in ret:
             ret['stdout'] = ret['stdout'][:(max_bytes - 1)] + u'\u2026'
             set_count = 0
             reset_count = 0

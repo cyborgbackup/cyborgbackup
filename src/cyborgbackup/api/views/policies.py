@@ -1,24 +1,24 @@
 # Python
 import datetime
-import dateutil
 import logging
-import pytz
-import tzcron
 from collections import OrderedDict
 
+import dateutil
+import pytz
+import tzcron
+from rest_framework import status
 # Django REST Framework
 from rest_framework.response import Response
-from rest_framework import status
 
-# CyBorgBackup
-from .generics import ListAPIView, RetrieveAPIView, RetrieveUpdateDestroyAPIView, ListCreateAPIView
-from ..serializers.policies import PolicySerializer, PolicyLaunchSerializer, PolicyModuleSerializer, \
-    PolicyCalendarSerializer, PolicyVMModuleSerializer
-from ..serializers.jobs import JobSerializer
-from cyborgbackup.main.models.policies import Policy
 from cyborgbackup.main.models.clients import Client
 from cyborgbackup.main.models.jobs import Job
+from cyborgbackup.main.models.policies import Policy
 from cyborgbackup.main.utils.common import get_module_provider
+# CyBorgBackup
+from .generics import ListAPIView, RetrieveAPIView, RetrieveUpdateDestroyAPIView, ListCreateAPIView
+from ..serializers.jobs import JobSerializer
+from ..serializers.policies import PolicySerializer, PolicyLaunchSerializer, PolicyModuleSerializer, \
+    PolicyCalendarSerializer, PolicyVMModuleSerializer
 from ...main.modules import Querier
 
 logger = logging.getLogger('cyborgbackups.api.views.policies')
@@ -134,10 +134,10 @@ class PolicyLaunch(RetrieveAPIView):
             return Response(data, status=status.HTTP_201_CREATED)
 
     def sanitize_for_response(self, data):
-        '''
+        """
         Model objects cannot be serialized by DRF,
         this replaces objects with their ids for inclusion in response
-        '''
+        """
 
         def display_value(val):
             if hasattr(val, 'id'):

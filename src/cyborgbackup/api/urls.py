@@ -1,22 +1,19 @@
 from django.conf.urls import include
-
-from django.urls import re_path, path
+from django.urls import re_path
 from rest_framework_simplejwt import views as jwt_views
 
-from cyborgbackup.api.swagger import CyBorgBackupSchemaView
-
 from .views.api import ApiRootView, ApiV1RootView, ApiV1PingView, ApiV1ConfigView, AuthView, CyborgTokenObtainPairView
-from .views.generics import LoggedLoginView, LoggedLogoutView
-from .views.users import UserList, UserDetail, UserMeList
+from .views.catalogs import CatalogList, CatalogDetail, MongoCatalog, RestoreLaunch
 from .views.clients import ClientList, ClientDetail
-from .views.repositories import RepositoryList, RepositoryDetail
-from .views.schedules import ScheduleList, ScheduleDetail
-from .views.policies import PolicyList, PolicyModule, PolicyDetail, PolicyLaunch, PolicyCalendar, PolicyVMModule
-from .views.stats import Stats
-from .views.settings import SettingList, SettingGetPublicSsh, SettingDetail, SettingGenerateSsh
+from .views.generics import LoggedLoginView, LoggedLogoutView
 from .views.jobs import JobStart, JobCancel, JobRelaunch, JobJobEventsList, JobStdout, JobList, JobEventDetail, \
     JobEventList, JobDetail
-from .views.catalogs import CatalogList, CatalogDetail, MongoCatalog, RestoreLaunch
+from .views.policies import PolicyList, PolicyModule, PolicyDetail, PolicyLaunch, PolicyCalendar, PolicyVMModule
+from .views.repositories import RepositoryList, RepositoryDetail
+from .views.schedules import ScheduleList, ScheduleDetail
+from .views.settings import SettingList, SettingGetPublicSsh, SettingDetail, SettingGenerateSsh
+from .views.stats import Stats
+from .views.users import UserList, UserDetail, UserMeList
 
 user_urls = [
     re_path(r'^$', UserList.as_view(), name='user_list'),

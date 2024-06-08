@@ -3,13 +3,10 @@ import warnings
 
 from coreapi.document import Object, Link
 from drf_yasg import openapi
-
 from drf_yasg.inspectors import SwaggerAutoSchema
 from drf_yasg.views import get_schema_view
-
-from rest_framework import exceptions, permissions
 from rest_framework import exceptions
-
+from rest_framework import permissions
 from rest_framework.permissions import AllowAny
 from rest_framework.renderers import CoreJSONRenderer
 from rest_framework.response import Response
@@ -128,5 +125,5 @@ CyBorgBackupSchemaView = get_schema_view(
         license=openapi.License(name="BSD License"),
     ),
     public=True,
-    permission_classes=(permissions.AllowAny,),
+    permission_classes=[permissions.AllowAny, ]
 )

@@ -2,6 +2,7 @@ import logging
 
 logger = logging.getLogger('cyborgbackup.main.tasks.builders.restore')
 
+
 def _build_args_for_restore(job, **kwargs):
     logger.debug(job.extra_vars)
     logger.debug(job.extra_vars_dict)

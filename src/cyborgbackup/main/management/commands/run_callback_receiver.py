@@ -220,11 +220,11 @@ class CallbackBrokerWorker(ConsumerMixin):
 
 
 class Command(BaseCommand):
-    '''
+    """
     Save Job Callback receiver (see cyborgbackup.plugins.callbacks.job_event_callback)
     Runs as a management command and receives job save events.  It then hands
     them off to worker processors (see Worker) which writes them to the database
-    '''
+    """
     help = 'Launch the job callback receiver'
 
     def handle(self, *arg, **options):

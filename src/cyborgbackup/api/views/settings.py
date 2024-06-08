@@ -2,16 +2,16 @@
 import logging
 from collections import OrderedDict
 
+from rest_framework import status
 # Django REST Framework
 from rest_framework.response import Response
-from rest_framework import status
 
+from cyborgbackup.main.models.settings import Setting
+from cyborgbackup.main.utils.encryption import Keypair
 # CyBorgBackup
 from .generics import ListAPIView, RetrieveUpdateAPIView, ListCreateAPIView
 from ..serializers.base import EmptySerializer
 from ..serializers.settings import SettingSerializer, SettingListSerializer
-from cyborgbackup.main.models.settings import Setting
-from cyborgbackup.main.utils.encryption import Keypair
 
 logger = logging.getLogger('cyborgbackups.api.views.settings')
 

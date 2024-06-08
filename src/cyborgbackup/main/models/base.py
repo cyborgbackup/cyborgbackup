@@ -27,9 +27,9 @@ VERBOSITY_CHOICES = [
 
 
 class VarsDictProperty(object):
-    '''
+    """
     Retrieve a string of variables in YAML or JSON as a dictionary.
-    '''
+    """
 
     def __init__(self, field='variables', key_value=False):
         self.field = field
@@ -49,9 +49,9 @@ class VarsDictProperty(object):
 
 
 class BaseModel(models.Model):
-    '''
+    """
     Base model class with common methods for all models.
-    '''
+    """
 
     class Meta:
         abstract = True
@@ -63,10 +63,10 @@ class BaseModel(models.Model):
             return u'%s-%s' % (self._meta.verbose_name, self.pk)
 
     def clean_fields(self, exclude=None):
-        '''
+        """
         Override default clean_fields to support methods for cleaning
         individual model fields.
-        '''
+        """
         exclude = exclude or []
         errors = {}
         try:
@@ -97,11 +97,11 @@ class BaseModel(models.Model):
 
 
 class CreatedModifiedModel(BaseModel):
-    '''
+    """
     Common model with created/modified timestamp fields.  Allows explicitly
     specifying created/modified timestamps in certain cases (migrations, job
     events), calculates automatically if not specified.
-    '''
+    """
 
     class Meta:
         abstract = True
@@ -129,10 +129,10 @@ class CreatedModifiedModel(BaseModel):
 
 
 class PasswordFieldsModel(BaseModel):
-    '''
+    """
     Abstract base class for a model with password fields that should be stored
     as encrypted values.
-    '''
+    """
 
     PASSWORD_FIELDS = ()
 
@@ -181,11 +181,11 @@ class PasswordFieldsModel(BaseModel):
 
 
 class PrimordialModel(CreatedModifiedModel):
-    '''
+    """
     Common model for all object types that have these standard fields
     must use a subclass CommonModel or CommonModelNameNotUnique though
     as this lacks a name field.
-    '''
+    """
 
     class Meta:
         abstract = True
@@ -259,7 +259,7 @@ class PrimordialModel(CreatedModifiedModel):
 
 
 class CommonModel(PrimordialModel):
-    ''' a base model where the name is unique '''
+    """ a base model where the name is unique """
 
     class Meta:
         abstract = True
@@ -271,7 +271,7 @@ class CommonModel(PrimordialModel):
 
 
 class CommonModelNameNotUnique(PrimordialModel):
-    ''' a base model where the name is not unique '''
+    """ a base model where the name is not unique """
 
     class Meta:
         abstract = True

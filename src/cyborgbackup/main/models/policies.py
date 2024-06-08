@@ -7,10 +7,6 @@ from django.db import models
 from django.db.models.query import QuerySet
 from django.utils.translation import gettext_lazy as _
 
-import tzcron
-import pytz
-from dateutil.tz import datetime_exists
-
 from cyborgbackup.api.versioning import reverse
 from cyborgbackup.celery import app
 from cyborgbackup.main.consumers import emit_channel_notification
@@ -199,9 +195,9 @@ class Policy(PrimordialModel):
         return Job
 
     def create_job(self, **kwargs):
-        '''
+        """
         Create a new job based on this policy.
-        '''
+        """
 
         job_class = self._get_job_class()
         fields = ('extra_vars', 'job_type')

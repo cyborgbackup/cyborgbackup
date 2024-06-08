@@ -5,7 +5,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('main', '0012_job_master_job'),
     ]
@@ -14,6 +13,8 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='client',
             name='port',
-            field=models.PositiveIntegerField(blank=True, default=22, max_length=5, validators=[django.core.validators.MinValueValidator(1), django.core.validators.MaxValueValidator(65535)]),
+            field=models.PositiveIntegerField(blank=True, default=22, max_length=5,
+                                              validators=[django.core.validators.MinValueValidator(1),
+                                                          django.core.validators.MaxValueValidator(65535)]),
         ),
     ]

@@ -5,12 +5,10 @@ from collections import OrderedDict
 # Django
 from django.conf import settings as dsettings
 from django.utils.translation import gettext_lazy as _
-
 # Django REST Framework
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
-
 # REST Simple JWT
 from rest_framework_simplejwt.views import TokenObtainPairView
 
@@ -29,7 +27,7 @@ class ApiRootView(APIView):
     swagger_topic = 'Versioning'
 
     def get(self, request, format=None):
-        ''' List supported API versions '''
+        """ List supported API versions """
 
         v1 = reverse('api:api_v1_root_view')
         data = dict(
@@ -45,7 +43,7 @@ class ApiVersionRootView(APIView):
     swagger_topic = 'Versioning'
 
     def get(self, request, format=None):
-        ''' List top level resources '''
+        """ List top level resources """
         data = OrderedDict()
         data['ping'] = reverse('api:api_v1_ping_view', request=request)
         data['config'] = reverse('api:api_v1_config_view', request=request)
@@ -84,11 +82,8 @@ class ApiV1PingView(APIView):
         Everything returned here should be considered public / insecure, as
         this requires no auth and is intended for use by the installer process.
         """
-        response = {
-            'version': get_cyborgbackup_version(),
-        }
+        response = {'version': get_cyborgbackup_version(), 'ping': "pong"}
 
-        response['ping'] = "pong"
         return Response(response)
 
 

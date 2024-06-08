@@ -30,6 +30,7 @@ Try upgrading OpenSSH or providing your private key in an different format. \
 
 logger = logging.getLogger('cyborgbackup.main.tasks')
 
+
 @contextmanager
 def advisory_lock(*args, **kwargs):
     if connection.vendor == 'postgresql':
@@ -43,5 +44,6 @@ def launch_integrity_check():
     # TODO
     # Launch Integrity Check on all Repositories based on crontab defined in Settings
     print("You didn't say the magic word")
+
 
 app_or_default().register_task(RunJob())

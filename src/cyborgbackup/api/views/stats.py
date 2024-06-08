@@ -1,15 +1,15 @@
 # Python
-import logging
 import datetime
-import pytz
+import logging
 
+import pytz
 # Django REST Framework
 from rest_framework.response import Response
 
+from cyborgbackup.main.models.jobs import Job
 # CyBorgBackup
 from .generics import ListAPIView
 from ..serializers.stats import StatsSerializer
-from cyborgbackup.main.models.jobs import Job
 
 logger = logging.getLogger('cyborgbackups.api.views.stats')
 

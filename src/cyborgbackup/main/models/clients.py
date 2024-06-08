@@ -1,12 +1,10 @@
 import logging
+
 import pymongo
-
-from django.db import models
 from django.conf import settings
-
-from pkg_resources import parse_version
-
 from django.core.validators import MaxValueValidator, MinValueValidator
+from django.db import models
+from pkg_resources import parse_version
 
 from cyborgbackup.api.versioning import reverse
 from cyborgbackup.main.models.base import PrimordialModel
@@ -97,9 +95,9 @@ class Client(PrimordialModel):
         return Job
 
     def create_prepare_client(self, **kwargs):
-        '''
+        """
         Create a new prepare job for this client.
-        '''
+        """
         eager_fields = kwargs.pop('_eager_fields', None)
 
         job_class = self._get_job_class()
@@ -126,9 +124,9 @@ class Client(PrimordialModel):
         return job
 
     def create_prepare_hypervisor(self, **kwargs):
-        '''
+        """
         Create a new prepare job for the hypervisor of this client.
-        '''
+        """
         eager_fields = kwargs.pop('_eager_fields', None)
 
         job_class = self._get_job_class()
@@ -156,7 +154,7 @@ class Client(PrimordialModel):
 
     def can_be_updated(self):
         db = pymongo.MongoClient(settings.MONGODB_URL).local
-        latest_versions = db.versions.find_one({}, sort=[("check_date",pymongo.DESCENDING)])
+        latest_versions = db.versions.find_one({}, sort=[("check_date", pymongo.DESCENDING)])
         if not latest_versions:
             return False
         return parse_version(self.version) < parse_version(latest_versions['version'])

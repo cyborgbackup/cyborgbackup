@@ -1,24 +1,24 @@
 # Python
 import logging
-import pymongo
 from collections import OrderedDict
 
+import pymongo
 # Django
 from django.conf import settings as dsettings
-
+from rest_framework import status
 # Django REST Framework
 from rest_framework.response import Response
-from rest_framework import status
 
+from cyborgbackup.main.models.catalogs import Catalog
+from cyborgbackup.main.models.jobs import Job
+from cyborgbackup.main.utils.callbacks import CallbackQueueDispatcher
 # CyBorgBackup
 from .generics import ListAPIView, RetrieveUpdateDestroyAPIView, ListCreateAPIView
 from ..serializers.catalogs import RestoreLaunchSerializer, CatalogSerializer, CatalogListSerializer
 from ..serializers.jobs import JobSerializer
-from cyborgbackup.main.models.catalogs import Catalog
-from cyborgbackup.main.models.jobs import Job
-from cyborgbackup.main.utils.callbacks import CallbackQueueDispatcher
 
 logger = logging.getLogger('cyborgbackups.api.views.catalogs')
+
 
 class RestoreLaunch(ListCreateAPIView):
     model = Job
@@ -31,6 +31,7 @@ class RestoreLaunch(ListCreateAPIView):
 
     def create(self, request, *args, **kwargs):
         result = None
+        new_job = None
         serializer = self.serializer_class(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

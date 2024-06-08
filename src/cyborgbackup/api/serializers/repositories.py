@@ -1,11 +1,12 @@
 # Python
 import logging
 
+from cyborgbackup.main.models.repositories import Repository
 # CyBorgBackup
 from .base import BaseSerializer
-from cyborgbackup.main.models.repositories import Repository
 
 logger = logging.getLogger('cyborgbackup.api.serializers.repositories')
+
 
 class RepositorySerializer(BaseSerializer):
     """Read-only serializer for activity stream."""
@@ -24,7 +25,6 @@ class RepositorySerializer(BaseSerializer):
 
 
 class RepositoryListSerializer(RepositorySerializer):
-
     class Meta:
         fields = ('*',)
 

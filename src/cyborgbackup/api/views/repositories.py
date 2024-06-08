@@ -1,10 +1,10 @@
 # Python
 import logging
 
+from cyborgbackup.main.models.repositories import Repository
 # CyBorgBackup
 from .generics import RetrieveUpdateDestroyAPIView, ListCreateAPIView
 from ..serializers.repositories import RepositorySerializer, RepositoryListSerializer
-from cyborgbackup.main.models.repositories import Repository
 
 logger = logging.getLogger('cyborgbackups.api.views.repositories')
 

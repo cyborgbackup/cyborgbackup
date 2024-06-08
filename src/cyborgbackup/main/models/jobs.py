@@ -12,11 +12,9 @@ from django.apps import apps
 # Django
 from django.conf import settings
 from django.db import models, connection
-from django.utils.translation import gettext_lazy as _
-from django.utils.timezone import now
 from django.utils.encoding import smart_str
-from django.apps import apps
-
+from django.utils.timezone import now
+from django.utils.translation import gettext_lazy as _
 from django_celery_results.models import TaskResult
 
 # CyBorgBackup
@@ -32,9 +30,6 @@ from cyborgbackup.main.utils.common import (
 )
 from cyborgbackup.main.utils.encryption import decrypt_field
 from cyborgbackup.main.utils.string import UriCleaner
-from cyborgbackup.main.consumers import emit_channel_notification
-from cyborgbackup.main.fields import JSONField
-
 
 __all__ = ['Job', 'StdoutMaxBytesExceeded']
 
@@ -100,22 +95,22 @@ class TaskManagerJobMixin(models.Model):
 
 
 class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
-    '''
+    """
     Concrete base class for job run by the task engine.
-    '''
+    """
 
     # status inherits from related jobs.
     # Thus, status must be able to be set to any status that a job status is settable to.
     JOB_STATUS_CHOICES = [
-        ('new', 'New'),                  # Job has been created, but not started.
-        ('pending', 'Pending'),          # Job has been queued, but is not yet running.
-        ('waiting', 'Waiting'),          # Job is waiting on an update/dependency.
-        ('running', 'Running'),          # Job is currently running.
-        ('successful', 'Successful'),    # Job completed successfully.
-        ('failed', 'Failed'),            # Job completed, but with failures.
-        ('error', 'Error'),              # The job was unable to run.
-        ('canceled', 'Canceled'),        # The job was canceled before completion.
-        ('starting', 'Starting'),        # The job is starting. Launched from Main queue but not yet on Job queue
+        ('new', 'New'),  # Job has been created, but not started.
+        ('pending', 'Pending'),  # Job has been queued, but is not yet running.
+        ('waiting', 'Waiting'),  # Job is waiting on an update/dependency.
+        ('running', 'Running'),  # Job is currently running.
+        ('successful', 'Successful'),  # Job completed successfully.
+        ('failed', 'Failed'),  # Job completed, but with failures.
+        ('error', 'Error'),  # The job was unable to run.
+        ('canceled', 'Canceled'),  # The job was canceled before completion.
+        ('starting', 'Starting'),  # The job is starting. Launched from Main queue but not yet on Job queue
     ]
 
     COMMON_STATUS_CHOICES = JOB_STATUS_CHOICES + [
@@ -123,7 +118,7 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
     ]
 
     DEPRECATED_STATUS_CHOICES = [
-        ('updating', 'Updating'),            # Same as running.
+        ('updating', 'Updating'),  # Same as running.
     ]
 
     ALL_STATUS_CHOICES = OrderedDict(DEPRECATED_STATUS_CHOICES).items()
@@ -364,6 +359,7 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
     def _update_parent_instance_no_save(self, parent_instance, update_fields=None):
         if update_fields is None:
             update_fields = []
+
         def parent_instance_set(key, val):
             setattr(parent_instance, key, val)
             if key not in update_fields:
@@ -458,10 +454,10 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
         return result
 
     def launch_prompts(self):
-        '''
+        """
         Return dictionary of prompts job was launched with
         returns None if unknown
-        '''
+        """
         JobLaunchConfig = self._meta.get_field('launch_config').related_model
         try:
             config = self.launch_config
@@ -470,10 +466,10 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
             return None
 
     def create_config_from_prompts(self, kwargs):
-        '''
+        """
         Create a launch configuration entry for this job, given prompts
         returns None if it can not be created
-        '''
+        """
         if self.job_template is None:
             return None
         JobLaunchConfig = self._meta.get_field('launch_config').related_model
@@ -517,9 +513,9 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
 
     @property
     def event_processing_finished(self):
-        '''
+        """
         Returns True / False, whether all events from job have been saved
-        '''
+        """
         if self.status in ACTIVE_STATES:
             return False  # tally of events is only available at end of run
         try:
@@ -677,9 +673,9 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
             return job
 
     def create_job(self, **kwargs):
-        '''
+        """
         Create a new job based on this job.
-        '''
+        """
         eager_fields = kwargs.pop('_eager_fields', None)
 
         job_class = self.__class__
@@ -710,11 +706,12 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
     @classmethod
     def _get_job_field_names(cls):
         return {'name', 'description', 'policy', 'client', 'repository', 'job_type', 'master_job'}
+
     def copy_job(self, limit=None):
-        '''
+        """
         Returns saved object, including related fields.
         Create a copy of this unified job for the purpose of relaunch
-        '''
+        """
         job_class = self.__class__
         parent_field_name = 'job'
         fields = job_class._get_job_field_names() | {parent_field_name}
@@ -738,9 +735,9 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
         return 1
 
     def websocket_emit_data(self):
-        '''
+        """
         Return extra data that should be included when submitting data to the browser over the websocket connection
-        '''
+        """
         websocket_data = dict(job_name=self.name)
         return websocket_data
 
@@ -811,16 +808,16 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
         app.autodiscover_tasks()
 
         with app.connection() as new_connection:
-            #runjob = app.tasks[task_class.name]
-            #async_result = runjob().apply_async(args, opts, connection=new_connection, **kwargs)
+            # runjob = app.tasks[task_class.name]
+            # async_result = runjob().apply_async(args, opts, connection=new_connection, **kwargs)
 
             async_result = task_class().apply_async(args, opts, connection=new_connection, **kwargs)
         return async_result
 
     def start(self, error_callback, success_callback, **kwargs):
-        '''
+        """
         Start the task running via Celery.
-        '''
+        """
         (res, opts) = self.pre_start(**kwargs)
         if res:
             self.start_celery_task(opts, error_callback, success_callback)

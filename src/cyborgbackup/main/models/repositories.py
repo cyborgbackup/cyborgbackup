@@ -70,9 +70,9 @@ class Repository(PrimordialModel):
         return Job
 
     def create_prepare_repository(self, **kwargs):
-        '''
+        """
         Create a new prepare job for this repository.
-        '''
+        """
         eager_fields = kwargs.pop('_eager_fields', None)
 
         job_class = self._get_job_class()

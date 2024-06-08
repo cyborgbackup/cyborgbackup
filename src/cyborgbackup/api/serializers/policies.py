@@ -4,15 +4,15 @@ import logging
 # Django REST Framework
 from rest_framework import serializers
 
-# CyBorgBackup
-from .base import BaseSerializer, EmptySerializer
 from cyborgbackup.main.models.policies import Policy
 from cyborgbackup.main.validators import vars_validate_or_raise
+# CyBorgBackup
+from .base import BaseSerializer, EmptySerializer
 
 logger = logging.getLogger('cyborgbackup.api.serializers.policies')
 
-class PolicySerializer(BaseSerializer):
 
+class PolicySerializer(BaseSerializer):
     class Meta:
         model = Policy
         fields = ('*', 'id', 'uuid', 'url', 'name', 'extra_vars',
@@ -41,7 +41,6 @@ class PolicySerializer(BaseSerializer):
 
 
 class PolicyListSerializer(PolicySerializer):
-
     class Meta:
         fields = ('*',)
 

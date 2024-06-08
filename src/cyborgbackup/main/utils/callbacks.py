@@ -5,7 +5,6 @@ import os
 from django.conf import settings
 # Kombu
 from kombu import Connection, Exchange, Producer
-from six.moves import xrange
 
 logger = logging.getLogger('cyborgbackup.main.utils.callbacks')
 
@@ -23,7 +22,7 @@ class CallbackQueueDispatcher(object):
         if not self.callback_connection or not self.connection_queue:
             return
         active_pid = os.getpid()
-        for retry_count in xrange(4):
+        for retry_count in range(4):
             try:
                 if not hasattr(self, 'connection_pid'):
                     self.connection_pid = active_pid

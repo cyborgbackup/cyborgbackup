@@ -1,16 +1,13 @@
 # Python
 import json
-import six
 
-# Django
-from django.utils.translation import gettext_lazy as _
-
-# jsonschema
-from jsonschema import Draft4Validator
 import jsonschema.exceptions
-
 # Django-JSONField
 from django.db.models import JSONField as upstream_JSONField
+# Django
+from django.utils.translation import gettext_lazy as _
+# jsonschema
+from jsonschema import Draft4Validator
 
 
 # Provide a (better) custom error message for enum jsonschema validation
@@ -35,6 +32,6 @@ class JSONField(upstream_JSONField):
     def from_db_value(self, value, expression, connection):
         if value in {'', None} and not self.null:
             return {}
-        if isinstance(value, six.string_types):
+        if isinstance(value, str):
             return json.loads(value)
         return value

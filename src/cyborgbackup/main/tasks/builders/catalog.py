@@ -11,6 +11,7 @@ from cyborgbackup.main.tasks.builders.helpers import build_env
 
 logger = logging.getLogger('cyborgbackup.main.tasks.builders.catalog')
 
+
 def _build_args_for_catalog(job, **kwargs):
     agent_users = User.objects.filter(is_agent=True)
     env = build_env(job, **kwargs)

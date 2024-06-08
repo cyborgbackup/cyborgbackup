@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('main', '0016_alter_catalog_created_by_alter_catalog_modified_by_and_more'),
     ]

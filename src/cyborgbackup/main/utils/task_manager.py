@@ -5,10 +5,10 @@ from contextlib import contextmanager
 from datetime import datetime, timedelta
 
 import pytz
-import six
 # Celery
 from celery import Celery
 from celery.app.control import Inspect
+# Celery
 # Django
 from django.conf import settings
 from django.core.cache import cache
@@ -24,15 +24,6 @@ from cyborgbackup.main.models.jobs import (
 )
 from cyborgbackup.main.models.repositories import Repository
 from cyborgbackup.main.utils.common import get_type_for_model, load_module_provider
-
-# Celery
-from celery import Celery
-from celery.app.control import Inspect
-
-from contextlib import contextmanager
-
-from django_pglocks import advisory_lock as django_pglocks_advisory_lock
-
 
 logger = logging.getLogger('cyborgbackup.main.scheduler')
 
@@ -90,7 +81,8 @@ class TaskManager:
         if not task.dependent_jobs_finished():
             return True
 
-        same_repo_jobs_count = Job.objects.filter(repository=task.policy.repository.pk, status__in=('starting', 'running',)).count()
+        same_repo_jobs_count = Job.objects.filter(repository=task.policy.repository.pk,
+                                                  status__in=('starting', 'running',)).count()
         same_client_jobs_count = Job.objects.filter(client=task.client.pk, status__in=('starting', 'running',)).count()
 
         logger.info('Found %d jobs with same repository that task %s.', same_repo_jobs_count, task.log_format)
@@ -123,7 +115,7 @@ class TaskManager:
         now = tz_now()
         jobs = Job.objects.filter((Q(status='running') |
                                    Q(status='waiting',
-                                   modified__lte=now - timedelta(seconds=60))))
+                                     modified__lte=now - timedelta(seconds=60))))
         for j in jobs:
             waiting_jobs.append(j)
         return execution_nodes, waiting_jobs
@@ -154,6 +146,7 @@ class TaskManager:
     '''
 
     def get_active_tasks(self):
+        max_concurrency_queues = []
         if not hasattr(settings, 'IGNORE_CELERY_INSPECTOR') or not getattr(settings, 'IGNORE_CELERY_INSPECTOR'):
             app = Celery('cyborgbackup')
             app.config_from_object('django.conf:settings')
@@ -187,7 +180,9 @@ class TaskManager:
 
         return active_task_queues, queues, concurrencies
 
-    def start_task(self, task, dependent_tasks=[]):
+    def start_task(self, task, dependent_tasks=None):
+        if dependent_tasks is None:
+            dependent_tasks = []
         from cyborgbackup.main.tasks.shared import handle_work_error, handle_work_success
 
         task_actual = {
@@ -366,9 +361,9 @@ class TaskManager:
     def process_dependencies(self, dependent_task, dependency_tasks):
         for task in dependency_tasks:
             if self.is_job_blocked(task):
-                logger.debug(six.text_type("Dependent {} is blocked from running").format(task.log_format))
+                logger.debug(str("Dependent {} is blocked from running").format(task.log_format))
                 continue
-            msg = six.text_type("Starting dependent {} in group {}")
+            msg = str("Starting dependent {} in group {}")
             logger.debug(msg.format(task.log_format, 'cyborgbackup'))
             self.graph['cyborgbackup']['graph'].add_job(task)
             tasks_to_fail = list(filter(lambda t: t != task, dependency_tasks))
@@ -381,12 +376,12 @@ class TaskManager:
         for task in pending_tasks:
             self.process_dependencies(task, self.generate_dependencies(task))
             if self.is_job_blocked(task):
-                logger.debug(six.text_type("{} is blocked from running").format(task.log_format))
+                logger.debug(str("{} is blocked from running").format(task.log_format))
                 continue
 
             self.graph['cyborgbackup']['graph'].add_job(task)
             self.start_task(task, [])
-            i+=1
+            i += 1
             if (concurrencies[1] + i) == concurrencies[0]:
                 break
 
@@ -394,11 +389,11 @@ class TaskManager:
                                    isolated=False):
         for task in node_jobs:
             if (
-                task.celery_task_id not in active_tasks
-                and (
+                    task.celery_task_id not in active_tasks
+                    and (
                     not hasattr(settings, 'IGNORE_CELERY_INSPECTOR')
                     or not getattr(settings, 'IGNORE_CELERY_INSPECTOR')
-                )
+            )
             ):
                 if task.modified > celery_task_start_time:
                     continue
@@ -421,9 +416,9 @@ class TaskManager:
                     'Isolated ' if isolated else '', task.log_format))
 
     def cleanup_inconsistent_celery_tasks(self):
-        '''
+        """
         Rectify cyborgbackup db <-> celery inconsistent view of jobs state
-        '''
+        """
         last_cleanup = cache.get('last_celery_task_cleanup') or datetime.min.replace(tzinfo=pytz.UTC)
         if (tz_now() - last_cleanup).seconds < 60 * 3:
             return
