@@ -1,17 +1,22 @@
 # Python
-import threading
 import re
+import threading
 
+from django.contrib.auth.models import User  # noqa
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 # Django
 from django.db import models
+<<<<<<< Updated upstream
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
+=======
+>>>>>>> Stashed changes
 from django.utils.translation import gettext_lazy as _
 
 # CyBorgBackup
 from cyborgbackup.api.versioning import reverse
-from django.contrib.auth.models import User # noqa
-from cyborgbackup.main.models.base import * # noqa
+from cyborgbackup.main.models.base import *  # noqa
 
 __all__ = [
     'Role',
@@ -57,7 +62,6 @@ role_descriptions = {
     'use_role': _('Can use the %s in a job template'),
 }
 
-
 tls = threading.local()  # thread local storage
 
 
@@ -67,6 +71,7 @@ def check_singleton(func):
     to a `visible_roles` method is in either of our singleton roles (Admin, Auditor)
     and if so, returns their full list of roles without filtering.
     '''
+
     def wrapper(*args, **kwargs):
         sys_admin = Role.singleton(ROLE_SINGLETON_SYSTEM_ADMINISTRATOR)
         sys_audit = Role.singleton(ROLE_SINGLETON_SYSTEM_AUDITOR)
@@ -76,6 +81,7 @@ def check_singleton(func):
                 return args[1]
             return Role.objects.all()
         return func(*args, **kwargs)
+
     return wrapper
 
 
@@ -97,7 +103,7 @@ class Role(models.Model):
     parents = models.ManyToManyField('Role', related_name='children')
     implicit_parents = models.TextField(null=False, default='[]')
     members = models.ManyToManyField('auth.User', related_name='roles')
-    content_type = models.ForeignKey(ContentType, null=True, default=None)
+    content_type = models.ForeignKey(ContentType, null=True, default=None, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField(null=True, default=None)
     content_object = GenericForeignKey('content_type', 'object_id')
 
@@ -149,7 +155,7 @@ class Role(models.Model):
                 value = description.get('default')
 
         if '%s' in value and content_type:
-                    value = value % model_name
+            value = value % model_name
 
         return value
 

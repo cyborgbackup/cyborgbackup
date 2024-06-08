@@ -10,9 +10,9 @@ The resulting data structure contains:
     }
 
 The `count` field indicates the total number of {{ model_verbose_name_plural }}
-found for the given query.  The `next` and `previous` fields provides links to
-additional results if there are more than will fit on a single page.  The
-`results` list contains zero or more {{ model_verbose_name }} records.  
+found for the given query. The `next` and `previous` fields provides links to
+additional results if there are more than will fit on a single page. The
+`results` list contains zero or more {{ model_verbose_name }} records.
 
 ## Results
 
@@ -39,7 +39,7 @@ comma `,`:
 ## Pagination
 
 Use the `page_size` query string parameter to change the number of results
-returned for each request.  Use the `page` query string parameter to retrieve
+returned for each request. Use the `page` query string parameter to retrieve
 a particular page of results.
 
     ?page_size=100&page=2
@@ -65,8 +65,8 @@ All search terms with the same key will be ORed together.
 ## Filtering
 
 Any additional query string parameters may be used to filter the list of
-results returned to those matching a given value.  Only fields and relations
-that exist in the database may be used for filtering.  Any special characters
+results returned to those matching a given value. Only fields and relations
+that exist in the database may be used for filtering. Any special characters
 in the specified value should be url-encoded. For example:
 
     ?field=value%20xyz
@@ -82,7 +82,7 @@ To exclude results matching certain criteria, prefix the field parameter with
     ?not__field=value
 
 By default, all query string filters are AND'ed together, so
-only the results matching *all* filters will be returned.  To combine results
+only the results matching *all* filters will be returned. To combine results
 matching *any* one of multiple criteria, prefix each query string parameter
 with `or__`:
 
@@ -91,7 +91,7 @@ with `or__`:
 
 The default AND filtering applies all filters
 simultaneously to each related object being filtered across database
-relationships.  The chain filter instead applies filters separately for each
+relationships. The chain filter instead applies filters separately for each
 related object. To use, prefix the query string parameter with `chain__`:
 
     ?chain__related__field=value&chain__related__field2=othervalue
@@ -99,7 +99,7 @@ related object. To use, prefix the query string parameter with `chain__`:
 
 If the first query above were written as
 `?related__field=value&related__field2=othervalue`, it would return only the
-primary objects where the *same* related object satisfied both conditions.  As
+primary objects where the *same* related object satisfied both conditions. As
 written using the chain filter, it would return the intersection of primary
 objects matching each condition.
 

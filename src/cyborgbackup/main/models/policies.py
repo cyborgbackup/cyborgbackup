@@ -1,20 +1,25 @@
 import logging
 
+import pytz
+import tzcron
+from dateutil.tz import datetime_exists
 from django.db import models
 from django.db.models.query import QuerySet
 from django.utils.translation import gettext_lazy as _
+<<<<<<< Updated upstream
 
 import tzcron
 import pytz
 from dateutil.tz import datetime_exists
+=======
+>>>>>>> Stashed changes
 
 from cyborgbackup.api.versioning import reverse
-from cyborgbackup.main.utils.common import copy_model_by_class
+from cyborgbackup.celery import app
+from cyborgbackup.main.consumers import emit_channel_notification
 from cyborgbackup.main.models.base import PrimordialModel
 from cyborgbackup.main.models.settings import Setting
-from cyborgbackup.main.consumers import emit_channel_notification
-
-from cyborgbackup.celery import app
+from cyborgbackup.main.utils.common import copy_model_by_class
 
 logger = logging.getLogger('cyborgbackup.models.policy')
 
@@ -41,7 +46,6 @@ class PolicyQuerySet(PolicyFilterMethods, QuerySet):
 
 
 class PolicyManager(PolicyFilterMethods, models.Manager):
-
     use_for_related_objects = True
 
     def get_queryset(self):
@@ -50,15 +54,15 @@ class PolicyManager(PolicyFilterMethods, models.Manager):
 
 class Policy(PrimordialModel):
     POLICY_TYPE_CHOICES = [
-        ('rootfs', 'Root FileSystem'),      # Backup all / filesystem
-        ('vm', 'Virtual Machine'),          # Backup Virtual Machine disk using snapshot
-        ('mysql', 'MySQL'),                 # Backup MySQL Database
-        ('postgresql', 'PostgreSQL'),       # Backup PostgreSQL
-        ('piped', 'Piped Backup'),          # Backup using pipe program
-        ('config', 'Only /etc'),            # Backup only /etc
-        ('mail', 'Only mail directory'),    # Backup only mail directory
-        ('folders', 'Specified folders'),   # Backup only specified folders
-        ('proxmox', 'Proxmox')              # Backup only specified folders
+        ('rootfs', 'Root FileSystem'),  # Backup all / filesystem
+        ('vm', 'Virtual Machine'),  # Backup Virtual Machine disk using snapshot
+        ('mysql', 'MySQL'),  # Backup MySQL Database
+        ('postgresql', 'PostgreSQL'),  # Backup PostgreSQL
+        ('piped', 'Piped Backup'),  # Backup using pipe program
+        ('config', 'Only /etc'),  # Backup only /etc
+        ('mail', 'Only mail directory'),  # Backup only mail directory
+        ('folders', 'Specified folders'),  # Backup only specified folders
+        ('proxmox', 'Proxmox')  # Backup only specified folders
     ]
 
     objects = PolicyManager()
@@ -185,11 +189,11 @@ class Policy(PrimordialModel):
         super(Policy, self).save(*args, **kwargs)
 
     @classmethod
-    def get_cache_key(self, key):
+    def get_cache_key(cls, key):
         return key
 
     @classmethod
-    def get_cache_id_key(self, key):
+    def get_cache_id_key(cls, key):
         return '{}_ID'.format(key)
 
     @classmethod
@@ -206,7 +210,7 @@ class Policy(PrimordialModel):
         fields = ('extra_vars', 'job_type')
         unallowed_fields = set(kwargs.keys()) - set(fields)
         if unallowed_fields:
-            logger.warn('Fields {} are not allowed as overrides.'.format(unallowed_fields))
+            logger.warning('Fields {} are not allowed as overrides.'.format(unallowed_fields))
             map(kwargs.pop, unallowed_fields)
 
         try:
@@ -234,6 +238,8 @@ class Policy(PrimordialModel):
 
         jobs = []
         previous_job = None
+        catalog_job = None
+        prune_job = None
         for client in self.clients.filter(enabled=True):
             job = copy_model_by_class(self, job_class, fields, kwargs)
             job.policy_id = self.pk
@@ -305,10 +311,10 @@ class Policy(PrimordialModel):
 
     def create_restore_job(self, source_job, **kwargs):
         job_class = self._get_job_class()
-        fields = ('extra_vars', )
+        fields = ('extra_vars',)
         unallowed_fields = set(kwargs.keys()) - set(fields)
         if unallowed_fields:
-            logger.warn('Fields {} are not allowed as overrides.'.format(unallowed_fields))
+            logger.warning('Fields {} are not allowed as overrides.'.format(unallowed_fields))
             map(kwargs.pop, unallowed_fields)
 
         job = copy_model_by_class(self, job_class, fields, kwargs)

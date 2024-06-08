@@ -1,12 +1,11 @@
 import datetime
 import os
 import re
-import stat
 import shutil
-import pymongo
+import stat
 import tempfile
-from io import StringIO
 from collections import OrderedDict
+<<<<<<< Updated upstream
 from django.conf import settings
 from django.utils import timezone
 from distutils.version import LooseVersion as Version
@@ -14,13 +13,23 @@ from cyborgbackup.main.expect import run
 from cyborgbackup.main.models.settings import Setting
 from cyborgbackup.main.utils.common import get_ssh_version
 from cyborgbackup.main.utils.encryption import decrypt_field
+=======
+from io import StringIO
+>>>>>>> Stashed changes
 
+import pymongo
+from distutils.version import LooseVersion as Version
+from django.conf import settings
 # Django
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
+from cyborgbackup.main.expect import run
 # CyBorgBackup
 from cyborgbackup.main.models import Job, Repository
+from cyborgbackup.main.models.settings import Setting
+from cyborgbackup.main.utils.common import get_ssh_version
+from cyborgbackup.main.utils.encryption import decrypt_field
 
 db = pymongo.MongoClient(settings.MONGODB_URL).local
 
@@ -43,7 +52,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('--dry-run', dest='dry_run', action='store_true',
                             default=False, help='Dry run mode (show items that would '
-                            'be removed)')
+                                                'be removed)')
         parser.add_argument('--jobs', dest='only_jobs', action='store_true',
                             default=True,
                             help='Remove jobs')
@@ -51,8 +60,8 @@ class Command(BaseCommand):
     def get_password_prompts(self, **kwargs):
         d = OrderedDict()
         for k, v in kwargs['passwords'].items():
-            d[re.compile(r'Enter passphrase for .*'+k+r':\s*?$', re.M)] = k
-            d[re.compile(r'Enter passphrase for .*'+k, re.M)] = k
+            d[re.compile(r'Enter passphrase for .*' + k + r':\s*?$', re.M)] = k
+            d[re.compile(r'Enter passphrase for .*' + k, re.M)] = k
         d[re.compile(r'Bad passphrase, try again for .*:\s*?$', re.M)] = ''
         return d
 
@@ -143,12 +152,18 @@ class Command(BaseCommand):
         return private_data_files
 
     def launch_command(self, cmd, instance, key, path, **kwargs):
+<<<<<<< Updated upstream
         cwd = '/var/tmp/cyborgbackup'
         env = {}
         env['BORG_PASSPHRASE'] = key
         env['BORG_REPO'] = path
         env['BORG_RELOCATED_REPO_ACCESS_IS_OK'] = 'yes'
         env['BORG_RSH'] = 'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+=======
+        cwd = '/tmp/'
+        env = {'BORG_PASSPHRASE': key, 'BORG_REPO': path, 'BORG_RELOCATED_REPO_ACCESS_IS_OK': 'yes',
+               'BORG_RSH': 'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'}
+>>>>>>> Stashed changes
         args = cmd
         safe_args = args
 
@@ -250,6 +265,6 @@ class Command(BaseCommand):
                 skipped, deleted = getattr(self, 'cleanup_%s' % m)()
                 if self.dry_run:
                     print('{}: {} would be deleted, {} would be skipped.'.format(m.replace('_', ' '),
-                                    deleted, skipped))
+                                                                                 deleted, skipped))
                 else:
                     print('{}: {} deleted, {} skipped.'.format(m.replace('_', ' '), deleted, skipped))

@@ -1,12 +1,12 @@
-import json
-import re
 import io
+import json
 import logging
 import os
-import traceback
-import tempfile
-import stat
+import re
 import shutil
+import stat
+import tempfile
+
 try:
     import psutil
 except Exception:
@@ -93,7 +93,7 @@ class Querier:
         finalOutput = []
 
         if self.client_user != 'root' and sudo:
-            args = ['sudo', '-E']+args
+            args = ['sudo', '-E'] + args
         args += cmd
 
         kwargs = {}
@@ -114,7 +114,6 @@ class Querier:
                 set = Setting.objects.get(key=setting.key.replace('ssh_key', 'ssh_password'))
                 passwords['credential_{}'.format(setting.key)] = decrypt_field(set, 'value')
             kwargs['passwords'] = passwords
-
 
             private_data = {'credentials': {}}
             for sets in Setting.objects.filter(key__contains='ssh_key'):
@@ -148,7 +147,8 @@ class Querier:
             new_args = []
             new_args += ['ssh', '-Ao', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
             new_args += ['{}@{}'.format(self.client_user, self.client.hostname)]
-            new_args += ['\"echo \'####CYBMOD#####\';', ' '.join(args), '; exitcode=\$?; echo \'####CYBMOD#####\'; exit \$exitcode\"']
+            new_args += ['\"echo \'####CYBMOD#####\';', ' '.join(args),
+                         '; exitcode=\$?; echo \'####CYBMOD#####\'; exit \$exitcode\"']
             args = new_args
 
             # If there is an SSH key path defined, wrap args with ssh-agent.

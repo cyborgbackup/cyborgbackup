@@ -1,32 +1,37 @@
 # Python
 import json
-import yaml
 import logging
 import os
 import re
 import subprocess
-import six
-from itertools import chain
 from functools import reduce
 from io import StringIO
+from itertools import chain
 
+import six
+import yaml
 # Django
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import DatabaseError
+<<<<<<< Updated upstream
 from django.utils.translation import gettext_lazy as _
 from django.db.models.fields.related import ForeignObjectRel, ManyToManyField
 from django.db.models.query import QuerySet
 from django.db.models import Q
 
+=======
+from django.db import connection
+>>>>>>> Stashed changes
 # Django database
 from django.db.migrations.loader import MigrationLoader
-from django.db import connection
-
+from django.db.models import Q
+from django.db.models.fields.related import ForeignObjectRel, ManyToManyField
+from django.db.models.query import QuerySet
+from django.utils.encoding import smart_str
+from django.utils.translation import gettext_lazy as _
 # Django REST Framework
 from rest_framework.exceptions import ParseError, PermissionDenied
-from django.utils.encoding import smart_str
-
 
 logger = logging.getLogger('cyborgbackup.main.utils')
 
@@ -35,11 +40,11 @@ __all__ = ['get_object_or_400', 'get_object_or_403', 'to_python_boolean', 'get_m
            'timestamp_apiformat', 'getattrd', 'has_model_field_prefetched', 'get_all_field_names',
            'prefetch_page_capabilities', 'copy_model_by_class', 'copy_m2m_relationships',
            'get_cyborgbackup_version', 'get_search_fields', 'could_be_script',
-           'model_instance_diff', 'model_to_dict', 'OutputEventFilter', 'get_ssh_version']
+           'model_instance_diff', 'model_to_dict', 'OutputEventFilter', 'get_ssh_version',
+           'parse_yaml_or_json', 'load_module_provider']
 
 
 def get_module_provider():
-    import importlib
     import importlib.util
     import pkgutil
     importlib.invalidate_caches()
@@ -68,7 +73,6 @@ def get_module_provider():
 
 
 def load_module_provider(name):
-    import importlib
     import importlib.util
     import pkgutil
     importlib.invalidate_caches()
@@ -100,12 +104,12 @@ def model_instance_diff(old, new, serializer_mapping=None):
     """
     from django.db.models import Model
 
-    if not(old is None or isinstance(old, Model)):
+    if not (old is None or isinstance(old, Model)):
         raise TypeError('The supplied old instance is not a valid model instance.')
-    if not(new is None or isinstance(new, Model)):
+    if not (new is None or isinstance(new, Model)):
         raise TypeError('The supplied new instance is not a valid model instance.')
-    old_password_fields = set(getattr(type(old), 'PASSWORD_FIELDS', [])) | set(['password'])
-    new_password_fields = set(getattr(type(new), 'PASSWORD_FIELDS', [])) | set(['password'])
+    old_password_fields = set(getattr(type(old), 'PASSWORD_FIELDS', [])) | {'password'}
+    new_password_fields = set(getattr(type(new), 'PASSWORD_FIELDS', [])) | {'password'}
 
     diff = {}
 
@@ -127,7 +131,6 @@ def model_instance_diff(old, new, serializer_mapping=None):
 
 
 def get_allowed_fields(obj, serializer_mapping):
-
     if serializer_mapping is not None and obj.__class__ in serializer_mapping:
         serializer_actual = serializer_mapping[obj.__class__]()
         allowed_fields = [x for x in serializer_actual.fields if not serializer_actual.fields[x].read_only] + ['id']
@@ -147,7 +150,7 @@ def _convert_model_field_for_display(obj, field_name, password_fields=None):
     except ObjectDoesNotExist:
         return '<missing {}>-{}'.format(obj._meta.verbose_name, getattr(obj, '{}_id'.format(field_name)))
     if password_fields is None:
-        password_fields = set(getattr(type(obj), 'PASSWORD_FIELDS', [])) | set(['password'])
+        password_fields = set(getattr(type(obj), 'PASSWORD_FIELDS', [])) | {'password'}
     if field_name in password_fields or (
             isinstance(field_val, six.string_types) and
             field_val.startswith('$encrypted$')
@@ -171,7 +174,7 @@ def model_to_dict(obj, serializer_mapping=None):
     serializer_mapping are used to determine read-only fields.
     When provided, read-only fields will not be included in the resulting dictionary
     """
-    password_fields = set(getattr(type(obj), 'PASSWORD_FIELDS', [])) | set(['password'])
+    password_fields = set(getattr(type(obj), 'PASSWORD_FIELDS', [])) | {'password'}
     attr_d = {}
 
     allowed_fields = get_allowed_fields(obj, serializer_mapping)
@@ -304,7 +307,7 @@ def parse_yaml_or_json(vars_str, silent_failure=True):
             raise ParseError(_(
                 'Cannot parse as JSON (error: {json_error}) or '
                 'YAML (error: {yaml_error}).').format(
-                    json_error=str(json_err), yaml_error=str(yaml_err)))
+                json_error=str(json_err), yaml_error=str(yaml_err)))
     return vars_dict
 
 
@@ -314,8 +317,8 @@ def get_cyborgbackup_version():
     '''
     from cyborgbackup import __version__
     try:
-        import pkg_resources
-        return pkg_resources.require('cyborgbackup')[0].version
+        from importlib.metadata import version
+        return version('cyborgbackup')
     except Exception:
         return __version__
 
@@ -402,7 +405,7 @@ def getattrd(obj, name, default=NoDefaultProvided):
     """
     Same as getattr(), but allows dot notation lookup
     Discussed in:
-    http://stackoverflow.com/questions/11975781
+    https://stackoverflow.com/questions/11975781
     """
 
     try:
@@ -459,6 +462,7 @@ def prefetch_page_capabilities(model, page, prefetch_list, user):
 
         # Build the query for accessible_objects according the user & role(s)
         filter_args = []
+        role_type = None
         for role_path in paths:
             if '.' in role_path:
                 res_path = '__'.join(role_path.split('.')[:-1])
@@ -571,7 +575,7 @@ def could_be_script(scripts_path, dir_path, filename):
         return None
     if not matchedLib and not matchedFunc:
         return None
-    return os.path.relpath(script_path, smart_str(scripts_path))
+    return os.path.relpath(str(script_path), str(scripts_path))
 
 
 class OutputEventFilter(object):
@@ -611,6 +615,7 @@ class OutputEventFilter(object):
 
     def _emit_event(self, buffered_stdout, next_event_data=None):
         next_event_data = next_event_data or {}
+        event_data = {}
         if self._current_event_data:
             event_data = self._current_event_data
             stdout_chunks = [buffered_stdout]

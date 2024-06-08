@@ -1,22 +1,21 @@
 #! /usr/bin/env python
 
-import io
-import codecs
-import base64
 import argparse
+import base64
+import codecs
 import collections
-import logging
+import io
 import json
+import logging
 import os
-import stat
 import signal
+import stat
 import sys
 import threading
 import time
 
 import pexpect
 import psutil
-
 
 logger = logging.getLogger('cyborgbackup.main.utils.expect')
 
@@ -53,19 +52,19 @@ def wrap_args_with_ssh_agent(args, ssh_key_path, ssh_auth_sock=None, silence_ssh
 
 
 def open_fifo_write(path, data):
-    '''open_fifo_write opens the fifo named pipe in a new thread.
+    """open_fifo_write opens the fifo named pipe in a new thread.
     This blocks the thread until an external process (such as ssh-agent)
     reads data from the pipe.
-    '''
+    """
     os.mkfifo(path, 0o600)
     threading.Thread(target=lambda p, d: open(p, 'w').write(d), args=(path, data)).start()
 
 
-def run_pexpect(args, cwd, env, logfile,
-                cancelled_callback=None, expect_passwords={},
-                extra_update_fields=None, idle_timeout=None, job_timeout=0,
+def run_pexpect(args, cwd, env, logfile, expect_passwords,
+                cancelled_callback=None, extra_update_fields=None,
+                idle_timeout=None, job_timeout=0,
                 pexpect_timeout=5, proot_cmd='bwrap'):
-    '''
+    """
     Run the given command using pexpect to capture output and provide
     passwords when requested.
 
@@ -95,7 +94,7 @@ def run_pexpect(args, cwd, env, logfile,
     :param proot_cmd            the command used to isolate processes, `bwrap`
 
     Returns a tuple (status, return_code) i.e., `('successful', 0)`
-    '''
+    """
     expect_passwords[pexpect.TIMEOUT] = None
     expect_passwords[pexpect.EOF] = None
 
@@ -127,8 +126,8 @@ def run_pexpect(args, cwd, env, logfile,
     job_start = time.time()
     while child.isalive():
         result_id = child.expect(password_patterns, timeout=pexpect_timeout, searchwindowsize=200)
-        password = password_values[result_id]
-        if password is not None:
+        password: str | None = password_values[result_id]
+        if password:
             child.sendline(password)
             last_stdout_update = time.time()
         if cancelled_callback:
@@ -161,7 +160,7 @@ def run_pexpect(args, cwd, env, logfile,
 
 
 def handle_termination(pid, args, proot_cmd, is_cancel=True):
-    '''
+    """
     Terminate a subprocess spawned by `pexpect`.
 
     :param pid:       the process id of the running the job.
@@ -169,9 +168,9 @@ def handle_termination(pid, args, proot_cmd, is_cancel=True):
     :param proot_cmd  the command used to isolate processes i.e., `bwrap`
     :param is_cancel: flag showing whether this termination is caused by
                       instance's cancel_flag.
-    '''
+    """
     try:
-        if proot_cmd in ' '.join(args.decode('utf-8')):
+        if proot_cmd in ' '.join(args):
             if not psutil:
                 os.kill(pid, signal.SIGKILL)
             else:
@@ -188,7 +187,7 @@ def handle_termination(pid, args, proot_cmd, is_cancel=True):
         time.sleep(3)
     except OSError:
         keyword = 'cancel' if is_cancel else 'timeout'
-        logger.warn("Attempted to %s already finished job, ignoring" % keyword)
+        logger.warning("Attempted to %s already finished job, ignoring" % keyword)
 
 
 def __run__(private_data_dir):
@@ -210,8 +209,8 @@ def __run__(private_data_dir):
         stdout_handle
     )
     for filename, data in [
-            ('status', status),
-            ('rc', rc),
+        ('status', status),
+        ('rc', rc),
     ]:
         artifact_path = os.path.join(private_data_dir, 'artifacts', filename)
         os.mknod(artifact_path, stat.S_IFREG | stat.S_IRUSR | stat.S_IWUSR)
@@ -221,6 +220,7 @@ def __run__(private_data_dir):
 
 if __name__ == '__main__':
     import cyborgbackup
+
     __version__ = cyborgbackup.__version__
     parser = argparse.ArgumentParser(description='manage a daemonized task')
     parser.add_argument('--version', action='version', version=__version__ + '-isolated')
@@ -241,6 +241,7 @@ if __name__ == '__main__':
 
         import daemon
         from daemon.pidfile import TimeoutPIDLockFile
+
         context = daemon.DaemonContext(
             pidfile=TimeoutPIDLockFile(pidfile),
             stderr=stderr

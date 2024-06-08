@@ -1,4 +1,5 @@
 from django.conf.urls import include
+<<<<<<< Updated upstream
 from django.urls import re_path, path
 from rest_framework_simplejwt import views as jwt_views
 
@@ -16,6 +17,57 @@ from .views.settings import SettingList, SettingGetPublicSsh, SettingDetail, Set
 from .views.jobs import JobStart, JobCancel, JobRelaunch, JobJobEventsList, JobStdout, JobList, JobEventDetail, \
     JobEventList, JobDetail
 from .views.catalogs import CatalogList, CatalogDetail, MongoCatalog, RestoreLaunch
+=======
+from django.urls import re_path
+from rest_framework_simplejwt import views as jwt_views
+
+from cyborgbackup.api.generics import (
+    LoggedLoginView,
+    LoggedLogoutView,
+)
+from cyborgbackup.api.swagger import SwaggerSchemaView
+from cyborgbackup.api.views import (
+    UserList,
+    UserDetail,
+    ClientList,
+    ClientDetail,
+    ScheduleList,
+    ScheduleDetail,
+    RepositoryList,
+    RepositoryDetail,
+    CatalogList,
+    CatalogDetail,
+    MongoCatalog,
+    PolicyList,
+    PolicyDetail,
+    PolicyLaunch,
+    PolicyCalendar,
+    PolicyModule,
+    PolicyVMModule,
+    Stats,
+    JobEventList,
+    JobEventDetail,
+    JobList,
+    JobDetail,
+    JobStart,
+    JobCancel,
+    JobRelaunch,
+    JobJobEventsList,
+    JobStdout,
+    SettingList,
+    SettingGetPublicSsh,
+    SettingGenerateSsh,
+    SettingDetail,
+    ApiRootView,
+    ApiV1RootView,
+    ApiV1PingView,
+    ApiV1ConfigView,
+    AuthView,
+    UserMeList,
+    CyborgTokenObtainPairView,
+    RestoreLaunch
+)
+>>>>>>> Stashed changes
 
 user_urls = [
     re_path(r'^$', UserList.as_view(), name='user_list'),
@@ -87,6 +139,10 @@ v1_urls = [
     re_path(r'^$', ApiV1RootView.as_view(), name='api_v1_root_view'),
     re_path(r'^ping/$', ApiV1PingView.as_view(), name='api_v1_ping_view'),
     re_path(r'^config/$', ApiV1ConfigView.as_view(), name='api_v1_config_view'),
+<<<<<<< Updated upstream
+=======
+    re_path(r'^auth/$', AuthView.as_view(), name="auth"),
+>>>>>>> Stashed changes
     re_path(r'^me/$', UserMeList.as_view(), name='user_me_list'),
     re_path(r'^users/', include(user_urls)),
     re_path(r'^jobs/', include(job_urls)),
@@ -104,7 +160,11 @@ v1_urls = [
 
 urlpatterns = [
     re_path(r'^$', ApiRootView.as_view(), name='api_root_view'),
+<<<<<<< Updated upstream
     re_path(r'^v1/', include(v1_urls)),
+=======
+    re_path(r'^(?P<version>(v1))/', include(v1_urls)),
+>>>>>>> Stashed changes
     re_path(r'^token/obtain/$', CyborgTokenObtainPairView.as_view(), name='token_create'),  # override sjwt stock token
     re_path(r'^token/refresh/$', jwt_views.TokenRefreshView.as_view(), name='token_refresh'),
     re_path(r'^password_reset/', include('django_rest_passwordreset.urls', namespace='password_reset')),
@@ -114,5 +174,10 @@ urlpatterns = [
     ), name='login'),
     re_path(r'^logout/$', LoggedLogoutView.as_view(
         next_page='/api/', redirect_field_name='next'
+<<<<<<< Updated upstream
     ), name='logout')
+=======
+    ), name='logout'),
+    re_path(r'^swagger/$', SwaggerSchemaView.as_view(), name='swagger_view'),
+>>>>>>> Stashed changes
 ]

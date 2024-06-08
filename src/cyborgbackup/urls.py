@@ -13,11 +13,17 @@ Including another URLconf
     1. Import the include() function: from django.conf.urls import url, include
     2. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))
 """
+<<<<<<< Updated upstream
 from django.contrib import admin
 from django.conf import settings
 from django.urls import include, re_path, path
 
 from cyborgbackup.api.swagger import CyBorgBackupSchemaView
+=======
+from django.conf import settings
+from django.contrib import admin
+from django.urls import include, path, re_path
+>>>>>>> Stashed changes
 
 app_name = 'cyborgbackup'
 urlpatterns = [
@@ -26,14 +32,27 @@ urlpatterns = [
         'cyborgbackup.api.urls',
         'cyborgbackup'
     ), namespace='api')),
+<<<<<<< Updated upstream
     path('doc/swagger<format>', CyBorgBackupSchemaView.without_ui(cache_timeout=0), name='schema_json'),
     path('doc/swagger/', CyBorgBackupSchemaView.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     path('doc/redoc/', CyBorgBackupSchemaView.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
+=======
+>>>>>>> Stashed changes
     re_path(r'', include('cyborgbackup.ui.urls', namespace='ui')),
 ]
 
 if settings.DEBUG:
     import debug_toolbar
+
     urlpatterns = [
+<<<<<<< Updated upstream
         re_path(r'^__debug__/', include(debug_toolbar.urls)),
     ] + urlpatterns
+=======
+                      path('__debug__/', include(debug_toolbar.urls)),
+
+                      # For django versions before 2.0:
+                      # url(r'^__debug__/', include(debug_toolbar.urls)),
+
+                  ] + urlpatterns
+>>>>>>> Stashed changes

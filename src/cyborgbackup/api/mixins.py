@@ -20,6 +20,7 @@ class LoggingMethodMixin:
         return {}
 
     def log(self, operation, instance):
+        action_message = ''
         if instance.__class__.__name__ != 'JobEvent':
             if operation == ADDITION:
                 action_message = _('Created')

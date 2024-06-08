@@ -13,14 +13,13 @@ __all__ = ['Setting']
 
 
 class Setting(CreatedModifiedModel):
-
     SETTING_TYPE_CHOICES = [
-        ('boolean', 'Boolean'),            # Job was started manually by a user.
-        ('integer', 'Integer'),        # Job was started via relaunch.
-        ('string', 'String'),        # Job was started via host callback.
-        ('privatekey', 'Scheduled'),      # Job was started from a schedule.
-        ('password', 'Dependency'),    # Job was started as a dependency of another job.
-        ('workflow', 'Workflow'),        # Job was started from a workflow job.
+        ('boolean', 'Boolean'),  # Job was started manually by a user.
+        ('integer', 'Integer'),  # Job was started via relaunch.
+        ('string', 'String'),  # Job was started via host callback.
+        ('privatekey', 'Scheduled'),  # Job was started from a schedule.
+        ('password', 'Dependency'),  # Job was started as a dependency of another job.
+        ('workflow', 'Workflow'),  # Job was started from a workflow job.
     ]
 
     key = models.CharField(
@@ -84,16 +83,16 @@ class Setting(CreatedModifiedModel):
         super(Setting, self).save(*args, **kwargs)
 
     @classmethod
-    def get_cache_key(self, key):
+    def get_cache_key(cls, key):
         return key
 
     @classmethod
-    def get_cache_id_key(self, key):
+    def get_cache_id_key(cls, key):
         return '{}_ID'.format(key)
 
     @classmethod
-    def get_value(self, name):
-        objs = self.objects.filter(key=name)
+    def get_value(cls, name):
+        objs = cls.objects.filter(key=name)
         if len(objs) == 1:
             setting = objs[0]
             return decrypt_field(setting, 'value')

@@ -18,7 +18,8 @@
       "deduplicated_size": 0,
       "latest_prepare": null
     }
-  },{
+  },
+  {
     "model": "main.schedule",
     "pk": 1,
     "fields": {
@@ -31,7 +32,8 @@
       "crontab": "0 5 * * MON *",
       "enabled": false
     }
-  },{
+  },
+  {
     "model": "main.client",
     "pk": 1,
     "fields": {
@@ -49,7 +51,8 @@
       "hypervisor_name": "",
       "latest_prepare": null
     }
-  },{
+  },
+  {
     "model": "main.user",
     "pk": 1,
     "fields": {
@@ -69,7 +72,8 @@
       "notify_backup_weekly": false,
       "notify_backup_monthly": false
     }
-  },{
+  },
+  {
     "model": "main.policy",
     "pk": 1,
     "fields": {

@@ -1,5 +1,4 @@
 # Python
-from io import StringIO
 import json
 import logging
 import os
@@ -7,19 +6,30 @@ import re
 import subprocess
 import tempfile
 from collections import OrderedDict
+from io import StringIO
 
+from django.apps import apps
 # Django
 from django.conf import settings
 from django.db import models, connection
+<<<<<<< Updated upstream
 from django.utils.translation import gettext_lazy as _
 from django.utils.timezone import now
 from django.utils.encoding import smart_str
 from django.apps import apps
 
+=======
+from django.utils.encoding import smart_bytes
+from django.utils.timezone import now
+from django.utils.translation import gettext_lazy as _
+>>>>>>> Stashed changes
 from django_celery_results.models import TaskResult
 
 # CyBorgBackup
 from cyborgbackup.api.versioning import reverse
+from cyborgbackup.main.constants import ACTIVE_STATES, CAN_CANCEL
+from cyborgbackup.main.consumers import emit_channel_notification
+from cyborgbackup.main.fields import JSONField, AskForField
 from cyborgbackup.main.models.base import prevent_search, VarsDictProperty, CommonModelNameNotUnique
 from cyborgbackup.main.models.events import JobEvent
 from cyborgbackup.main.utils.common import (
@@ -27,15 +37,18 @@ from cyborgbackup.main.utils.common import (
     get_type_for_model
 )
 from cyborgbackup.main.utils.encryption import decrypt_field
-from cyborgbackup.main.constants import ACTIVE_STATES, CAN_CANCEL
 from cyborgbackup.main.utils.string import UriCleaner
+<<<<<<< Updated upstream
 from cyborgbackup.main.consumers import emit_channel_notification
 from cyborgbackup.main.fields import JSONField
 
+=======
+>>>>>>> Stashed changes
 
 __all__ = ['Job', 'StdoutMaxBytesExceeded']
 
 logger = logging.getLogger('cyborgbackup.main.models.jobs')
+
 
 # NOTE: ACTIVE_STATES moved to constants because it is used by parent modules
 
@@ -70,7 +83,6 @@ class JobTypeStringMixin(object):
 
 
 class JobDeprecatedStdout(models.Model):
-
     class Meta:
         managed = False
         db_table = 'main_job'
@@ -104,6 +116,7 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
     # status inherits from related jobs.
     # Thus, status must be able to be set to any status that a job status is settable to.
     JOB_STATUS_CHOICES = [
+<<<<<<< Updated upstream
         ('new', 'New'),                  # Job has been created, but not started.
         ('pending', 'Pending'),          # Job has been queued, but is not yet running.
         ('waiting', 'Waiting'),          # Job is waiting on an update/dependency.
@@ -113,27 +126,42 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
         ('error', 'Error'),              # The job was unable to run.
         ('canceled', 'Canceled'),        # The job was canceled before completion.
         ('starting', 'Starting'),        # The job is starting. Launched from Main queue but not yet on Job queue
+=======
+        ('new', 'New'),  # Job has been created, but not started.
+        ('pending', 'Pending'),  # Job has been queued, but is not yet running.
+        ('waiting', 'Waiting'),  # Job is waiting on an update/dependency.
+        ('running', 'Running'),  # Job is currently running.
+        ('successful', 'Successful'),  # Job completed successfully.
+        ('failed', 'Failed'),  # Job completed, but with failures.
+        ('error', 'Error'),  # The job was unable to run.
+        ('canceled', 'Canceled'),  # The job was canceled before completion.
+>>>>>>> Stashed changes
     ]
 
     COMMON_STATUS_CHOICES = JOB_STATUS_CHOICES + [
-        ('never updated', 'Never Updated'),     # A job has never been run using this template.
+        ('never updated', 'Never Updated'),  # A job has never been run using this template.
     ]
 
     DEPRECATED_STATUS_CHOICES = [
+<<<<<<< Updated upstream
         ('updating', 'Updating'),            # Same as running.
+=======
+        # No longer used for Project / Inventory Source:
+        ('updating', 'Updating'),  # Same as running.
+>>>>>>> Stashed changes
     ]
 
     ALL_STATUS_CHOICES = OrderedDict(DEPRECATED_STATUS_CHOICES).items()
 
     LAUNCH_TYPE_CHOICES = [
-        ('manual', 'Manual'),            # Job was started manually by a user.
-        ('relaunch', 'Relaunch'),        # Job was started via relaunch.
-        ('callback', 'Callback'),        # Job was started via host callback.
-        ('scheduled', 'Scheduled'),      # Job was started from a schedule.
-        ('dependency', 'Dependency'),    # Job was started as a dependency of another job.
-        ('workflow', 'Workflow'),        # Job was started from a workflow job.
-        ('sync', 'Sync'),                # Job was started from a project sync.
-        ('scm', 'SCM Update')            # Job was created as an Inventory SCM sync.
+        ('manual', 'Manual'),  # Job was started manually by a user.
+        ('relaunch', 'Relaunch'),  # Job was started via relaunch.
+        ('callback', 'Callback'),  # Job was started via host callback.
+        ('scheduled', 'Scheduled'),  # Job was started from a schedule.
+        ('dependency', 'Dependency'),  # Job was started as a dependency of another job.
+        ('workflow', 'Workflow'),  # Job was started from a workflow job.
+        ('sync', 'Sync'),  # Job was started from a project sync.
+        ('scm', 'SCM Update')  # Job was created as an Inventory SCM sync.
     ]
 
     JOB_TYPE_CHOICES = [
@@ -358,7 +386,9 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
     def _get_parent_instance(self):
         return getattr(self, self._get_parent_field_name(), None)
 
-    def _update_parent_instance_no_save(self, parent_instance, update_fields=[]):
+    def _update_parent_instance_no_save(self, parent_instance, update_fields=None):
+        if update_fields is None:
+            update_fields = []
         def parent_instance_set(key, val):
             setattr(parent_instance, key, val)
             if key not in update_fields:
@@ -681,7 +711,7 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
         fields = self._get_job_field_names()
         unallowed_fields = set(kwargs.keys()) - set(fields)
         if unallowed_fields:
-            logger.warn('Fields {} are not allowed as overrides.'.format(unallowed_fields))
+            logger.warning('Fields {} are not allowed as overrides.'.format(unallowed_fields))
             map(kwargs.pop, unallowed_fields)
 
         job = copy_model_by_class(self, job_class, fields, kwargs)
@@ -704,7 +734,11 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
 
     @classmethod
     def _get_job_field_names(cls):
+<<<<<<< Updated upstream
         return {'name', 'description', 'policy', 'client', 'repository', 'job_type', 'master_job'}
+=======
+        return {'name', 'description', 'policy', 'client', 'repository', 'job_type'}
+>>>>>>> Stashed changes
 
     def copy_job(self, limit=None):
         '''
@@ -757,7 +791,11 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
         return dict(id=self.id,
                     name=self.name,
                     url=self.get_ui_url(),
+<<<<<<< Updated upstream
                     created_by=smart_str(self.created_by),
+=======
+                    created_by=smart_bytes(self.created_by),
+>>>>>>> Stashed changes
                     started=self.started.isoformat() if self.started is not None else None,
                     finished=self.finished.isoformat() if self.finished is not None else None,
                     status=self.status,
@@ -769,7 +807,7 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
                                                                                 self.status, str(('new', 'waiting')))
             self.job_explanation = msg
             self.save(update_fields=['job_explanation'])
-            return (False, None)
+            return False, None
 
         needed = self.get_passwords_needed_to_start()
         try:
@@ -786,13 +824,16 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
             missing_fields = ', '.join([k for k, v in opts.items() if not v])
             self.job_explanation = u'Missing needed fields: %s.' % missing_fields
             self.save(update_fields=['job_explanation'])
-            return (False, None)
+            return False, None
 
-        return (True, opts)
+        return True, opts
 
     def start_celery_task(self, opts, error_callback, success_callback):
+<<<<<<< Updated upstream
         if not self.celery_task_id:
             raise RuntimeError("Expected celery_task_id to be set on model.")
+=======
+>>>>>>> Stashed changes
         kwargs = {
             'link_error': error_callback,
             'link': success_callback,
@@ -885,7 +926,7 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
     def _build_job_explanation(self):
         if not self.job_explanation:
             return 'Previous Task Canceled: {"job_type": "%s", "job_name": "%s", "job_id": "%s"}' % \
-                   (self.model_to_str(), self.name, self.id)
+                (self.model_to_str(), self.name, self.id)
         return None
 
     def cancel(self, job_explanation=None, is_chain=False):

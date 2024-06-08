@@ -1,4 +1,3 @@
-
 import logging
 
 from django.db import models
@@ -13,7 +12,6 @@ __all__ = ['Repository']
 
 
 class Repository(PrimordialModel):
-
     name = models.CharField(
         max_length=1024,
     )
@@ -59,11 +57,11 @@ class Repository(PrimordialModel):
         return "/#/repositories/{}".format(self.pk)
 
     @classmethod
-    def get_cache_key(self, key):
+    def get_cache_key(cls, key):
         return key
 
     @classmethod
-    def get_cache_id_key(self, key):
+    def get_cache_id_key(cls, key):
         return '{}_ID'.format(key)
 
     @classmethod
@@ -81,7 +79,7 @@ class Repository(PrimordialModel):
         fields = ('extra_vars', 'job_type')
         unallowed_fields = set(kwargs.keys()) - set(fields)
         if unallowed_fields:
-            logger.warn('Fields {} are not allowed as overrides.'.format(unallowed_fields))
+            logger.warning('Fields {} are not allowed as overrides.'.format(unallowed_fields))
             map(kwargs.pop, unallowed_fields)
 
         job = copy_model_by_class(self, job_class, fields, kwargs)

@@ -1,12 +1,15 @@
 # Python
-from collections import OrderedDict
 import json
-import yaml
+from collections import OrderedDict
 
+import yaml
 # Django
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
 # Django REST Framework
 from rest_framework import parsers
 from rest_framework.exceptions import ParseError
@@ -57,7 +60,7 @@ class JSONParser(parsers.JSONParser):
             data = stream.read().decode(encoding)
             if not data:
                 return {}
-            obj = json.loads(data, object_pairs_hook=OrderedDict)
+            obj = json.loads(data)
             if not isinstance(obj, dict) and not isinstance(obj, list) and obj is not None:
                 raise ParseError(_('JSON parse error - not a JSON object'))
             return obj

@@ -13,10 +13,11 @@ https://docs.djangoproject.com/en/1.11/ref/settings/
 import os
 import urllib.parse
 from datetime import timedelta
+
 from celery.schedules import crontab
+from corsheaders.defaults import default_headers
 from kombu import Queue, Exchange
 from kombu.common import Broadcast
-from corsheaders.defaults import default_headers
 
 
 class SecretKeyException(Exception):
@@ -35,9 +36,33 @@ PROVIDER_DIR = os.path.join(BASE_DIR, 'cyborgbackup', 'provider')
 # See https://docs.djangoproject.com/en/1.11/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
+<<<<<<< Updated upstream
 SECRET_KEY = os.environ.get("SECRET_KEY", None)
 if not SECRET_KEY:
     raise SecretKeyException("SECRET_KEY not defined! Please generate your secret key!")
+=======
+SECRET_KEY = None
+try:
+    SECRET_KEY = os.environ.get("SECRET_KEY", None)
+    if not SECRET_KEY:
+        raise Exception("SECRET_KEY not defined")
+except Exception:
+    SECRET_FILE = os.path.join(BASE_DIR, 'secret.txt')
+    try:
+        SECRET_KEY = open(SECRET_FILE).read().strip()
+    except IOError:
+        try:
+            import random
+
+            choices = 'abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)'
+            SECRET_KEY = ''.join([random.SystemRandom().choice(choices) for i in range(50)])
+            secret = open(SECRET_FILE, 'w')
+            secret.write(SECRET_KEY)
+            secret.close()
+        except IOError:
+            Exception('Please create a %s file with random characters \
+            to generate your secret key!' % SECRET_FILE)
+>>>>>>> Stashed changes
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -48,6 +73,7 @@ ALLOWED_HOSTS = ['web', 'localhost', '127.0.0.1', '::1', '*']
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -98,23 +124,31 @@ BROKER_URL = "amqp://{}:{}@{}/{}".format(os.environ.get("RABBITMQ_DEFAULT_USER",
                                              safe=''
                                          ))
 
-
 MONGODB_URL = "mongodb://{}/".format(os.environ.get("MONGODB_HOST", "127.0.0.1"))
 
 CHANNEL_LAYERS = {
+<<<<<<< Updated upstream
     'default': {'BACKEND': 'channels_rabbitmq.core.RabbitmqChannelLayer',
                 'CONFIG': {
                     'host': BROKER_URL
                 }
     }
+=======
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [(os.environ.get("REDIS_HOST", "127.0.0.1"), os.environ.get("REDIS_POST", 6379))],
+        },
+    },
+>>>>>>> Stashed changes
 }
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -125,12 +159,20 @@ MIDDLEWARE = [
 ROOT_URLCONF = 'cyborgbackup.urls'
 
 CORS_ORIGIN_ALLOW_ALL = True
-CORS_ALLOW_HEADERS = list(default_headers) + [
+CORS_ALLOW_HEADERS = (
+    *default_headers,
     'access-control-allow-methods',
     'access-control-allow-origin',
+    'x-token',
     'cookies'
-]
-
+)
+CORS_EXPOSE_HEADERS = (
+    *default_headers,
+    'access-control-allow-methods',
+    'access-control-allow-origin',
+    'x-token',
+    'cookies'
+)
 
 TEMPLATES = [
     {
@@ -156,7 +198,6 @@ ASGI_AMQP = {
     'INIT_FUNC': 'cyborgbackup.prepare_env',
     'MODEL': 'cyborgbackup.main.models.channels.ChannelGroup',
 }
-
 
 # Database
 # https://docs.djangoproject.com/en/1.11/ref/settings/#databases
@@ -272,7 +313,6 @@ LOGGING['handlers']['console'] = {
     'formatter': 'simple',
 }
 
-
 AUTH_USER_MODEL = 'main.User'
 
 # Password validation
@@ -308,7 +348,6 @@ SIMPLE_JWT = {
     'TOKEN_TYPE_CLAIM': 'token_type',
 }
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/1.11/topics/i18n/
 
@@ -321,7 +360,6 @@ USE_I18N = True
 USE_L10N = True
 
 USE_TZ = True
-
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
@@ -370,9 +408,12 @@ CELERY_QUEUES = (
     Queue('backup_job', routing_key='backup_job'),
     Broadcast('cyborgbackup_broadcast_all')
 )
+<<<<<<< Updated upstream
 CELERY_DEFAULT_QUEUE='backup_job'
 CELERY_DEFAULT_ROUTING_KEY='backup.job'
 CELERY_ACCEPT_CONTENT = ['application/json']
+=======
+>>>>>>> Stashed changes
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 
@@ -405,6 +446,7 @@ CELERY_BEAT_SCHEDULE = {
     },
     'cyborgbackup_notify_weekly': {
         'task': 'cyborgbackup.main.tasks.cyborgbackup_notifier',
+<<<<<<< Updated upstream
         'schedule': crontab(hour=0, minute=0, day_of_week=6),
         'args': ('weekly',),
         'options': main_tasks_route
@@ -414,6 +456,15 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': crontab(hour=0, minute=0, day_of_month=1),
         'args': ('monthly',),
         'options': main_tasks_route
+=======
+        'schedule': crontab(hour='0', minute='0', day_of_week='6'),
+        'args': ('weekly',)
+    },
+    'cyborgbackup_notify_monthly': {
+        'task': 'cyborgbackup.main.tasks.cyborgbackup_notifier',
+        'schedule': crontab(hour='0', minute='0', day_of_month='1'),
+        'args': ('monthly',)
+>>>>>>> Stashed changes
     },
     'cyborgbackup_scheduler': {
         'task': 'cyborgbackup.main.tasks.cyborgbackup_periodic_scheduler',

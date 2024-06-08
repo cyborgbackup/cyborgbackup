@@ -4,28 +4,27 @@ import os
 import signal
 import time
 from functools import cmp_to_key
-from uuid import UUID
 from multiprocessing import Process
 from multiprocessing import Queue as MPQueue
 from queue import Empty as QueueEmpty
 from queue import Full as QueueFull
-
-from kombu import Connection, Exchange, Queue
-from kombu.mixins import ConsumerMixin
+from uuid import UUID
 
 # Django
 from django.conf import settings
-from django.core.management.base import BaseCommand
-from django.db import connection as django_connection
-from django.db import DatabaseError, OperationalError
-from django.db.utils import InterfaceError, InternalError
 from django.core.cache import cache as django_cache
+from django.core.management.base import BaseCommand
+from django.db import DatabaseError, OperationalError
+from django.db import connection as django_connection
+from django.db.utils import InterfaceError, InternalError
+from kombu import Connection, Exchange, Queue
+from kombu.mixins import ConsumerMixin
 
+from cyborgbackup.main.consumers import emit_channel_notification
+from cyborgbackup.main.models.catalogs import Catalog
+from cyborgbackup.main.models.events import JobEvent
 # CyBorgBackup
 from cyborgbackup.main.models.jobs import Job
-from cyborgbackup.main.models.events import JobEvent
-from cyborgbackup.main.models.catalogs import Catalog
-from cyborgbackup.main.consumers import emit_channel_notification
 
 logger = logging.getLogger('cyborgbackup.main.commands.run_callback_receiver')
 
@@ -42,7 +41,6 @@ class WorkerSignalHandler:
 
 
 class CallbackBrokerWorker(ConsumerMixin):
-
     MAX_RETRIES = 2
 
     def __init__(self, connection, use_workers=True):
@@ -61,6 +59,7 @@ class CallbackBrokerWorker(ConsumerMixin):
                     os.kill(os.getpid(), signum)  # Rethrow signal, this time without catching it
                 except Exception:
                     logger.exception('Error in shutdown_handler')
+
             return _handler
 
         if use_workers:
@@ -74,7 +73,7 @@ class CallbackBrokerWorker(ConsumerMixin):
                     logger.info('Started worker %s' % str(idx))
                 self.worker_queues.append([0, queue_actual, w])
         elif settings.DEBUG:
-            logger.warn('Started callback receiver (no workers)')
+            logger.warning('Started callback receiver (no workers)')
 
         signal.signal(signal.SIGINT, shutdown_handler([p[2] for p in self.worker_queues]))
         signal.signal(signal.SIGTERM, shutdown_handler([p[2] for p in self.worker_queues]))
@@ -112,10 +111,10 @@ class CallbackBrokerWorker(ConsumerMixin):
             except Exception:
                 import traceback
                 tb = traceback.format_exc()
-                logger.warn("Could not write to queue %s" % preferred_queue)
-                logger.warn("Detail: {}".format(tb))
+                logger.warning("Could not write to queue %s" % preferred_queue)
+                logger.warning("Detail: {}".format(tb))
             write_attempt_order.append(preferred_queue)
-        logger.warn("Could not write payload to any queue, attempted order: {}".format(write_attempt_order))
+        logger.warning("Could not write payload to any queue, attempted order: {}".format(write_attempt_order))
         return None
 
     def callback_worker(self, queue_actual, idx):

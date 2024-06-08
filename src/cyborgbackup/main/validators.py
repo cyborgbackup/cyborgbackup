@@ -2,13 +2,17 @@
 import base64
 import re
 
+<<<<<<< Updated upstream
 # Django
 from django.utils.translation import gettext_lazy as _
+=======
+>>>>>>> Stashed changes
 from django.core.exceptions import ValidationError
-
+# Django
+from django.utils.translation import gettext_lazy as _
+from rest_framework.exceptions import ParseError
 # REST framework
 from rest_framework.serializers import ValidationError as RestValidationError
-from rest_framework.exceptions import ParseError
 
 # CyBorgBackup
 from cyborgbackup.main.utils.common import parse_yaml_or_json
@@ -67,8 +71,7 @@ def validate_pem(data, min_keys=0, max_keys=None, min_certs=0, max_certs=None):
         data = match.group('next').lstrip()
 
         # Check PEM object type, check key type if private key.
-        pem_obj_info = {}
-        pem_obj_info['all'] = match.group(0)
+        pem_obj_info = {'all': match.group(0)}
         pem_obj_info['type'] = pem_obj_type = match.group('type')
         if pem_obj_type.endswith('PRIVATE KEY'):
             key_count += 1
@@ -115,7 +118,7 @@ def validate_pem(data, min_keys=0, max_keys=None, min_certs=0, max_certs=None):
             # length field, followed by the ciphername -- if ciphername is anything
             # other than 'none' the key is encrypted.
             magic = 'openssh-key-v1\x00\x00\x00\x00\x04none'
-            pem_obj_info['key_enc'] = not bool(pem_obj_info['bin'].startswith(magic))
+            pem_obj_info['key_enc'] = not bool(pem_obj_info['bin'].startswith(str.encode(magic)))
         elif pem_obj_info.get('key_type', ''):
             pem_obj_info['key_enc'] = bool('ENCRYPTED' in pem_obj_info['data'])
 

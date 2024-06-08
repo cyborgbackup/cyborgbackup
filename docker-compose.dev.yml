@@ -9,6 +9,10 @@ services:
       - .env
     ports:
       - "5432:5432"
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
   rabbitmq:
     image: "rabbitmq:management"
     volumes:
@@ -27,6 +31,7 @@ services:
       - postgres
       - mongodb
       - rabbitmq
+      - redis
   channel_workers:
     image: cyborgbackup/cyborgbackup:latest
     command: bash -c 'python /cyborgbackup/manage.py runworker websocket.*'
@@ -38,6 +43,7 @@ services:
       - postgres
       - mongodb
       - rabbitmq
+      - redis
   web:
     image: cyborgbackup/cyborgbackup:latest
     #command: bash -c "python /cyborgbackup/manage.py migrate --noinput && python /cyborgbackup/manage.py runserver 0.0.0.0:8000"
@@ -52,6 +58,7 @@ services:
       - postgres
       - mongodb
       - rabbitmq
+      - redis
     restart: unless-stopped
   celery:
     image: cyborgbackup/cyborgbackup:latest
@@ -64,6 +71,7 @@ services:
       - postgres
       - mongodb
       - rabbitmq
+      - redis
   celery_beat:
     image: cyborgbackup/cyborgbackup:latest
     command: celery -A cyborgbackup beat -l debug
@@ -75,6 +83,7 @@ services:
       - postgres
       - mongodb
       - rabbitmq
+      - redis
   flower:
     image: cyborgbackup/cyborgbackup:latest
     command: celery flower -A cyborgbackup --address=0.0.0.0 --port=8001
@@ -88,6 +97,7 @@ services:
       - postgres
       - rabbitmq
       - celery
+      - redis
   adminer:
     image: adminer
     ports:
@@ -95,7 +105,7 @@ services:
     env_file:
       - .env
   mongodb:
-    image: mongo:bionic
+    image: mongo:latest
     volumes:
       - mongo_data:/data/db
     ports:

@@ -1,9 +1,9 @@
 import json
 
+from django.apps import apps
 # Django
 from django.core.management.base import BaseCommand
 from django.db import transaction
-from django.apps import apps
 
 # CyBorgBackup
 from cyborgbackup.main.models.settings import Setting
@@ -19,7 +19,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('--dry-run', dest='dry_run', action='store_true',
                             default=False, help='Dry run mode (show items that would '
-                            'be removed)')
+                                                'be removed)')
 
     @transaction.atomic
     def handle(self, *args, **options):
@@ -36,7 +36,8 @@ class Command(BaseCommand):
             for setting in settings:
                 existing.append(setting.key)
                 if setting.order == 0 or setting.group is None:
-                    item = [x for x in fixtures if x['fields']['key'] == setting.key and x['model'] == 'main.setting'][0]
+                    item = [x for x in fixtures if x['fields']['key'] == setting.key and x['model'] == 'main.setting'][
+                        0]
                     updated = updated + 1
                     if not self.dry_run:
                         setting.order = item['fields']['order']
@@ -52,6 +53,7 @@ class Command(BaseCommand):
                     set.save()
 
         if self.dry_run:
-            print('Settings: {} would be added, {} would be updated, {} would be skipped.'.format(added, updated, skipped))
+            print('Settings: {} would be added, {} would be updated, {} would be skipped.'.format(added, updated,
+                                                                                                  skipped))
         else:
             print('Settings: {} added, {} updated, {} skipped.'.format(added, updated, skipped))

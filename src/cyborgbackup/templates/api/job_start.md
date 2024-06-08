@@ -1,7 +1,7 @@
 # Determine if a Job can be started
 
 Make a GET request to this resource to determine if the job can be started and
-whether any passwords are required to start the job.  The response will include
+whether any passwords are required to start the job. The response will include
 the following fields:
 
 * `can_start`: Flag indicating if this job can be started (boolean, read-only)
@@ -9,9 +9,10 @@ the following fields:
   read-only)
 
 # Start a Job
-Make a POST request to this resource to start the job.  If any passwords are
+
+Make a POST request to this resource to start the job. If any passwords are
 required, they must be passed via POST data.
 
-If successful, the response status code will be 202.  If any required passwords
-are not provided, a 400 status code will be returned.  If the job cannot be
+If successful, the response status code will be 202. If any required passwords
+are not provided, a 400 status code will be returned. If the job cannot be
 started, a 405 status code will be returned.

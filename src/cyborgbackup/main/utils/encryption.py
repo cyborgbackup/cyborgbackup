@@ -1,9 +1,9 @@
-import os
-import stat
-import errno
 import base64
+import errno
 import hashlib
 import logging
+import os
+import stat
 import tempfile
 from collections import namedtuple
 
@@ -12,7 +12,7 @@ from cryptography.fernet import Fernet, InvalidToken
 from cryptography.hazmat.backends import default_backend
 from django.utils.encoding import smart_str
 
-__all__ = ['get_encryption_key',
+__all__ = ['get_encryption_key', 'Keypair',
            'encrypt_field', 'decrypt_field',
            'encrypt_value', 'decrypt_value',
            'encrypt_dict', 'is_encrypted']
@@ -46,6 +46,7 @@ def get_encryption_key(field_name, pk=None):
     Generate key for encrypted password based on field name,
     ``settings.SECRET_KEY``, and instance pk (if available).
 
+    :param field_name: the field name
     :param pk: (optional) the primary key of the model object;
                can be omitted in situations where you're encrypting a setting
                that is not database-persistent (like a read-only setting)
@@ -213,7 +214,11 @@ class Keypair(object):
         import string
         import secrets
         letters_and_digits = string.ascii_letters + string.digits
+<<<<<<< Updated upstream
         return '/var/tmp/cyborgbackup/tmpcyborg_'+''.join((secrets.choice(letters_and_digits) for _ in range(15)))
+=======
+        return '/tmp/tmpcyborg_' + ''.join((random.choice(letters_and_digits) for i in range(15)))
+>>>>>>> Stashed changes
 
     def generate(self):
         import subprocess
@@ -274,4 +279,8 @@ class Keypair(object):
                 if exc.errno != errno.ENOENT:
                     raise KeypairError(exc)
                 else:
+<<<<<<< Updated upstream
                     return True
+=======
+                    pass
+>>>>>>> Stashed changes

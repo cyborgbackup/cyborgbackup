@@ -8,31 +8,35 @@ __all__ = ['BooleanNullField', 'CharNullField', 'ChoiceNullField', 'VerbatimFiel
 
 
 class NullFieldMixin(object):
-    '''
+    """
     Mixin to prevent shortcutting validation when we want to allow null input,
     but coerce the resulting value to another type.
-    '''
+    """
 
     def validate_empty_values(self, data):
         (is_empty_value, data) = super(NullFieldMixin, self).validate_empty_values(data)
         if is_empty_value and data is None:
-            return (False, data)
-        return (is_empty_value, data)
+            return False, data
+        return is_empty_value, data
 
 
 class BooleanNullField(NullFieldMixin, serializers.BooleanField):
+<<<<<<< Updated upstream
     '''
+=======
+    """
+>>>>>>> Stashed changes
     Custom boolean field that allows null and empty string as False values.
-    '''
+    """
 
     def to_internal_value(self, data):
         return bool(super(BooleanNullField, self).to_internal_value(data))
 
 
 class CharNullField(NullFieldMixin, serializers.CharField):
-    '''
+    """
     Custom char field that allows null as input and coerces to an empty string.
-    '''
+    """
 
     def __init__(self, **kwargs):
         kwargs['allow_null'] = True
@@ -43,9 +47,9 @@ class CharNullField(NullFieldMixin, serializers.CharField):
 
 
 class ChoiceNullField(NullFieldMixin, serializers.ChoiceField):
-    '''
+    """
     Custom choice field that allows null as input and coerces to an empty string.
-    '''
+    """
 
     def __init__(self, **kwargs):
         kwargs['allow_null'] = True
@@ -56,9 +60,9 @@ class ChoiceNullField(NullFieldMixin, serializers.ChoiceField):
 
 
 class VerbatimField(serializers.Field):
-    '''
+    """
     Custom field that passes the value through without changes.
-    '''
+    """
 
     def to_internal_value(self, data):
         return data

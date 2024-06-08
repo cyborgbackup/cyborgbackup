@@ -1,4 +1,8 @@
+<<<<<<< Updated upstream
 FROM python:3.8
+=======
+FROM python:3.12
+>>>>>>> Stashed changes
 
 ENV PYTHONUNBUFFERED 1
 ENV DJANGO_ENV dev

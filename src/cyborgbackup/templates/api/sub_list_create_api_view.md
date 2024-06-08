@@ -14,6 +14,7 @@ fields to create a new {{ model_verbose_name }} associated with this
 
 {% if has_attach|default:False %}
 {% if parent_key %}
+
 # Remove {{ parent_model_verbose_name|title }} {{ model_verbose_name_plural|title }}:
 
 Make a POST request to this resource with `id` and `disassociate` fields to
@@ -25,6 +26,7 @@ delete the associated {{ model_verbose_name }}.
     }
 
 {% else %}
+
 # Add {{ model_verbose_name_plural|title }} for {{ parent_model_verbose_name|title }}:
 
 Make a POST request to this resource with only an `id` field to associate an

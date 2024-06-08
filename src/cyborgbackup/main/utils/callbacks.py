@@ -1,12 +1,11 @@
 import logging
 import os
-from six.moves import xrange
 
 # Django
 from django.conf import settings
-
 # Kombu
 from kombu import Connection, Exchange, Producer
+from six.moves import xrange
 
 logger = logging.getLogger('cyborgbackup.main.utils.callbacks')
 

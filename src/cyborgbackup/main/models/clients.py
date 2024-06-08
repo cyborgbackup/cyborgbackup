@@ -2,11 +2,15 @@ import logging
 import pymongo
 
 from django.db import models
+<<<<<<< Updated upstream
 from django.conf import settings
 
 from pkg_resources import parse_version
 
 from django.core.validators import MaxValueValidator, MinValueValidator
+=======
+
+>>>>>>> Stashed changes
 from cyborgbackup.api.versioning import reverse
 from cyborgbackup.main.models.base import PrimordialModel
 from cyborgbackup.main.utils.common import copy_model_by_class, copy_m2m_relationships
@@ -83,11 +87,11 @@ class Client(PrimordialModel):
         return "/#/clients/{}".format(self.pk)
 
     @classmethod
-    def get_cache_key(self, key):
+    def get_cache_key(cls, key):
         return key
 
     @classmethod
-    def get_cache_id_key(self, key):
+    def get_cache_id_key(cls, key):
         return '{}_ID'.format(key)
 
     @classmethod
@@ -105,7 +109,7 @@ class Client(PrimordialModel):
         fields = ('extra_vars', 'job_type')
         unallowed_fields = set(kwargs.keys()) - set(fields)
         if unallowed_fields:
-            logger.warn('Fields {} are not allowed as overrides.'.format(unallowed_fields))
+            logger.warning('Fields {} are not allowed as overrides.'.format(unallowed_fields))
             map(kwargs.pop, unallowed_fields)
 
         job = copy_model_by_class(self, job_class, fields, kwargs)
@@ -134,7 +138,7 @@ class Client(PrimordialModel):
         fields = ('extra_vars', 'job_type')
         unallowed_fields = set(kwargs.keys()) - set(fields)
         if unallowed_fields:
-            logger.warn('Fields {} are not allowed as overrides.'.format(unallowed_fields))
+            logger.warning('Fields {} are not allowed as overrides.'.format(unallowed_fields))
             map(kwargs.pop, unallowed_fields)
 
         job = copy_model_by_class(self, job_class, fields, kwargs)

@@ -1,18 +1,25 @@
 # Python
-import re
 import json
 import logging
+import re
 
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 # Django
 from django.core.exceptions import FieldError, ValidationError, FieldDoesNotExist
 from django.db import models
 from django.db.models import Q
 from django.db.models.fields.related import ForeignObjectRel, ManyToManyField, ForeignKey
+<<<<<<< Updated upstream
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.utils.encoding import force_str
 from django.utils.translation import gettext_lazy as _
 
+=======
+from django.utils.encoding import force_str
+from django.utils.translation import gettext_lazy as _
+>>>>>>> Stashed changes
 # Django REST Framework
 from rest_framework.exceptions import ParseError, PermissionDenied
 from rest_framework.filters import BaseFilterBackend
@@ -24,9 +31,9 @@ logger = logging.getLogger('cyborgbackup.main.tasks')
 
 
 class V1CredentialFilterBackend(BaseFilterBackend):
-    '''
+    """
     For /api/v1/ requests, filter out v2 (custom) credentials
-    '''
+    """
 
     def filter_queryset(self, request, queryset, view):
         from cyborgbackup.api.versioning import get_request_version
@@ -36,9 +43,9 @@ class V1CredentialFilterBackend(BaseFilterBackend):
 
 
 class TypeFilterBackend(BaseFilterBackend):
-    '''
+    """
     Filter on type field now returned with all objects.
-    '''
+    """
 
     def filter_queryset(self, request, queryset, view):
         try:
@@ -71,9 +78,9 @@ class TypeFilterBackend(BaseFilterBackend):
 
 
 class FieldLookupBackend(BaseFilterBackend):
-    '''
+    """
     Filter using field lookups provided via query string parameters.
-    '''
+    """
 
     RESERVED_NAMES = ('page', 'page_size', 'format', 'order', 'order_by',
                       'search', 'type', 'host_filter', 'fields')
@@ -147,7 +154,7 @@ class FieldLookupBackend(BaseFilterBackend):
                 raise ParseError(_('Invalid {field_name} id: {field_id}').format(
                     field_name=getattr(field, 'name', 'related field'),
                     field_id=value)
-                    )
+                )
         else:
             return field.to_python(value)
 
@@ -290,16 +297,15 @@ class FieldLookupBackend(BaseFilterBackend):
 
 
 class OrderByBackend(BaseFilterBackend):
-    '''
+    """
     Filter to apply ordering based on query string parameters.
-    '''
+    """
 
     def filter_queryset(self, request, queryset, view):
         try:
             order_by = None
             for key, value in request.query_params.items():
                 if key in ('order', 'order_by'):
-                    order_by = value
                     if ',' in value:
                         order_by = value.split(',')
                     else:

@@ -1,11 +1,10 @@
 # Python
 import logging
+
 import pymongo
-
-from django.conf import settings
-
 # Celery
 from celery import Task, shared_task, current_app
+from django.conf import settings
 
 # CyBorgBackup
 from cyborgbackup.main.utils.task_manager import TaskManager

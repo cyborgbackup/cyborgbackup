@@ -1,4 +1,5 @@
 import os
+<<<<<<< Updated upstream
 import logging
 
 from urllib.parse import parse_qs
@@ -11,6 +12,15 @@ from django.core.asgi import get_asgi_application
 
 from cyborgbackup import prepare_env
 from cyborgbackup.main.consumers import CyborgBackupConsumer
+=======
+
+from channels.routing import ProtocolTypeRouter, URLRouter
+from django.core.asgi import get_asgi_application
+from django.urls import re_path
+
+from cyborgbackup import prepare_env
+from cyborgbackup.main.consumers import CyBorgBackupConsumer, JwtAuthMiddlewareStack
+>>>>>>> Stashed changes
 
 prepare_env()
 
@@ -19,6 +29,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "cyborgbackup.settings")
 
 django_asgi_app = get_asgi_application()
 
+<<<<<<< Updated upstream
 from django.contrib.auth.models import AnonymousUser
 
 
@@ -78,5 +89,13 @@ application = ProtocolTypeRouter({
         SessionMiddlewareStack(
             CyborgBackupConsumer.as_asgi()
         )
+=======
+application = ProtocolTypeRouter({
+    "http": django_asgi_app,
+    'websocket' : JwtAuthMiddlewareStack(
+        URLRouter([
+            re_path(r"^websocket/$", CyBorgBackupConsumer.as_asgi()),
+        ])
+>>>>>>> Stashed changes
     )
 })

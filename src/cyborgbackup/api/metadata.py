@@ -4,7 +4,10 @@ from collections import OrderedDict
 from django.core.exceptions import PermissionDenied
 from django.http import Http404
 from django.utils.encoding import force_str, smart_str
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
 # Django REST Framework
 from rest_framework import exceptions
 from rest_framework import metadata

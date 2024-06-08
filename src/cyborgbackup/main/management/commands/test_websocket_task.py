@@ -9,6 +9,7 @@ class Command(BaseCommand):
     help = 'Creates a preload tower data iff there is none.'
 
     def handle(self, *args, **kwargs):
+<<<<<<< Updated upstream
         data = [
             {
                 "job_id": 38631,
@@ -32,3 +33,23 @@ class Command(BaseCommand):
 
         for msg in data:
             consumers.emit_channel_notification('jobs-status_changed', msg)
+=======
+        consumers.emit_channel_notification("jobs-status_changed", {
+            "job_id": 38631,
+            "status": "successful",
+            "job_name": "Backup Job Backup mail from Knet",
+            "group_name": "jobs"
+        })
+        consumers.emit_channel_notification("jobs-status_changed", {
+            "job_id": 38631,
+            "status": "failed",
+            "job_name": "Backup Job Backup mail from Knet",
+            "group_name": "jobs"
+        })
+        consumers.emit_channel_notification("jobs-status_changed", {
+            "job_id": 38631,
+            "status": "running",
+            "job_name": "Backup Job Backup mail from Knet",
+            "group_name": "jobs"
+        })
+>>>>>>> Stashed changes

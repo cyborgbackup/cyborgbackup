@@ -8,7 +8,7 @@ from cyborgbackup.main.models.policies import Policy
 
 analytics_logger = logging.getLogger('cyborgbackup.models.schedule')
 
-__all__ = ['Schedule']
+__all__ = ['Schedule', 'CyborgBackupScheduleState']
 
 
 class CyborgBackupScheduleState(models.Model):
@@ -35,11 +35,11 @@ class Schedule(PrimordialModel):
         return "/#/schedules/{}".format(self.pk)
 
     @classmethod
-    def get_cache_key(self, key):
+    def get_cache_key(cls, key):
         return key
 
     @classmethod
-    def get_cache_id_key(self, key):
+    def get_cache_id_key(cls, key):
         return '{}_ID'.format(key)
 
     def updated_related_policies(self):

@@ -1,5 +1,7 @@
 {% if has_named_url %}
+
 ### Note: starting from api v2, this resource object can be accessed via its named URL.
+
 {% endif %}
 
 # Retrieve {{ model_verbose_name|title }}:
@@ -12,7 +14,7 @@ record containing the following fields:
 # Update {{ model_verbose_name|title }}:
 
 Make a PUT or PATCH request to this resource to update this
-{{ model_verbose_name }}.  The following fields may be modified:
+{{ model_verbose_name }}. The following fields may be modified:
 
 {% with write_only=1 %}
 {% include "api/_result_fields_common.md" with serializer_fields=serializer_update_fields %}

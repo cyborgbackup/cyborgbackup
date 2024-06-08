@@ -1,17 +1,19 @@
+import json
 import os
 import re
-import json
 import stat
 import tempfile
-from datetime import datetime
-from io import StringIO
-from django.db import transaction
 from collections import OrderedDict
+import datetime
+from io import StringIO
+
+from packaging.version import Version, parse
 from django.conf import settings
-from distutils.version import LooseVersion as Version
 from django.core.management.base import BaseCommand
-from cyborgbackup.main.models import Job, Repository, Catalog
+from django.db import transaction
+
 from cyborgbackup.main.expect import run
+from cyborgbackup.main.models import Job, Repository, Catalog
 from cyborgbackup.main.models.settings import Setting
 from cyborgbackup.main.utils.common import get_ssh_version
 from cyborgbackup.main.utils.encryption import decrypt_field
@@ -33,9 +35,9 @@ class Command(BaseCommand):
     def get_password_prompts(self, **kwargs):
         d = OrderedDict()
         for k, v in kwargs['passwords'].items():
-            d[re.compile(r'Enter passphrase for .*'+k+r':\s*?$', re.M)] = k
-            d[re.compile(r'Enter passphrase for .*'+k, re.M)] = k
-        d[re.compile(r'Bad passphrase, try again for .*:\s*?$', re.M)] = ''
+            d[re.compile(r'Enter passphrase for .*' + k + r':\s*?$', re.M)] = k
+            d[re.compile(r'Enter passphrase for .*' + k, re.M)] = k
+        d[re.compile(r'Bad passphrase, try again for .*:\s*$', re.M)] = ''
         return d
 
     def get_ssh_key_path(self, instance, **kwargs):
@@ -97,8 +99,8 @@ class Command(BaseCommand):
         private_data_files = {'credentials': {}}
         if private_data is not None:
             ssh_ver = get_ssh_version()
-            ssh_too_old = True if ssh_ver == "unknown" else Version(ssh_ver) < Version("6.0")
-            openssh_keys_supported = ssh_ver != "unknown" and Version(ssh_ver) >= Version("6.5")
+            ssh_too_old = True if ssh_ver == "unknown" else parse(ssh_ver) < Version("6.0")
+            openssh_keys_supported = ssh_ver != "unknown" and parse(ssh_ver) >= Version("6.5")
             for sets, data in private_data.get('credentials', {}).items():
                 # Bail out now if a private key was provided in OpenSSH format
                 # and we're running an earlier version (<6.5).
@@ -125,12 +127,18 @@ class Command(BaseCommand):
         return private_data_files
 
     def launch_command(self, cmd, instance, key, path, **kwargs):
+<<<<<<< Updated upstream
         cwd = '/var/tmp/cyborgbackup/'
         env = {}
         env['BORG_PASSPHRASE'] = key
         env['BORG_REPO'] = path
         env['BORG_RELOCATED_REPO_ACCESS_IS_OK'] = 'yes'
         env['BORG_RSH'] = 'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+=======
+        cwd = '/tmp/'
+        env = {'BORG_PASSPHRASE': key, 'BORG_REPO': path, 'BORG_RELOCATED_REPO_ACCESS_IS_OK': 'yes',
+               'BORG_RSH': 'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'}
+>>>>>>> Stashed changes
         args = cmd
         safe_args = args
 
@@ -159,40 +167,52 @@ class Command(BaseCommand):
             args = run.wrap_args_with_ssh_agent(args, ssh_key_path, ssh_auth_sock)
             safe_args = run.wrap_args_with_ssh_agent(safe_args, ssh_key_path, ssh_auth_sock)
 
-        status, rc = run.run_pexpect(
+        run.run_pexpect(
             args, cwd, env, stdout_handle, **_kw
         )
 
         lines = stdout_handle.getvalue().splitlines()
         return lines
 
+    def get_running_jobs(self):
+        return Job.objects.filter(status="running")
+
+    def get_enabled_repos(self):
+        return Repository.objects.filter(enabled=True)
+
+    def get_successful_jobs(self):
+        return Job.objects.filter(job_type='job', status='successful')
+
+    def generate_repo_archives(self, repos, **kwargs):
+        repo_archives = []
+        for repo in repos:
+            archive_lines = self.launch_command(["borg", "list", "::"], repo, repo.repository_key, repo.path, **kwargs)
+            for line in archive_lines:
+                archive_name = line.split(' ')[0]
+                for archive_type in ('rootfs', 'vm', 'mysql', 'postgresql', 'config', 'piped', 'mail', 'folders'):
+                    if '{}-'.format(archive_type) in archive_name:
+                        repo_archives.append(archive_name)
+        return repo_archives
+
+    def handle_non_archived_entries(self, entries, repo_archives):
+        for entry in entries:
+            if entry.archive_name and entry.archive_name not in repo_archives:
+                print('Delete {} from catalog'.format(entry.archive_name))
+                Catalog.objects.filter(archive_name=entry.archive_name).delete()
+                entry.archive_name = ''
+                entry.save()
+
     def handle(self, *args, **kwargs):
-        # Sanity check: Is there already a running job on the System?
-        jobs = Job.objects.filter(status="running")
-        if jobs.exists():
+        if self.get_running_jobs().exists():
             print('A job is already running, exiting.')
             return
 
-        repos = Repository.objects.filter(enabled=True)
-        repoArchives = []
+        repos = self.get_enabled_repos()
         if repos.exists():
-            for repo in repos:
-                lines = self.launch_command(["borg", "list", "::"], repo, repo.repository_key, repo.path, **kwargs)
-
-                for line in lines:
-                    archive_name = line.split(' ')[0]  #
-                    for type in ('rootfs', 'vm', 'mysql', 'postgresql', 'config', 'piped', 'mail', 'folders'):
-                        if '{}-'.format(type) in archive_name:
-                            repoArchives.append(archive_name)
-
-            entries = Job.objects.filter(job_type='job', status='successful')
+            repo_archives = self.generate_repo_archives(repos, **kwargs)
+            entries = self.get_successful_jobs()
             if entries.exists():
-                for entry in entries:
-                    if entry.archive_name != '' and entry.archive_name not in repoArchives:
-                        print('Delete {} from catalog'.format(entry.archive_name))
-                        Catalog.objects.filter(archive_name=entry.archive_name).delete()
-                        entry.archive_name = ''
-                        entry.save()
+                self.handle_non_archived_entries(entries, repo_archives)
 
             for repo in repos:
                 jobs = Job.objects.filter(policy__repository_id=repo.pk,
@@ -211,8 +231,8 @@ class Command(BaseCommand):
                                                         repo.repository_key,
                                                         repo.path,
                                                         **kwargs)
-                            # elements = len(lines)
-                            hoursTimezone = round((round((datetime.now()-datetime.utcnow()).total_seconds())/1800)/2)
+                            hours_timezone = round(
+                                (round((datetime.datetime.now() - datetime.datetime.now(datetime.UTC)).total_seconds()) / 1800) / 2)
                             with transaction.atomic():
                                 for line in lines:
                                     try:
@@ -232,7 +252,7 @@ class Command(BaseCommand):
                                             entry.size = data['size']
                                             entry.healthy = data['healthy']
                                             entry.mtime = '{}+0{}00'.format(data['mtime'].replace('T', ' '),
-                                                                            hoursTimezone)
+                                                                            hours_timezone)
                                             entry.save()
                                     except Exception as e:
                                         print(e)

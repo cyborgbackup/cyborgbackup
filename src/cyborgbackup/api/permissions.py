@@ -1,9 +1,9 @@
 # Python
 import logging
 
+from rest_framework import permissions
 # Django REST Framework
 from rest_framework.exceptions import MethodNotAllowed, PermissionDenied
-from rest_framework import permissions
 from rest_framework.permissions import IsAuthenticated
 
 # CyBorgBackup
@@ -15,10 +15,10 @@ __all__ = ['ModelAccessPermission', 'UserPermission', 'IsSuperUser', 'check_user
 
 
 def check_user_access(user, model_class, action, *args, **kwargs):
-    '''
+    """
     Return True if user can perform action against model_class with the
     provided parameters.
-    '''
+    """
     result = False
     userAction = 'cyborgbackup.{}_{}'.format(action, model_class.__name__.lower())
     result = user.has_perm(userAction)
@@ -29,10 +29,10 @@ def check_user_access(user, model_class, action, *args, **kwargs):
 
 
 class ModelAccessPermission(permissions.BasePermission):
-    '''
+    """
     Default permissions class to check user access based on the model and
     request method, optionally verifying the request data.
-    '''
+    """
 
     def check_options_permissions(self, request, view, obj=None):
         # return self.check_get_permissions(request, view, obj)
@@ -102,10 +102,10 @@ class ModelAccessPermission(permissions.BasePermission):
         return check_user_access(request.user, view.model, 'delete', obj)
 
     def check_permissions(self, request, view, obj=None):
-        '''
+        """
         Perform basic permissions checking before delegating to the appropriate
         method based on the request method.
-        '''
+        """
 
         if request.method.upper() == 'OPTIONS':
             return True

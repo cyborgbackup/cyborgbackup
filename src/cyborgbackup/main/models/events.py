@@ -1,9 +1,13 @@
 import datetime
 import logging
 
+import pytz
 from django.db import models
 from django.utils.dateparse import parse_datetime
+<<<<<<< Updated upstream
 from django.utils.timezone import utc
+=======
+>>>>>>> Stashed changes
 from django.utils.translation import gettext_lazy as _
 
 from cyborgbackup.api.versioning import reverse
@@ -140,7 +144,7 @@ class JobEvent(CreatedModifiedModel):
         return updated_fields
 
     @classmethod
-    def create_from_data(self, **kwargs):
+    def create_from_data(cls, **kwargs):
         pk = None
         for key in ('job_id',):
             if key in kwargs:
@@ -157,16 +161,16 @@ class JobEvent(CreatedModifiedModel):
             if not isinstance(kwargs['created'], datetime.datetime):
                 kwargs['created'] = parse_datetime(kwargs['created'])
             if not kwargs['created'].tzinfo:
-                kwargs['created'] = kwargs['created'].replace(tzinfo=utc)
+                kwargs['created'] = kwargs['created'].replace(tzinfo=pytz.UTC)
         except (KeyError, ValueError):
             kwargs.pop('created', None)
 
         # Sanity check: Don't honor keys that we don't recognize.
         for key in list(kwargs.keys()):
-            if key not in self.VALID_KEYS:
+            if key not in cls.VALID_KEYS:
                 kwargs.pop(key)
 
-        job_event = self.objects.create(**kwargs)
+        job_event = cls.objects.create(**kwargs)
         logger.info('Event data saved.', extra=dict(python_objects=dict(job_event=job_event)))
         return job_event
 

@@ -1,11 +1,11 @@
-import logging
-import gzip
 import base64
+import gzip
 import json
+import logging
 
-from django.db import models
-from django.conf import settings
 import pymongo
+from django.conf import settings
+from django.db import models
 
 from cyborgbackup.api.versioning import reverse
 from cyborgbackup.main.models.base import PrimordialModel
@@ -16,7 +16,6 @@ __all__ = ['Catalog']
 
 
 class Catalog(PrimordialModel):
-
     archive_name = models.CharField(
         max_length=1024,
     )
@@ -62,7 +61,7 @@ class Catalog(PrimordialModel):
         return "/#/catalogs/{}".format(self.pk)
 
     @classmethod
-    def create_from_data(self, **kwargs):
+    def create_from_data(cls, **kwargs):
         pk = None
         for key in ('archive_name',):
             if key in kwargs:
@@ -70,8 +69,6 @@ class Catalog(PrimordialModel):
         if pk is None:
             return
 
-        archive_name = kwargs['archive_name']
-        job = kwargs['job']
         catalog_data = kwargs['catalog']
         catalogs_entries_raw = gzip.decompress(base64.b64decode(catalog_data))
         catalog_entries = json.loads(catalogs_entries_raw.decode('utf-8'))
@@ -90,11 +87,11 @@ class Catalog(PrimordialModel):
         return len(catalog_entries)
 
     @classmethod
-    def get_cache_key(self, key):
+    def get_cache_key(cls, key):
         return key
 
     @classmethod
-    def get_cache_id_key(self, key):
+    def get_cache_id_key(cls, key):
         return '{}_ID'.format(key)
 
     def __str__(self):

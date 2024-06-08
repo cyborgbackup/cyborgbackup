@@ -1,17 +1,23 @@
-import os
 import base64
+import os
 import socket
+
 import prometheus_client
+<<<<<<< Updated upstream
 from prometheus_client import multiprocess
 from django.views.generic.base import TemplateView
+=======
+>>>>>>> Stashed changes
 from django.contrib.staticfiles import views
 from django.http import HttpResponse
 from django.urls import re_path
+from django.views.generic.base import TemplateView
+from prometheus_client import multiprocess
 
-from cyborgbackup.main.utils.tasks import catalog_is_running, celery_worker_is_running
+from cyborgbackup import get_version
 from cyborgbackup.main.models import Job, Policy, Repository, Schedule, Client
 from cyborgbackup.main.models.settings import Setting
-from cyborgbackup import get_version
+from cyborgbackup.main.utils.tasks import catalog_is_running, celery_worker_is_running
 
 app_name = 'ui'
 
@@ -75,8 +81,8 @@ METRICS_CYBORG_JOBS_DURATIONS = prometheus_client.Gauge(
     ['instance', 'archive_name', 'client', 'policy_type']
 )
 
-class IndexView(TemplateView):
 
+class IndexView(TemplateView):
     template_name = 'ui/index.html'
 
     def get_context_data(self, **kwargs):
@@ -185,6 +191,10 @@ index = IndexView.as_view()
 
 urlpatterns = [
     re_path(r'^$', index, name='index'),
+<<<<<<< Updated upstream
     re_path(r'^metrics$', metrics_prometheus),
+=======
+    re_path(r'^metrics$', MetricsPrometheus),
+>>>>>>> Stashed changes
     re_path(r'^(?P<path>.*)$', views.serve),
 ]

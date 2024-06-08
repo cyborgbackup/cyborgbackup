@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('main', '0010_client_bandwidth_limit'),
     ]
@@ -23,7 +22,9 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='job',
             name='job_type',
-            field=models.CharField(choices=[('job', 'Default Backup Job'), ('check', 'Prepare Client or Repository'), ('catalog', 'Catalog Job'), ('prune', 'Prune Job'), ('restore', 'Restore Job')], default='job', max_length=64),
+            field=models.CharField(choices=[('job', 'Default Backup Job'), ('check', 'Prepare Client or Repository'),
+                                            ('catalog', 'Catalog Job'), ('prune', 'Prune Job'),
+                                            ('restore', 'Restore Job')], default='job', max_length=64),
         ),
         migrations.AlterField(
             model_name='policy',
@@ -33,6 +34,10 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='policy',
             name='policy_type',
-            field=models.CharField(choices=[('rootfs', 'Root FileSystem'), ('vm', 'Virtual Machine'), ('mysql', 'MySQL'), ('postgresql', 'PostgreSQL'), ('piped', 'Piped Backup'), ('config', 'Only /etc'), ('mail', 'Only mail directory'), ('folders', 'Specified folders'), ('proxmox', 'Proxmox')], default='rootfs', max_length=20),
+            field=models.CharField(
+                choices=[('rootfs', 'Root FileSystem'), ('vm', 'Virtual Machine'), ('mysql', 'MySQL'),
+                         ('postgresql', 'PostgreSQL'), ('piped', 'Piped Backup'), ('config', 'Only /etc'),
+                         ('mail', 'Only mail directory'), ('folders', 'Specified folders'), ('proxmox', 'Proxmox')],
+                default='rootfs', max_length=20),
         ),
     ]

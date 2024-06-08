@@ -3,7 +3,10 @@ import logging
 
 # Django
 from django.utils.encoding import smart_str
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
 # Django REST Framework
 from rest_framework import authentication
 

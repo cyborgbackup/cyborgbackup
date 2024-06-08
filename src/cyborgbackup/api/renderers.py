@@ -1,14 +1,13 @@
 # Django REST Framework
+import six
 from rest_framework import renderers
 from rest_framework.request import override_method
 
-import six
-
 
 class BrowsableAPIRenderer(renderers.BrowsableAPIRenderer):
-    '''
+    """
     Customizations to the default browsable API renderer.
-    '''
+    """
 
     def get_default_renderer(self, view):
         renderer = super(BrowsableAPIRenderer, self).get_default_renderer(view)

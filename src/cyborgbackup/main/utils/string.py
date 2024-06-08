@@ -45,7 +45,7 @@ class UriCleaner(object):
 
             t = redactedtext[:match.start()] + uri_str
             text_index = len(t)
-            if (match.end() < len(redactedtext)):
+            if match.end() < len(redactedtext):
                 t += redactedtext[match.end():]
 
             redactedtext = t

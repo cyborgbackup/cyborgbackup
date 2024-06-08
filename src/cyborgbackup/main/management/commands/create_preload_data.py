@@ -1,8 +1,9 @@
-from django.core.management.base import BaseCommand
-from django.core.management import call_command
 from crum import impersonate
-from cyborgbackup.main.models import Policy, Client, Repository, Schedule
 from django.contrib.auth import get_user_model
+from django.core.management import call_command
+from django.core.management.base import BaseCommand
+
+from cyborgbackup.main.models import Policy, Client, Repository, Schedule
 from cyborgbackup.main.models.settings import Setting
 
 

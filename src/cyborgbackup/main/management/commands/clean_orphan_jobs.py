@@ -1,4 +1,3 @@
-
 # Django
 from django.core.management.base import BaseCommand
 from django.db import transaction
@@ -17,7 +16,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('--dry-run', dest='dry_run', action='store_true',
                             default=False, help='Dry run mode (show items that would '
-                            'be removed)')
+                                                'be removed)')
 
     def cleanup_jobs(self):
         # Sanity check: Is there already a running job on the System?
@@ -49,6 +48,6 @@ class Command(BaseCommand):
                 skipped, updated = getattr(self, 'cleanup_%s' % m)()
                 if self.dry_run:
                     print('{}: {} would be updated, {} would be skipped.'.format(m.replace('_', ' '),
-                                    updated, skipped))
+                                                                                 updated, skipped))
                 else:
                     print('{}: {} updated, {} skipped.'.format(m.replace('_', ' '), updated, skipped))

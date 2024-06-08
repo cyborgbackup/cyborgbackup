@@ -1,16 +1,15 @@
 import uuid
 
-# Django
-from django.db import models
-from django.core.exceptions import ValidationError, ObjectDoesNotExist
-from django.utils.timezone import now
-
 # Django-CRUM
 from crum import get_current_user
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
+# Django
+from django.db import models
+from django.utils.timezone import now
 
+from cyborgbackup.main.utils.common import parse_yaml_or_json
 # CyBorgBackup
 from cyborgbackup.main.utils.encryption import encrypt_field
-from cyborgbackup.main.utils.common import parse_yaml_or_json
 
 __all__ = ['prevent_search', 'VarsDictProperty', 'BaseModel', 'CreatedModifiedModel',
            'PasswordFieldsModel', 'PrimordialModel', 'CommonModel',
@@ -284,7 +283,6 @@ class CommonModelNameNotUnique(PrimordialModel):
 
 
 class NotificationFieldsModel(BaseModel):
-
     class Meta:
         abstract = True
 

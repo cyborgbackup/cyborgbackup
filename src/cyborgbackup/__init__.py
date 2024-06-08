@@ -1,9 +1,10 @@
-from .celery import app as celery_app
-import warnings
 import os
 import sys
+import warnings
 
-__all__ = ['celery_app']
+from .celery import app as celery_app
+
+__all__ = ['celery_app', 'prepare_env', 'get_version', '__version__']
 
 __version__ = '1.4'
 
@@ -47,7 +48,7 @@ def prepare_env():
         import six
         sys.modules['django.utils.six'] = sys.modules['six']
         django.utils.six = sys.modules['django.utils.six']
-        from django.utils import six # noqa
+        from django.utils import six  # noqa
     # Disable capturing all SQL queries in memory when in DEBUG mode.
     if settings.DEBUG and not getattr(settings, 'SQL_DEBUG', True):
         from django.db.backends.base.base import BaseDatabaseWrapper as b
@@ -84,9 +85,9 @@ def manage():
     # error message.  Allow --help to still work.
     elif settings.SECRET_KEY == 'permission-denied':
         if (
-            len(sys.argv) == 1
-            or len(sys.argv) >= 2
-            and sys.argv[1] in ('-h', '--help', 'help')
+                len(sys.argv) == 1
+                or len(sys.argv) >= 2
+                and sys.argv[1] in ('-h', '--help', 'help')
         ):
             execute_from_command_line(sys.argv)
             sys.stdout.write('\n')

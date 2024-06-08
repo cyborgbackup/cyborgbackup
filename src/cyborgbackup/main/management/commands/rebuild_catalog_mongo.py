@@ -1,17 +1,19 @@
+import json
 import os
 import re
-import json
 import stat
 import tempfile
-import pymongo
-from datetime import datetime
-from io import StringIO
 from collections import OrderedDict
+import datetime
+from io import StringIO
+
+import pymongo
+from packaging.version import Version, parse
 from django.conf import settings
-from distutils.version import LooseVersion as Version
 from django.core.management.base import BaseCommand
-from cyborgbackup.main.models import Job, Repository
+
 from cyborgbackup.main.expect import run
+from cyborgbackup.main.models import Job, Repository
 from cyborgbackup.main.models.settings import Setting
 from cyborgbackup.main.utils.common import get_ssh_version
 from cyborgbackup.main.utils.encryption import decrypt_field
@@ -34,8 +36,8 @@ class Command(BaseCommand):
     def get_password_prompts(self, **kwargs):
         d = OrderedDict()
         for k, v in kwargs['passwords'].items():
-            d[re.compile(r'Enter passphrase for .*'+k+r':\s*?$', re.M)] = k
-            d[re.compile(r'Enter passphrase for .*'+k, re.M)] = k
+            d[re.compile(r'Enter passphrase for .*' + k + r':\s*?$', re.M)] = k
+            d[re.compile(r'Enter passphrase for .*' + k, re.M)] = k
         d[re.compile(r'Bad passphrase, try again for .*:\s*?$', re.M)] = ''
         return d
 
@@ -98,8 +100,8 @@ class Command(BaseCommand):
         private_data_files = {'credentials': {}}
         if private_data is not None:
             ssh_ver = get_ssh_version()
-            ssh_too_old = True if ssh_ver == "unknown" else Version(ssh_ver) < Version("6.0")
-            openssh_keys_supported = ssh_ver != "unknown" and Version(ssh_ver) >= Version("6.5")
+            ssh_too_old = True if ssh_ver == "unknown" else parse(ssh_ver) < Version("6.0")
+            openssh_keys_supported = ssh_ver != "unknown" and parse(ssh_ver) >= Version("6.5")
             for sets, data in private_data.get('credentials', {}).items():
                 # Bail out now if a private key was provided in OpenSSH format
                 # and we're running an earlier version (<6.5).
@@ -126,12 +128,18 @@ class Command(BaseCommand):
         return private_data_files
 
     def launch_command(self, cmd, instance, key, path, **kwargs):
+<<<<<<< Updated upstream
         cwd = '/var/tmp/cyborgbackup'
         env = {}
         env['BORG_PASSPHRASE'] = key
         env['BORG_REPO'] = path
         env['BORG_RELOCATED_REPO_ACCESS_IS_OK'] = 'yes'
         env['BORG_RSH'] = 'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+=======
+        cwd = '/tmp/'
+        env = {'BORG_PASSPHRASE': key, 'BORG_REPO': path, 'BORG_RELOCATED_REPO_ACCESS_IS_OK': 'yes',
+               'BORG_RSH': 'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'}
+>>>>>>> Stashed changes
         args = cmd
         safe_args = args
 
@@ -212,7 +220,7 @@ class Command(BaseCommand):
                                                         **kwargs)
                             hoursTimezone = round(
                                 (round(
-                                    (datetime.now()-datetime.utcnow()).total_seconds())/1800)
+                                    (datetime.datetime.now() - datetime.datetime.now(datetime.UTC)).total_seconds()) / 1800)
                                 / 2)
 
                             print('Clean archive {} catalog entries.'.format(job.archive_name))

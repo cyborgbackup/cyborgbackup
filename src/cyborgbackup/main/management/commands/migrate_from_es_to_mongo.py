@@ -1,7 +1,7 @@
-import json
 import pymongo
 from django.conf import settings
 from django.core.management.base import BaseCommand
+
 from cyborgbackup.main.models import Job
 
 try:
@@ -12,6 +12,7 @@ except:
 
 db = pymongo.MongoClient(settings.MONGODB_URL).local
 es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
+
 
 class Command(BaseCommand):
     """Fill MongoDB Catalog from ElasticSearch Catalog
@@ -27,7 +28,7 @@ class Command(BaseCommand):
 
         jobs = Job.objects.exclude(archive_name='')
         if jobs.exists():
-            i=0
+            i = 0
             search_object = {
                 'size': 1000,
                 'from': 0,
@@ -76,4 +77,3 @@ class Command(BaseCommand):
                     }
                 }
                 res = es.search(index="catalog", doc_type='_doc', body=search_object)
-

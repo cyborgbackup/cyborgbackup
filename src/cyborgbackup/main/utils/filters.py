@@ -1,5 +1,8 @@
 import re
 from functools import reduce
+
+import django
+import six
 from pyparsing import (
     infixNotation,
     opAssoc,
@@ -8,10 +11,6 @@ from pyparsing import (
     CharsNotIn,
     ParseException,
 )
-
-import six
-
-import django
 
 from cyborgbackup.main.utils.common import get_search_fields
 
@@ -38,7 +37,6 @@ def get_model(name):
 
 
 class SmartFilter(object):
-
     class BoolOperand(object):
         def __init__(self, t):
             kwargs = dict()
@@ -49,7 +47,8 @@ class SmartFilter(object):
             search_kwargs = self._expand_search(k, v)
             if search_kwargs:
                 kwargs.update(search_kwargs)
-                q = reduce(lambda x, y: x | y, [django.db.models.Q(**{u'%s__contains' % _k: _v}) for _k, _v in kwargs.items()])  # noqa
+                q = reduce(lambda x, y: x | y,
+                           [django.db.models.Q(**{u'%s__contains' % _k: _v}) for _k, _v in kwargs.items()])  # noqa
                 self.result = Host.objects.filter(q)
             else:
                 kwargs[k] = v
@@ -67,7 +66,7 @@ class SmartFilter(object):
 
         def _json_path_to_contains(self, k, v):
             v = self.strip_quotes_traditional_logic(v)
-            return (k, v)
+            return k, v
 
         def _extract_key_value(self, t):
             t_len = len(t)
@@ -96,7 +95,7 @@ class SmartFilter(object):
             else:
                 v = string_to_type(t[v_offset])
 
-            return (k, v)
+            return k, v
 
         def _expand_search(self, k, v):
             if 'search' not in k:
@@ -150,7 +149,7 @@ class SmartFilter(object):
 
         unicode_spaces = list(set(six.text_type(c) for c in filter_string if c.isspace()))
         unicode_spaces_other = unicode_spaces + [u'(', u')', u'=', u'"']
-        atom = CharsNotIn(unicode_spaces_other)
+        atom = CharsNotIn(''.join(unicode_spaces_other))
         atom_inside_quotes = CharsNotIn(u'"')
         atom_quoted = Literal('"') + Optional(atom_inside_quotes) + Literal('"')
         EQUAL = Literal('=')

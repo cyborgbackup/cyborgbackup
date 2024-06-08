@@ -18,7 +18,7 @@ Will show ids less than the given one.
 
     ?failed=true
 
-Will show only failed plays.  Alternatively `false` may be used.
+Will show only failed plays. Alternatively `false` may be used.
 
     ?play__icontains=test
 
