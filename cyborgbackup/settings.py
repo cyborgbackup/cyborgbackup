@@ -59,7 +59,7 @@ except Exception:
             to generate your secret key!' % SECRET_FILE)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 SQL_DEBUG = False
 
 ALLOWED_HOSTS = ['web', 'localhost', '127.0.0.1', '::1', '*']
@@ -82,36 +82,39 @@ INSTALLED_APPS = [
     'channels',
     'auditlog',
     'django_rest_passwordreset',
-    'debug_toolbar',
     'cyborgbackup.ui',
     'cyborgbackup.api',
     'cyborgbackup.main'
 ]
 
-DEBUG_TOOLBAR_CONFIG = {
-    'INTERCEPT_REDIRECTS': False,
-}
+if DEBUG:
+    INSTALLED_APPS += [
+        'debug_toolbar',
+    ]
+    DEBUG_TOOLBAR_CONFIG = {
+        'INTERCEPT_REDIRECTS': False,
+    }
 
-DEBUG_TOOLBAR_PANELS = (
-    # Defaults
-    'debug_toolbar.panels.versions.VersionsPanel',
-    'debug_toolbar.panels.timer.TimerPanel',
-    'debug_toolbar.panels.settings.SettingsPanel',
-    'debug_toolbar.panels.headers.HeadersPanel',
-    'debug_toolbar.panels.request.RequestPanel',
-    'debug_toolbar.panels.sql.SQLPanel',
-    'debug_toolbar.panels.staticfiles.StaticFilesPanel',
-    'debug_toolbar.panels.templates.TemplatesPanel',
-    'debug_toolbar.panels.cache.CachePanel',
-    'debug_toolbar.panels.signals.SignalsPanel',
-    'debug_toolbar.panels.logging.LoggingPanel',
-    'debug_toolbar.panels.redirects.RedirectsPanel',
-)
+    DEBUG_TOOLBAR_PANELS = (
+        # Defaults
+        'debug_toolbar.panels.versions.VersionsPanel',
+        'debug_toolbar.panels.timer.TimerPanel',
+        'debug_toolbar.panels.settings.SettingsPanel',
+        'debug_toolbar.panels.headers.HeadersPanel',
+        'debug_toolbar.panels.request.RequestPanel',
+        'debug_toolbar.panels.sql.SQLPanel',
+        'debug_toolbar.panels.staticfiles.StaticFilesPanel',
+        'debug_toolbar.panels.templates.TemplatesPanel',
+        'debug_toolbar.panels.cache.CachePanel',
+        'debug_toolbar.panels.signals.SignalsPanel',
+        'debug_toolbar.panels.logging.LoggingPanel',
+        'debug_toolbar.panels.redirects.RedirectsPanel',
+    )
 
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
 BROKER_URL = "redis://{}:{}/{}".format(
-    os.environ.get("REDIS_HOST", "redis"),
+    os.environ.get("REDIS_HOST", "127.0.0.1"),
     os.environ.get("REDIS_PORT", "6379"),
     "1")
 
@@ -122,7 +125,7 @@ CHANNEL_LAYERS = {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
             "hosts": ["redis://{}:{}/{}".format(
-                os.environ.get("REDIS_HOST", "redis"),
+                os.environ.get("REDIS_HOST", "127.0.0.1"),
                 os.environ.get("REDIS_POST", 6379),
                 "0"
             )],

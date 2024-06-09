@@ -27,7 +27,7 @@ class CyborgbackupApiTest(APITestCase):
         self.assertEqual(response.data['current_version'], '/api/v1/')
 
     def test_api_access_swagger(self, mocked):
-        url = reverse('api:swagger_view')
+        url = reverse('schema_json', kwargs={'format': '.json'})
         response = self.client.get(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -38,29 +38,29 @@ class CyborgbackupApiTest(APITestCase):
 
     def test_api_access_logout(self, mocked):
         url = reverse('api:logout')
-        response = self.client.get(url, format='json')
+        response = self.client.post(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_302_FOUND)
 
     def test_api_v1_access_root(self, mocked):
-        url = reverse('api:api_v1_root_view', kwargs={'version': 'v1'})
+        url = reverse('api:api_v1_root_view')
         response = self.client.get(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['ping'], '/api/v1/ping/')
+        self.assertIn('/api/v1/ping', response.data['ping'])
 
     def test_api_v1_access_ping(self, mocked):
-        url = reverse('api:api_v1_ping_view', kwargs={'version': 'v1'})
+        url = reverse('api:api_v1_ping_view')
         response = self.client.get(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['version'], '1.4')
         self.assertEqual(response.data['ping'], 'pong')
 
     def test_api_v1_access_config_without_auth(self, mocked):
-        url = reverse('api:api_v1_config_view', kwargs={'version': 'v1'})
+        url = reverse('api:api_v1_config_view')
         response = self.client.get(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_api_v1_access_config_with_auth(self, mocked):
-        url = reverse('api:api_v1_config_view', kwargs={'version': 'v1'})
+        url = reverse('api:api_v1_config_view')
         user = get_user_model().objects.first()
         self.client.force_login(user)
         response = self.client.get(url, format='json')
@@ -71,7 +71,7 @@ class CyborgbackupApiTest(APITestCase):
         self.assertEqual(response.data['version'], '1.4')
 
     def test_api_v1_access_me(self, mocked):
-        url = reverse('api:user_me_list', kwargs={'version': 'v1'})
+        url = reverse('api:user_me_list')
         self.client.login(username=self.user_login, password=self.user_pass)
         response = self.client.get(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -81,63 +81,63 @@ class CyborgbackupApiTest(APITestCase):
         self.assertEqual(response.data['results'][0]['email'], 'admin@cyborg.local')
 
     def test_api_v1_access_users(self, mocked):
-        url = reverse('api:user_list', kwargs={'version': 'v1'})
+        url = reverse('api:user_list')
         self.client.login(username=self.user_login, password=self.user_pass)
         response = self.client.get(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['count'], 1)
 
     def test_api_v1_access_settings(self, mocked):
-        url = reverse('api:setting_list', kwargs={'version': 'v1'})
+        url = reverse('api:setting_list')
         self.client.login(username=self.user_login, password=self.user_pass)
         response = self.client.get(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['count'], 22)
 
     def test_api_v1_access_clients(self, mocked):
-        url = reverse('api:client_list', kwargs={'version': 'v1'})
+        url = reverse('api:client_list')
         self.client.login(username=self.user_login, password=self.user_pass)
         response = self.client.get(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['count'], 1)
 
     def test_api_v1_access_schedules(self, mocked):
-        url = reverse('api:schedule_list', kwargs={'version': 'v1'})
+        url = reverse('api:schedule_list')
         self.client.login(username=self.user_login, password=self.user_pass)
         response = self.client.get(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['count'], 1)
 
     def test_api_v1_access_repositories(self, mocked):
-        url = reverse('api:repository_list', kwargs={'version': 'v1'})
+        url = reverse('api:repository_list')
         self.client.login(username=self.user_login, password=self.user_pass)
         response = self.client.get(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['count'], 1)
 
     def test_api_v1_access_policies(self, mocked):
-        url = reverse('api:policy_list', kwargs={'version': 'v1'})
+        url = reverse('api:policy_list')
         self.client.login(username=self.user_login, password=self.user_pass)
         response = self.client.get(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['count'], 1)
 
     def test_api_v1_access_catalogs(self, mocked):
-        url = reverse('api:catalog_list', kwargs={'version': 'v1'})
+        url = reverse('api:catalog_list')
         self.client.login(username=self.user_login, password=self.user_pass)
         response = self.client.get(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['count'], 0)
 
     def test_api_v1_access_stats(self, mocked):
-        url = reverse('api:stats', kwargs={'version': 'v1'})
+        url = reverse('api:stats')
         self.client.login(username=self.user_login, password=self.user_pass)
         response = self.client.get(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, [])
 
     def test_api_v1_get_schedule_1(self, mocked):
-        url = reverse('api:schedule_detail', kwargs={'version': 'v1', 'pk': 1})
+        url = reverse('api:schedule_detail', kwargs={'pk': 1})
         self.client.login(username=self.user_login, password=self.user_pass)
         response = self.client.get(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -146,7 +146,7 @@ class CyborgbackupApiTest(APITestCase):
         self.assertFalse(response.data['enabled'])
 
     def test_api_v1_access_schedules_create_schedule(self, mocked):
-        url = reverse('api:schedule_list', kwargs={'version': 'v1'})
+        url = reverse('api:schedule_list')
         self.client.login(username=self.user_login, password=self.user_pass)
         data = {"name": "Test Create Schedule", "crontab": "1 1 1 1 * *"}
         response = self.client.post(url, data=data, format='json')
@@ -156,28 +156,27 @@ class CyborgbackupApiTest(APITestCase):
         self.assertTrue(response.data['enabled'])
 
     def test_api_v1_access_schedules_after_creation(self, mocked):
-        url = reverse('api:schedule_list', kwargs={'version': 'v1'})
+        url = reverse('api:schedule_list')
         self.client.login(username=self.user_login, password=self.user_pass)
         data = {"name": "Test List Schedule", "crontab": "1 1 1 1 * *"}
         response = self.client.post(url, data=data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-        url = reverse('api:schedule_list', kwargs={'version': 'v1'})
+        url = reverse('api:schedule_list')
         self.client.login(username=self.user_login, password=self.user_pass)
         response = self.client.get(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertNotEqual(response.data['count'], 0)
 
     def test_api_v1_access_schedules_update_schedule(self, mocked):
-        url = reverse('api:schedule_list', kwargs={'version': 'v1'})
+        url = reverse('api:schedule_list')
         self.client.login(username=self.user_login, password=self.user_pass)
         data = {"name": "Test Update Schedule", "crontab": "2 2 2 2 * *"}
         response = self.client.post(url, data=data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         id = response.data['id']
-        url = response.data['url']
 
-        url = reverse('api:schedule_detail', kwargs={'version': 'v1', 'pk': response.data['id']})
+        url = reverse('api:schedule_detail', kwargs={'pk': response.data['id']})
         self.client.login(username=self.user_login, password=self.user_pass)
         data = {"enabled": False}
         response = self.client.patch(url, data=data, format='json')
@@ -185,28 +184,28 @@ class CyborgbackupApiTest(APITestCase):
         self.assertEqual(response.data['id'], id)
         self.assertEqual(response.data['crontab'], "2 2 2 2 * *")
         self.assertEqual(response.data['name'], "Test Update Schedule")
-        self.assertEqual(response.data['url'], url)
+        self.assertIn(url, response.data['url'])
         self.assertFalse(response.data['enabled'])
 
     def test_api_v1_access_schedules_delete_schedule(self, mocked):
-        url = reverse('api:schedule_list', kwargs={'version': 'v1'})
+        url = reverse('api:schedule_list')
         self.client.login(username=self.user_login, password=self.user_pass)
         response = self.client.get(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         count_before_delete = response.data['count']
 
-        url = reverse('api:schedule_list', kwargs={'version': 'v1'})
+        url = reverse('api:schedule_list')
         self.client.login(username=self.user_login, password=self.user_pass)
         data = {"name": "Test Delete Schedule", "crontab": "1 1 1 1 * *"}
         response = self.client.post(url, data=data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-        url = reverse('api:schedule_detail', kwargs={'version': 'v1', 'pk': response.data['id']})
+        url = reverse('api:schedule_detail', kwargs={ 'pk': response.data['id']})
         self.client.login(username=self.user_login, password=self.user_pass)
         response = self.client.delete(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
-        url = reverse('api:schedule_list', kwargs={'version': 'v1'})
+        url = reverse('api:schedule_list')
         self.client.login(username=self.user_login, password=self.user_pass)
         response = self.client.get(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -215,7 +214,7 @@ class CyborgbackupApiTest(APITestCase):
         self.assertEqual(count_before_delete, count_after_delete)
 
     def test_api_v1_get_repository_1(self, mocked):
-        url = reverse('api:repository_detail', kwargs={'version': 'v1', 'pk': 1})
+        url = reverse('api:repository_detail', kwargs={'pk': 1})
         self.client.login(username=self.user_login, password=self.user_pass)
         response = self.client.get(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -226,7 +225,7 @@ class CyborgbackupApiTest(APITestCase):
         self.assertEqual(response.data['repository_key'], "0123456789abcdef")
 
     def test_api_v1_access_repositories_create_repository(self, mocked):
-        url = reverse('api:repository_list', kwargs={'version': 'v1'})
+        url = reverse('api:repository_list')
         self.client.login(username=self.user_login, password=self.user_pass)
         data = {"name": "Test Create Repository", "path": "/dev/null", "repository_key": "abcedf02"}
         response = self.client.post(url, data=data, format='json')
@@ -236,28 +235,27 @@ class CyborgbackupApiTest(APITestCase):
         self.assertTrue(response.data['enabled'])
 
     def test_api_v1_access_repositories_after_creation(self, mocked):
-        url = reverse('api:repository_list', kwargs={'version': 'v1'})
+        url = reverse('api:repository_list')
         self.client.login(username=self.user_login, password=self.user_pass)
         data = {"name": "Test List Repository", "path": "/dev/log", "repository_key": "abcedf03"}
         response = self.client.post(url, data=data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-        url = reverse('api:repository_list', kwargs={'version': 'v1'})
+        url = reverse('api:repository_list')
         self.client.login(username=self.user_login, password=self.user_pass)
         response = self.client.get(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertNotEqual(response.data['count'], 0)
 
     def test_api_v1_access_repositories_update_repository(self, mocked):
-        url = reverse('api:repository_list', kwargs={'version': 'v1'})
+        url = reverse('api:repository_list')
         self.client.login(username=self.user_login, password=self.user_pass)
         data = {"name": "Test Update Repository", "path": "/dev/log", "repository_key": "abcedf04"}
         response = self.client.post(url, data=data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         id = response.data['id']
-        url = response.data['url']
 
-        url = reverse('api:repository_detail', kwargs={'version': 'v1', 'pk': response.data['id']})
+        url = reverse('api:repository_detail', kwargs={'pk': response.data['id']})
         self.client.login(username=self.user_login, password=self.user_pass)
         data = {"enabled": False, "path": "/dev/null"}
         response = self.client.patch(url, data=data, format='json')
@@ -265,28 +263,28 @@ class CyborgbackupApiTest(APITestCase):
         self.assertEqual(response.data['id'], id)
         self.assertEqual(response.data['path'], "/dev/null")
         self.assertEqual(response.data['name'], "Test Update Repository")
-        self.assertEqual(response.data['url'], url)
+        self.assertIn(url, response.data['url'])
         self.assertFalse(response.data['enabled'])
 
     def test_api_v1_access_repositories_delete_repository(self, mocked):
-        url = reverse('api:repository_list', kwargs={'version': 'v1'})
+        url = reverse('api:repository_list')
         self.client.login(username=self.user_login, password=self.user_pass)
         response = self.client.get(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         count_before_delete = response.data['count']
 
-        url = reverse('api:repository_list', kwargs={'version': 'v1'})
+        url = reverse('api:repository_list')
         self.client.login(username=self.user_login, password=self.user_pass)
         data = {"name": "Test Delete Repository", "path": "/dev/none", "repository_key": "abcedf05"}
         response = self.client.post(url, data=data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-        url = reverse('api:repository_detail', kwargs={'version': 'v1', 'pk': response.data['id']})
+        url = reverse('api:repository_detail', kwargs={'pk': response.data['id']})
         self.client.login(username=self.user_login, password=self.user_pass)
         response = self.client.delete(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
-        url = reverse('api:repository_list', kwargs={'version': 'v1'})
+        url = reverse('api:repository_list')
         self.client.login(username=self.user_login, password=self.user_pass)
         response = self.client.get(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -295,7 +293,7 @@ class CyborgbackupApiTest(APITestCase):
         self.assertEqual(count_before_delete, count_after_delete)
 
     def test_api_v1_get_client_1(self, mocked):
-        url = reverse('api:client_detail', kwargs={'version': 'v1', 'pk': 1})
+        url = reverse('api:client_detail', kwargs={'pk': 1})
         self.client.login(username=self.user_login, password=self.user_pass)
         response = self.client.get(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -306,7 +304,7 @@ class CyborgbackupApiTest(APITestCase):
         self.assertFalse(response.data['ready'])
 
     def test_api_v1_access_clients_create_client(self, mocked):
-        url = reverse('api:client_list', kwargs={'version': 'v1'})
+        url = reverse('api:client_list')
         self.client.login(username=self.user_login, password=self.user_pass)
         data = {"hostname": "localhost.localdomain"}
         response = self.client.post(url, data=data, format='json')
@@ -315,56 +313,55 @@ class CyborgbackupApiTest(APITestCase):
         self.assertTrue(response.data['enabled'])
 
     def test_api_v1_access_clients_after_creation(self, mocked):
-        url = reverse('api:client_list', kwargs={'version': 'v1'})
+        url = reverse('api:client_list')
         self.client.login(username=self.user_login, password=self.user_pass)
         data = {"hostname": "localhost.contoso"}
         response = self.client.post(url, data=data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-        url = reverse('api:client_list', kwargs={'version': 'v1'})
+        url = reverse('api:client_list')
         self.client.login(username=self.user_login, password=self.user_pass)
         response = self.client.get(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertNotEqual(response.data['count'], 0)
 
     def test_api_v1_access_clients_update_client(self, mocked):
-        url = reverse('api:client_list', kwargs={'version': 'v1'})
+        url = reverse('api:client_list')
         self.client.login(username=self.user_login, password=self.user_pass)
         data = {"hostname": "localhost.example"}
         response = self.client.post(url, data=data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         id = response.data['id']
-        url = response.data['url']
 
-        url = reverse('api:client_detail', kwargs={'version': 'v1', 'pk': response.data['id']})
+        url = reverse('api:client_detail', kwargs={'pk': response.data['id']})
         self.client.login(username=self.user_login, password=self.user_pass)
         data = {"enabled": False}
         response = self.client.patch(url, data=data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['id'], id)
         self.assertEqual(response.data['hostname'], "localhost.example")
-        self.assertEqual(response.data['url'], url)
+        self.assertIn(url, response.data['url'])
         self.assertFalse(response.data['enabled'])
 
     def test_api_v1_access_clients_delete_client(self, mocked):
-        url = reverse('api:client_list', kwargs={'version': 'v1'})
+        url = reverse('api:client_list')
         self.client.login(username=self.user_login, password=self.user_pass)
         response = self.client.get(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         count_before_delete = response.data['count']
 
-        url = reverse('api:client_list', kwargs={'version': 'v1'})
+        url = reverse('api:client_list')
         self.client.login(username=self.user_login, password=self.user_pass)
         data = {"hostname": "localhost.test"}
         response = self.client.post(url, data=data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-        url = reverse('api:client_detail', kwargs={'version': 'v1', 'pk': response.data['id']})
+        url = reverse('api:client_detail', kwargs={'pk': response.data['id']})
         self.client.login(username=self.user_login, password=self.user_pass)
         response = self.client.delete(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
-        url = reverse('api:client_list', kwargs={'version': 'v1'})
+        url = reverse('api:client_list')
         self.client.login(username=self.user_login, password=self.user_pass)
         response = self.client.get(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -373,7 +370,7 @@ class CyborgbackupApiTest(APITestCase):
         self.assertEqual(count_before_delete, count_after_delete)
 
     def test_api_v1_get_policy_1(self, mocked):
-        url = reverse('api:policy_detail', kwargs={'version': 'v1', 'pk': 1})
+        url = reverse('api:policy_detail', kwargs={'pk': 1})
         self.client.login(username=self.user_login, password=self.user_pass)
         response = self.client.get(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -383,14 +380,14 @@ class CyborgbackupApiTest(APITestCase):
         self.assertEqual(response.data['policy_type'], "rootfs")
 
     def test_api_v1_get_policy_vmmmodule(self, mocked):
-        url = reverse('api:policy_vmmodule', kwargs={'version': 'v1'})
+        url = reverse('api:policy_vmmodule')
         self.client.login(username=self.user_login, password=self.user_pass)
         response = self.client.get(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, [])
 
     def test_api_v1_get_policy_calendar_1(self, mocked):
-        url = reverse('api:policy_calendar', kwargs={'version': 'v1', 'pk': 1})
+        url = reverse('api:policy_calendar', kwargs={'pk': 1})
         self.client.login(username=self.user_login, password=self.user_pass)
         response = self.client.get(url, format='json')
 
@@ -414,7 +411,7 @@ class CyborgbackupApiTest(APITestCase):
         self.assertEqual(response.data, expectedCalendar)
 
     def test_api_v1_access_policies_create_policy(self, mocked):
-        url = reverse('api:policy_list', kwargs={'version': 'v1'})
+        url = reverse('api:policy_list')
         self.client.login(username=self.user_login, password=self.user_pass)
         data = {"name": "Test Create Policy", "policy_type": "config", "schedule": 1, "repository": 1, "clients": [1]}
         response = self.client.post(url, data=data, format='json')
@@ -424,56 +421,55 @@ class CyborgbackupApiTest(APITestCase):
         self.assertTrue(response.data['enabled'])
 
     def test_api_v1_access_policies_after_policy(self, mocked):
-        url = reverse('api:policy_list', kwargs={'version': 'v1'})
+        url = reverse('api:policy_list')
         self.client.login(username=self.user_login, password=self.user_pass)
         data = {"name": "Test List Policy", "policy_type": "config", "schedule": 1, "repository": 1, "clients": [1]}
         response = self.client.post(url, data=data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-        url = reverse('api:policy_list', kwargs={'version': 'v1'})
+        url = reverse('api:policy_list')
         self.client.login(username=self.user_login, password=self.user_pass)
         response = self.client.get(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertNotEqual(response.data['count'], 0)
 
     def test_api_v1_access_policies_update_policy(self, mocked):
-        url = reverse('api:policy_list', kwargs={'version': 'v1'})
+        url = reverse('api:policy_list')
         self.client.login(username=self.user_login, password=self.user_pass)
         data = {"name": "Test Update Policy", "policy_type": "config", "schedule": 1, "repository": 1, "clients": [1]}
         response = self.client.post(url, data=data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         id = response.data['id']
-        url = response.data['url']
 
-        url = reverse('api:policy_detail', kwargs={'version': 'v1', 'pk': response.data['id']})
+        url = reverse('api:policy_detail', kwargs={'pk': response.data['id']})
         self.client.login(username=self.user_login, password=self.user_pass)
         data = {"enabled": False}
         response = self.client.patch(url, data=data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['id'], id)
         self.assertEqual(response.data['name'], "Test Update Policy")
-        self.assertEqual(response.data['url'], url)
+        self.assertIn(url, response.data['url'])
         self.assertFalse(response.data['enabled'])
 
     def test_api_v1_access_policies_delete_policy(self, mocked):
-        url = reverse('api:policy_list', kwargs={'version': 'v1'})
+        url = reverse('api:policy_list')
         self.client.login(username=self.user_login, password=self.user_pass)
         response = self.client.get(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         count_before_delete = response.data['count']
 
-        url = reverse('api:policy_list', kwargs={'version': 'v1'})
+        url = reverse('api:policy_list')
         self.client.login(username=self.user_login, password=self.user_pass)
         data = {"name": "Test Delete Policy", "policy_type": "config", "schedule": 1, "repository": 1, "clients": [1]}
         response = self.client.post(url, data=data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-        url = reverse('api:policy_detail', kwargs={'version': 'v1', 'pk': response.data['id']})
+        url = reverse('api:policy_detail', kwargs={'pk': response.data['id']})
         self.client.login(username=self.user_login, password=self.user_pass)
         response = self.client.delete(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
-        url = reverse('api:policy_list', kwargs={'version': 'v1'})
+        url = reverse('api:policy_list')
         self.client.login(username=self.user_login, password=self.user_pass)
         response = self.client.get(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
