@@ -13,41 +13,31 @@ services:
     image: redis:latest
     ports:
       - "6379:6379"
-  rabbitmq:
-    image: rabbitmq:management
-    volumes:
-      - ./tools/rabbitmq_docker/:/etc/rabbitmq/
-    ports:
-      - "5672:5672"
-      - "15672:15672"
   callback_receiver:
     image: cyborgbackup/cyborgbackup:latest
-    command: bash -c "python /cyborgbackup/manage.py run_callback_receiver -v 3"
+    command: "cyborgbackup-manage run_callback_receiver -v 3"
     env_file:
       - .env
     depends_on:
       - postgres
-      - rabbitmq
       - redis
   channel_workers:
     image: cyborgbackup/cyborgbackup:latest
-    command: bash -c 'python /cyborgbackup/manage.py runworker --only-channels websocket.*'
+    command: 'cyborgbackup-manage runworker websocket'
     env_file:
       - .env
     depends_on:
       - postgres
-      - rabbitmq
       - redis
   api:
     image: cyborgbackup/cyborgbackup:latest
-    command: bash -c "python /cyborgbackup/manage.py migrate --noinput && python /cyborgbackup/manage.py runserver 0.0.0.0:8000"
+    command: launch_cyborg.sh
     env_file:
       - .env
     ports:
       - "8000:8000"
     depends_on:
       - postgres
-      - rabbitmq
       - redis
     restart: unless-stopped
   celery:
@@ -57,7 +47,6 @@ services:
       - .env
     depends_on:
       - postgres
-      - rabbitmq
       - redis
   celery_beat:
     image: cyborgbackup/cyborgbackup:latest
@@ -66,7 +55,6 @@ services:
       - .env
     depends_on:
       - postgres
-      - rabbitmq
       - redis
   mongodb:
     image: mongo:latest
