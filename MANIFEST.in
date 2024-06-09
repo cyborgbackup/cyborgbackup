@@ -1,0 +1,11 @@
+recursive-include cyborgbackup *.py
+recursive-include cyborgbackup *.po
+recursive-include cyborgbackup *.mo
+recursive-include cyborgbackup *.txt
+recursive-include cyborgbackup/static *
+recursive-include cyborgbackup/templates *
+recursive-include cyborgbackup/main/fixtures *.json
+recursive-include cyborgbackup/scripts *
+recursive-include requirements *.yml
+include tools/scripts/cyborgbackup-python
+include Makefile

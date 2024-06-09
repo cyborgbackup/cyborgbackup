@@ -54,3 +54,4 @@ cryptography~=42.0.8
 packaging~=24.0
 asgiref~=3.8.1
 setuptools~=70.0.0
+django-auditlog

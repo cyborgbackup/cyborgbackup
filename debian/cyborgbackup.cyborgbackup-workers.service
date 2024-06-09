@@ -8,7 +8,7 @@ Environment=PATH=/opt/cyborgbackup/venv/bin:$PATH
 WorkingDirectory=/opt/cyborgbackup
 User=cyborgbackup
 Group=cyborgbackup
-ExecStart=/opt/cyborgbackup/manage.py runworker --only-channels websocket.*
+ExecStart=/opt/cyborgbackup/manage.py runworker websocket
 
 [Install]
 WantedBy=multi-user.target

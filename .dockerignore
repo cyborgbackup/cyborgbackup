@@ -1,3 +1,4 @@
 .git
+venv
 cyborgbackup/ui/src/node_modules
 cyborgbackup/ui/src/bower_components

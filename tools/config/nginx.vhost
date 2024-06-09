@@ -18,14 +18,14 @@ server {
     keepalive_timeout 65;
     client_max_body_size 10M;
 
-    root /opt/cyborgbackup/cyborgbackup/static;
+    root /opt/cyborgbackup/cyborgbackup/var/static;
 
     location / {
         try_files $uri $uri @uwsgi;
     }
 
     location /static {
-        alias /opt/cyborgbackup/cyborgbackup/static;
+        alias /opt/cyborgbackup/cyborgbackup/var/static;
     }
 
     location /websocket {

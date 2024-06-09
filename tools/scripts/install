@@ -1,7 +1,6 @@
 #!/bin/bash
 
 postgres_passwd = $(tr -cd '[:alnum:]' < /dev/urandom | fold -w50 | head -n1)
-rabbitmq_passwd = $(tr -cd '[:alnum:]' < /dev/urandom | fold -w50 | head -n1)
 
 if [ "$1" = configure ]; then
     [ "$DPKG_MAINTSCRIPT_PACKAGE" ] && quiet="--quiet" # RedHat doesn't have this

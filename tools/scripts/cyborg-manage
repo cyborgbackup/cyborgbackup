@@ -1,0 +1,19 @@
+#!/usr/bin/python3
+import sys
+from importlib.metadata import distribution
+
+
+def load_entry_point(dist, group, name):
+    dist_name, _, _ = dist.partition('==')
+    matches = (
+        entry_point
+        for entry_point in distribution(dist_name).entry_points
+        if entry_point.group == group and entry_point.name == name
+    )
+    return next(matches).load()
+
+
+if __name__ == '__main__':
+    sys.exit(
+        load_entry_point('cyborgbackup', 'console_scripts', 'cyborg-manage')()
+    )

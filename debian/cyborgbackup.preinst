@@ -9,7 +9,8 @@ case "$1" in
          useradd -m -d /opt/cyborgbackup -s /bin/bash cyborgbackup
       fi
       if test -f /etc/supervisor/conf.d/cyborgbackup.conf ; then
-         supervisorctl stop cyborg-celery
+         supervisorctl stop cyborg-celery-worker-main
+         supervisorctl stop cyborg-celery-worker-job
          supervisorctl stop cyborg-celery-beat
          supervisorctl stop cyborg-callback-receiver
          supervisorctl stop cyborg-daphne

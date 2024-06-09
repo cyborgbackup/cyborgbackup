@@ -9,9 +9,10 @@ pip3 install -r /usr/share/cyborgbackup/requirements.txt
 mkdir -p /opt/cyborgbackup/var/run
 
 python3 "$HOME/manage.py" migrate
+python3 "$HOME/manage.py" collectstatic
 if [ -z "$CYBORG_READY" ]; then
     python3 "$HOME/manage.py" loaddata settings
-    echo "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.create_superuser('admin@cyborg.local', 'admin')" | python3 "$HOME/manage.py" shell
+    python3 "$HOME/manage.py" makesuperuser
     echo "export CYBORG_READY=1" >> /opt/cyborgbackup/.env
 else
   python3 "$HOME/manage.py" rebuild_settings

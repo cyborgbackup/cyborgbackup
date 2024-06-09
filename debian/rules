@@ -30,7 +30,8 @@
 override_dh_installinit:
 	dh_installinit --name=cyborgbackup
 	dh_installinit --name=cyborgbackup-callback-receiver
-	dh_installinit --name=cyborgbackup-celery
+	dh_installinit --name=cyborgbackup-celery-worker-job
+	dh_installinit --name=cyborgbackup-celery-worker-main
 	dh_installinit --name=cyborgbackup-celery-beat
 	dh_installinit --name=cyborgbackup-daphne
 	dh_installinit --name=cyborgbackup-uwsgi
@@ -40,7 +41,8 @@ override_dh_installinit:
 override_dh_systemd_enable:
 	dh_systemd_enable --name=cyborgbackup
 	dh_systemd_enable --name=cyborgbackup-callback-receiver
-	dh_systemd_enable --name=cyborgbackup-celery
+	dh_systemd_enable --name=cyborgbackup-celery-worker-job
+	dh_systemd_enable --name=cyborgbackup-celery-worker-main
 	dh_systemd_enable --name=cyborgbackup-celery-beat
 	dh_systemd_enable --name=cyborgbackup-daphne
 	dh_systemd_enable --name=cyborgbackup-uwsgi
@@ -49,7 +51,8 @@ override_dh_systemd_enable:
 override_dh_systemd_start:
 	dh_systemd_start --name=cyborgbackup
 	dh_systemd_start --name=cyborgbackup-callback-receiver
-	dh_systemd_start --name=cyborgbackup-celery
+	dh_systemd_start --name=cyborgbackup-celery-worker-job
+	dh_systemd_start --name=cyborgbackup-celery-worker-main
 	dh_systemd_start --name=cyborgbackup-celery-beat
 	dh_systemd_start --name=cyborgbackup-daphne
 	dh_systemd_start --name=cyborgbackup-uwsgi
