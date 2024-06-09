@@ -20,8 +20,8 @@ Build Status
 ===========  =======  ============
 Type         Branch   Status
 ===========  =======  ============
-GitHub       master   |ci-develop|
-Github       develop  |ci-master|
+GitHub       master   |ci-master|
+GitHub       develop  |ci-develop|
 CodeCov      master   |codecov|
 ReadTheDocs  master   |readthedocs|
 ===========  =======  ============
