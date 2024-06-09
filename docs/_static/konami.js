@@ -14,7 +14,7 @@ var Konami = function (callback) {
 	var konami = {
 		addEvent: function (obj, type, fn, ref_obj) {
 			if (obj.addEventListener)
-				obj.addEventListener(type, fn, false);
+				{obj.addEventListener(type, fn, false);}
 			else if (obj.attachEvent) {
 				// IE
 				obj["e" + type + fn] = fn;
@@ -28,10 +28,10 @@ var Konami = function (callback) {
 		pattern: "38384040373937396665",
 		load: function (link) {
 			this.addEvent(document, "keydown", function (e, ref_obj) {
-				if (ref_obj) konami = ref_obj; // IE
+				if (ref_obj) {konami = ref_obj;} // IE
 				konami.input += e ? e.keyCode : event.keyCode;
 				if (konami.input.length > konami.pattern.length)
-					konami.input = konami.input.substr((konami.input.length - konami.pattern.length));
+					{konami.input = konami.input.substr((konami.input.length - konami.pattern.length));}
 				if (konami.input == konami.pattern) {
 					konami.code(link);
 					konami.input = "";
@@ -95,9 +95,8 @@ var Konami = function (callback) {
 					result = "TAP";
 				}
 				if (result) {
-					if (result == this.keys[0]) this.keys = this.keys.slice(1, this.keys.length);
-					else this.keys = this.orig_keys;
-				}
+					if (result == this.keys[0]) {this.keys = this.keys.slice(1, this.keys.length);}
+					else {this.keys = this.orig_keys;}				}
 				if (this.keys.length == 0) {
 					this.keys = this.orig_keys;
 					this.code(link);

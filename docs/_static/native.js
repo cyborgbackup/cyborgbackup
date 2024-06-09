@@ -10,7 +10,7 @@ var _native = (function () {
       targetClass: 'native-ad'
     }
 
-    if (typeof e === 'undefined') return defaultOptions
+    if (typeof e === 'undefined') {return defaultOptions}
     Object.keys(defaultOptions).forEach((key, index) => {
       if (typeof e[key] === 'undefined') {
         e[key] = defaultOptions[key]
@@ -45,7 +45,7 @@ var _native = (function () {
 
   var sanitize = function (ads) {
     return ads
-      .filter(ad => {
+      .filter((ad) => {
         return Object.keys(ad).length > 0
       })
       .filter(ad => {
@@ -68,11 +68,11 @@ var _native = (function () {
   }
 
   return {
-    carbon: carbon,
-    init: init,
-    options: options,
-    pixel: pixel,
-    sanitize: sanitize
+    carbon,
+    init,
+    options,
+    pixel,
+    sanitize
   }
 })()
 
@@ -85,9 +85,9 @@ var _native_go = function (json) {
     selectedClass.forEach((className, index) => {
       let selectedTarget = document.getElementsByClassName(options['targetClass'])[index]
 
-      if (options['fallback'] !== '' || options['carbonZoneKey'] !== '') selectedTarget.setAttribute('data-state', 'visible')
+      if (options['fallback'] !== '' || options['carbonZoneKey'] !== '') {selectedTarget.setAttribute('data-state', 'visible')}
       selectedTarget.innerHTML = options['fallback']
-      if (options['carbonZoneKey'] !== '') selectedTarget.appendChild(_native.carbon(options))
+      if (options['carbonZoneKey'] !== '') {selectedTarget.appendChild(_native.carbon(options))}
     })
 
     // End at this line if no ads are found, avoiding unnecessary steps
