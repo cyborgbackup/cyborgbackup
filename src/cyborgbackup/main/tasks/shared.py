@@ -219,7 +219,8 @@ def cyborgbackup_periodic_scheduler(self):
                 continue
             if not can_start:
                 new_job.status = 'failed'
-                expl = "Scheduled job could not start because it was not in the right state or required manual credentials"
+                expl = ("Scheduled job could not start because it was not in the right state or required manual "
+                        "credentials")
                 new_job.job_explanation = expl
                 new_job.save(update_fields=['status', 'job_explanation'])
                 new_job.websocket_emit_status("failed")
