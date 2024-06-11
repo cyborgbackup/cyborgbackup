@@ -57,7 +57,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'CyBorgBackup'
-copyright = u'2018. A Gaëtan Ferez Project for <a href="https://milkywan.fr/">MilkyWan</a>'
+copyright = u'Copyright 2024, CyBorgBackup & contributors'
 author = u'Gaëtan FEREZ'
 
 # The version info for the project you're documenting, acts as replacement for
