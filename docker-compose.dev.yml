@@ -70,7 +70,7 @@ services:
       - redis
   celery_beat:
     image: cyborgbackup/cyborgbackup:latest
-    command: celery -A cyborgbackup beat -l debug
+    command: celery -A cyborgbackup beat -l debug -s /var/run/cyborgbackup/celerybeat-schedule
     volumes:
       - ./src:/cyborgbackup
     env_file:

@@ -34,6 +34,8 @@ services:
     command: launch_cyborg.sh
     env_file:
       - .env
+    environment:
+      - RUN_MIGRATIONS=1
     ports:
       - "8000:8000"
     depends_on:
@@ -50,7 +52,7 @@ services:
       - redis
   celery_beat:
     image: cyborgbackup/cyborgbackup:latest
-    command: celery -A cyborgbackup beat
+    command: celery -A cyborgbackup beat -s /var/run/cyborgbackup/celerybeat-schedule
     env_file:
       - .env
     depends_on:
