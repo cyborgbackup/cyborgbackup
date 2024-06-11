@@ -49,7 +49,8 @@ If you don't have `docker-compose <https://docs.docker.com/compose/>`_ or `docke
 Connecting to the interface
 ---------------------------
 | You can connect to the CyBorgBackup interface at : http://localhost:8000
-| The admin account is created on first docker-compose launch like following ::
+| The admin account is created on first docker-compose launch like following :
+::
 
     cyborgbackup-web-1                | admin user not found, creating one
     cyborgbackup-web-1                | ===================================
