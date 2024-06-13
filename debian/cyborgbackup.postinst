@@ -55,3 +55,5 @@ then
   ln -s /etc/nginx/sites-available/cyborg /etc/nginx/sites-enabled/cyborg
   nginx -t && nginx -s reload
 fi
+
+systemctl start cyborgbackup
