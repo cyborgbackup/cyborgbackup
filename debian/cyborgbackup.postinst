@@ -44,7 +44,7 @@ then
     su - cyborgbackup -c "python3 -m venv /opt/cyborgbackup/venv/" || exit $?
 fi
 
-su - postgres -c /usr/share/cyborgbackup/tools/scripts/makedb.sh || exit $?
+/usr/share/cyborgbackup/tools/scripts/makedb.sh || exit $?
 
 su - cyborgbackup -c 'source $HOME/venv/bin/activate && /usr/share/cyborgbackup/tools/scripts/initcyborg.sh' || exit $?
 
