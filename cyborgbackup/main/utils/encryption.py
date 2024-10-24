@@ -76,7 +76,7 @@ def encrypt_field(instance, field_name, ask=False, subfield=None, skip_utf8=Fals
     if skip_utf8:
         utf8 = False
     else:
-        utf8 = type(value) == six.text_type
+        utf8 = type(value) == str
     value = smart_str(value)
     key = get_encryption_key(field_name, getattr(instance, 'pk', None))
     f = Fernet256(key)
@@ -145,7 +145,7 @@ def encrypt_dict(data, fields):
 
 
 def is_encrypted(value):
-    if not isinstance(value, six.string_types):
+    if not isinstance(value, str):
         return False
     return value.startswith('$encrypted$') and len(value) > len('$encrypted$')
 

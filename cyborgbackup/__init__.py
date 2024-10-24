@@ -39,9 +39,6 @@ def prepare_env():
     # Monkeypatch Django find_commands to also work with .pyc files.
     import django.core.management
     django.core.management.find_commands = find_commands
-    # Fixup sys.modules reference to django.utils.six to allow jsonfield to
-    # work when using Django 1.4.
-    import django.utils
     # Disable capturing all SQL queries in memory when in DEBUG mode.
     if settings.DEBUG and not getattr(settings, 'SQL_DEBUG', True):
         from django.db.backends.base.base import BaseDatabaseWrapper as b

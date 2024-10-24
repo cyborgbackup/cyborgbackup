@@ -59,7 +59,7 @@ except Exception:
             to generate your secret key!' % SECRET_FILE)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 SQL_DEBUG = False
 
 ALLOWED_HOSTS = ['web', 'localhost', '127.0.0.1', '::1', '*']

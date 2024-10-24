@@ -65,7 +65,7 @@ class PlainTextRenderer(renderers.BaseRenderer):
     format = 'txt'
 
     def render(self, data, media_type=None, renderer_context=None):
-        if not isinstance(data, six.string_types):
+        if not isinstance(data, str):
             data = str(data)
         return data.encode(self.charset)
 
