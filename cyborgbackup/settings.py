@@ -11,12 +11,11 @@ https://docs.djangoproject.com/en/1.11/ref/settings/
 """
 
 import os
-import urllib.parse
 from datetime import timedelta
 
 from celery.schedules import crontab
 from corsheaders.defaults import default_headers
-from kombu import Queue, Exchange
+from kombu import Queue
 from kombu.common import Broadcast
 
 

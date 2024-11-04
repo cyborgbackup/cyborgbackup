@@ -1,14 +1,10 @@
 import logging
 import os
-import stat
 import tempfile
 
-from django.conf import settings
 from django.contrib.auth import get_user_model
 
-from cyborgbackup.main.models.settings import Setting
 from cyborgbackup.main.tasks.builders.helpers import build_env
-from cyborgbackup.main.utils.common import load_module_provider
 
 logger = logging.getLogger('cyborgbackup.main.tasks.builders.check')
 

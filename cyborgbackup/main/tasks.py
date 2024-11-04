@@ -3,13 +3,6 @@ import logging
 
 from cyborgbackup.main.tasks.runjob import RunJob
 
-try:
-    import psutil
-except Exception:
-    psutil = None
-
-from contextlib import contextmanager
-
 # Celery
 from celery.app import app_or_default
 

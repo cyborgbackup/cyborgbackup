@@ -10,20 +10,20 @@ from django.utils.encoding import force_str
 from django.utils.text import capfirst
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
-# Django-Polymorphic
+
+# Django REST Framework
 from rest_framework import fields
 from rest_framework import serializers
 from rest_framework import validators
-# Django REST Framework
 from rest_framework.exceptions import ValidationError
-# cyborgbackup
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
+
+# cyborgbackup
 from cyborgbackup.api.fields import BooleanNullField, CharNullField, ChoiceNullField, VerbatimField
 from cyborgbackup.api.versioning import reverse
 from cyborgbackup.main.constants import ACTIVE_STATES
 from cyborgbackup.main.constants import ANSI_SGR_PATTERN
-from cyborgbackup.main.models.catalogs import Catalog
 from cyborgbackup.main.models.clients import Client
 from cyborgbackup.main.models.events import JobEvent
 from cyborgbackup.main.models.jobs import Job
