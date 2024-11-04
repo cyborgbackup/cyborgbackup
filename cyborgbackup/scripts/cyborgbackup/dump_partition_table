@@ -1,0 +1,46 @@
+#!/bin/bash
+
+########################################################
+##          CyBorgBackup Dump Partition               ##
+##   Author : Gaëtan Ferez <gaetan@cyborgbackup.dev>  ##
+##                 Version 0.1                        ##
+########################################################
+
+echo "Running CyBorgBackup Dump Partitions script"
+
+lsblk -V 2>&1 1>/dev/null || (echo "lsblk missing command" && exit 1)
+
+temp_file=$(mktemp)
+cat > $temp_file <<EOF
+import tarfile
+import json
+import subprocess
+import io
+
+tar = tarfile.open("/var/tmp/cyborgbackup/cyborg_partitioning.tgz", "w:gz")
+
+try:
+  subprocess_lsblk = subprocess.run(['lsblk', '-OJ'], capture_output=True, text=True)
+  if subprocess_lsblk.returncode == 0:
+    data = subprocess_lsblk.stdout.encode('utf-8')
+    tarinfo = tarfile.TarInfo('lsblk.json')
+    tarinfo.size = len(data)
+    tar.addfile(tarinfo, io.BytesIO(data))
+except:
+  pass
+
+try:
+  subprocess_lvm = subprocess.run(['lvm', 'fullreport', '--reportformat', 'json'], capture_output=True, text=True)
+  if subprocess_lvm.returncode == 0:
+    data = subprocess_lvm.stdout.encode('utf-8')
+    tarinfo = tarfile.TarInfo('lvm.json')
+    tarinfo.size = len(data)
+    tar.addfile(tarinfo, io.BytesIO(data))
+except:
+  pass
+
+tar.close()
+
+EOF
+python3 $temp_file
+echo "done"

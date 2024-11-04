@@ -21,14 +21,15 @@ class RestoreLaunchSerializer(BaseSerializer):
     dry_run = serializers.BooleanField(required=False, initial=False, write_only=True)
     item = serializers.CharField(required=False, write_only=True)
     verbosity = serializers.IntegerField(required=False, initial=0, min_value=0, max_value=4, write_only=True)
+    retrieve_url = serializers.CharField(read_only=True)
 
     class Meta:
         model = Job
-        fields = ('defaults', 'archive_name', 'destination', 'dest_folder', 'dry_run', 'item', 'verbosity')
+        fields = ('defaults', 'archive_name', 'destination', 'dest_folder', 'dry_run', 'item', 'verbosity', 'retrieve_url')
 
     def get_defaults(self, obj):
         defaults_dict = {'verbosity': 0, 'archive_name': '', 'destination': '',
-                         'dest_folder': '', 'dry_run': False, 'item': ''}
+                         'dest_folder': '', 'dry_run': False, 'item': '', 'retrieve_url': ''}
         return defaults_dict
 
     def get_job_template_data(self, obj):

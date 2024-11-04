@@ -83,7 +83,7 @@ class TaskManager:
 
         same_repo_jobs_count = Job.objects.filter(repository=task.policy.repository.pk,
                                                   status__in=('starting', 'running',)).count()
-        same_client_jobs_count = Job.objects.filter(client=task.client.pk, status__in=('starting', 'running',)).count()
+        same_client_jobs_count = Job.objects.filter(client=task.client.pk, status__in=('starting', 'running',)).count() if task.client else 0
 
         logger.info('Found %d jobs with same repository that task %s.', same_repo_jobs_count, task.log_format)
         logger.info('Found %d jobs with same client that task %s.', same_client_jobs_count, task.log_format)
@@ -114,6 +114,7 @@ class TaskManager:
         waiting_jobs = []
         now = tz_now()
         jobs = Job.objects.filter((Q(status='running') |
+                                   Q(status='starting') |
                                    Q(status='waiting',
                                      modified__lte=now - timedelta(seconds=60))))
         for j in jobs:
@@ -415,12 +416,12 @@ class TaskManager:
                 logger.error("{}Task {} has no record in celery. Marking as failed".format(
                     'Isolated ' if isolated else '', task.log_format))
 
-    def cleanup_inconsistent_celery_tasks(self):
+    def cleanup_inconsistent_celery_tasks(self, force=False):
         """
         Rectify cyborgbackup db <-> celery inconsistent view of jobs state
         """
         last_cleanup = cache.get('last_celery_task_cleanup') or datetime.min.replace(tzinfo=pytz.UTC)
-        if (tz_now() - last_cleanup).seconds < 60 * 3:
+        if (tz_now() - last_cleanup).seconds < 60 * 3 and not force:
             return
 
         logger.debug("Failing inconsistent running jobs.")

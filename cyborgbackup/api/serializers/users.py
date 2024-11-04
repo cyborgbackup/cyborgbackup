@@ -3,12 +3,13 @@ import logging
 
 # Django
 from django.utils.translation import gettext_lazy as _
+
 # Django REST Framework
 from rest_framework import serializers
 
-from cyborgbackup.main.models.users import User
 # CyBorgBackup
 from .base import BaseSerializer
+from cyborgbackup.main.models.users import User
 
 logger = logging.getLogger('cyborgbackup.api.serializers.stats')
 

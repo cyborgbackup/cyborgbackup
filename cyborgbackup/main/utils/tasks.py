@@ -40,7 +40,8 @@ def run_job_launch(job_id):
 
 @shared_task(base=LogErrorsTask)
 def run_job_complete(job_id):
-    TaskManager().schedule()
+    compute_borg_size.s()
+    #TaskManager().schedule()
 
 
 @shared_task(base=LogErrorsTask)

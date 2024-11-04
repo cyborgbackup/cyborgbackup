@@ -103,6 +103,13 @@ class JobCancelSerializer(JobSerializer):
         fields = ('can_cancel',)
 
 
+class JobCheckSerializer(JobSerializer):
+    can_check = serializers.BooleanField(read_only=True)
+
+    class Meta:
+        fields = ('can_check',)
+
+
 class JobRelaunchSerializer(BaseSerializer):
     retry_counts = serializers.SerializerMethodField()
 

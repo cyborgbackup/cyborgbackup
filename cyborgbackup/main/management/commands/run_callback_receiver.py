@@ -20,11 +20,12 @@ from django.db.utils import InterfaceError, InternalError
 from kombu import Connection, Exchange, Queue
 from kombu.mixins import ConsumerMixin
 
+
+# CyBorgBackup
+from cyborgbackup.main.models.jobs import Job
 from cyborgbackup.main.consumers import emit_channel_notification
 from cyborgbackup.main.models.catalogs import Catalog
 from cyborgbackup.main.models.events import JobEvent
-# CyBorgBackup
-from cyborgbackup.main.models.jobs import Job
 
 logger = logging.getLogger('cyborgbackup.main.commands.run_callback_receiver')
 

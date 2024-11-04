@@ -116,7 +116,19 @@ DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 BROKER_URL = "redis://{}:{}/{}".format(
     os.environ.get("REDIS_HOST", "127.0.0.1"),
     os.environ.get("REDIS_PORT", "6379"),
-    "1")
+    os.environ.get("REDIS_BROKER_DB", "1")
+)
+
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": "redis://{}:{}/{}".format(
+            os.environ.get("REDIS_HOST", "127.0.0.1"),
+            os.environ.get("REDIS_PORT", "6379"),
+            os.environ.get("REDIS_CACHE_DB", "2")
+        ),
+    }
+}
 
 MONGODB_URL = "mongodb://{}/".format(os.environ.get("MONGODB_HOST", "127.0.0.1"))
 
@@ -127,7 +139,7 @@ CHANNEL_LAYERS = {
             "hosts": ["redis://{}:{}/{}".format(
                 os.environ.get("REDIS_HOST", "127.0.0.1"),
                 os.environ.get("REDIS_POST", 6379),
-                "0"
+                os.environ.get("REDIS_CHANNELS_DB", "0")
             )],
         },
     },
@@ -392,7 +404,10 @@ CELERYD_TASK_SOFT_TIME_LIMIT = None
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 CELERYD_POOL_RESTARTS = True
 CELERY_RESULT_BACKEND = 'django-db'
-CELERY_IMPORTS = ('cyborgbackup.main.utils.tasks', 'cyborgbackup.main.tasks')
+CELERY_IMPORTS = ('cyborgbackup.main.tasks.runjob',
+                  'cyborgbackup.main.utils.tasks',
+                  'cyborgbackup.main.tasks.shared'
+                  )
 CELERY_QUEUES = (
     Queue('main_tasks', routing_key='main_tasks'),
     Queue('backup_job', routing_key='backup_job'),
@@ -409,13 +424,13 @@ main_tasks_route = {
 }
 
 CELERY_ROUTES = {
-    'cyborgbackup.main.tasks.cyborgbackup_notifier': main_tasks_route,
-    'cyborgbackup.main.tasks.cyborgbackup_periodic_scheduler': main_tasks_route,
-    'cyborgbackup.main.tasks.compute_borg_size': main_tasks_route,
-    'cyborgbackup.main.tasks.prune_catalog': main_tasks_route,
-    'cyborgbackup.main.tasks.check_borg_new_version': main_tasks_route,
+    'cyborgbackup.main.tasks.shared.cyborgbackup_notifier': main_tasks_route,
+    'cyborgbackup.main.tasks.shared.cyborgbackup_periodic_scheduler': main_tasks_route,
+    'cyborgbackup.main.tasks.shared.compute_borg_size': main_tasks_route,
+    'cyborgbackup.main.tasks.shared.prune_catalog': main_tasks_route,
+    'cyborgbackup.main.tasks.shared.check_borg_new_version': main_tasks_route,
     'cyborgbackup.main.utils.tasks.run_task_manager': main_tasks_route,
-    'cyborgbackup.main.tasks.run_job': {'queue': 'backup_job'}
+    'cyborgbackup.main.tasks.runjob.RunJob': {'queue': 'backup_job'}
 }
 CELERY_BEAT_SCHEDULER = 'celery.beat.PersistentScheduler'
 CELERY_BEAT_SCHEDULE_FILENAME = os.path.join(
@@ -426,38 +441,38 @@ CELERY_BEAT_SCHEDULE_FILENAME = os.path.join(
 CELERY_BEAT_MAX_LOOP_INTERVAL = 60
 CELERY_BEAT_SCHEDULE = {
     'cyborgbackup_notify_daily': {
-        'task': 'cyborgbackup.main.tasks.cyborgbackup_notifier',
+        'task': 'cyborgbackup.main.tasks.shared.cyborgbackup_notifier',
         'schedule': crontab(minute='55', hour='23'),
         'args': ('daily',),
         'options': main_tasks_route
     },
     'cyborgbackup_notify_weekly': {
-        'task': 'cyborgbackup.main.tasks.cyborgbackup_notifier',
+        'task': 'cyborgbackup.main.tasks.shared.cyborgbackup_notifier',
         'schedule': crontab(hour='0', minute='0', day_of_week='6'),
         'args': ('weekly',)
     },
     'cyborgbackup_notify_monthly': {
-        'task': 'cyborgbackup.main.tasks.cyborgbackup_notifier',
+        'task': 'cyborgbackup.main.tasks.shared.cyborgbackup_notifier',
         'schedule': crontab(hour='0', minute='0', day_of_month='1'),
         'args': ('monthly',)
     },
     'cyborgbackup_scheduler': {
-        'task': 'cyborgbackup.main.tasks.cyborgbackup_periodic_scheduler',
+        'task': 'cyborgbackup.main.tasks.shared.cyborgbackup_periodic_scheduler',
         'schedule': timedelta(seconds=30),
         'options': {'expires': 20} | main_tasks_route
     },
-    'cyborgbackup_compute_Size': {
-        'task': 'cyborgbackup.main.tasks.compute_borg_size',
-        'schedule': timedelta(seconds=10),
-        'options': {'expires': 20} | main_tasks_route
-    },
+    #'cyborgbackup_compute_Size': {
+    #    'task': 'cyborgbackup.main.tasks.shared.compute_borg_size',
+    #    'schedule': timedelta(seconds=10),
+    #    'options': {'expires': 20} | main_tasks_route
+    #},
     'cyborgbackup_prune_catalog': {
-        'task': 'cyborgbackup.main.tasks.prune_catalog',
+        'task': 'cyborgbackup.main.tasks.shared.prune_catalog',
         'schedule': crontab(minute='30'),
         'options': {'expires': 20} | main_tasks_route
     },
     'cyborgbackup_check_new_version_borg': {
-        'task': 'cyborgbackup.main.tasks.check_borg_new_version',
+        'task': 'cyborgbackup.main.tasks.shared.check_borg_new_version',
         'schedule': crontab(hour='1', minute='0', day_of_month='1'),
         'options': {'expires': 20} | main_tasks_route
     },

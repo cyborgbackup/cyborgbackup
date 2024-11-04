@@ -25,7 +25,6 @@ class Fernet256(Fernet):
     """
 
     def __init__(self, key, backend=None):
-        super().__init__(key, backend)
         if backend is None:
             backend = default_backend()
 

@@ -7,7 +7,7 @@ from .views.catalogs import CatalogList, CatalogDetail, MongoCatalog, RestoreLau
 from .views.clients import ClientList, ClientDetail
 from .views.generics import LoggedLoginView, LoggedLogoutView
 from .views.jobs import JobStart, JobCancel, JobRelaunch, JobJobEventsList, JobStdout, JobList, JobEventDetail, \
-    JobEventList, JobDetail
+    JobEventList, JobDetail, JobCheck
 from .views.policies import PolicyList, PolicyModule, PolicyDetail, PolicyLaunch, PolicyCalendar, PolicyVMModule
 from .views.repositories import RepositoryList, RepositoryDetail
 from .views.schedules import ScheduleList, ScheduleDetail
@@ -63,6 +63,7 @@ job_urls = [
     re_path(r'^(?P<pk>[0-9]+)/$', JobDetail.as_view(), name='job_detail'),
     re_path(r'^(?P<pk>[0-9]+)/start/$', JobStart.as_view(), name='job_start'),
     re_path(r'^(?P<pk>[0-9]+)/cancel/$', JobCancel.as_view(), name='job_cancel'),
+    re_path(r'^(?P<pk>[0-9]+)/check/$', JobCheck.as_view(), name='job_cancel'),
     re_path(r'^(?P<pk>[0-9]+)/relaunch/$', JobRelaunch.as_view(), name='job_relaunch'),
     re_path(r'^(?P<pk>[0-9]+)/job_events/$', JobJobEventsList.as_view(), name='job_job_events_list'),
     re_path(r'^(?P<pk>[0-9]+)/stdout/$', JobStdout.as_view(), name='job_stdout'),

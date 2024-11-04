@@ -1,6 +1,6 @@
 [Unit]
 Description=CyBorgBackup Job Callback Receiver Service
-PartOf=cyborgbackup.service
+PartOf=cyborgbackup.target
 
 [Service]
 EnvironmentFile=-/etc/default/cyborgbackup

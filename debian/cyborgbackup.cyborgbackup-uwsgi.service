@@ -1,6 +1,6 @@
 [Unit]
 Description=CyBorgBackup uWSGI Service
-PartOf=cyborgbackup.service
+PartOf=cyborgbackup.target
 
 [Service]
 EnvironmentFile=-/etc/default/cyborgbackup

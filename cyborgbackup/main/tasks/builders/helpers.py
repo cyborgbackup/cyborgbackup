@@ -5,10 +5,11 @@ import stat
 import tempfile
 
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from rest_framework.authtoken.models import Token
 
 from cyborgbackup.main.exceptions import JobCatalogException
-from cyborgbackup.main.models import JobEvent, User
+from cyborgbackup.main.models import JobEvent
 from cyborgbackup.main.models.settings import Setting
 from cyborgbackup.main.utils.encryption import decrypt_field
 
@@ -27,6 +28,7 @@ def build_env(job, **kwargs):
     if 'private_data_dir' in kwargs.keys():
         env['PRIVATE_DATA_DIR'] = kwargs['private_data_dir']
 
+    User = get_user_model()
     agent_users = User.objects.filter(is_agent=True)
     if not agent_users.exists():
         agent_user = User()

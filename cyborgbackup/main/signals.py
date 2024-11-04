@@ -15,6 +15,8 @@ from cyborgbackup.main.models import User, JobEvent
 
 __all__ = []
 
+from cyborgbackup.main.consumers import emit_channel_notification
+
 logger = logging.getLogger('cyborgbackup.main.signals')
 
 
@@ -26,11 +28,14 @@ def get_current_user_or_none():
 
 
 def emit_event_detail(serializer, relation, **kwargs):
+    logger.info("NEW EMIT EVENT DETAIL")
     instance = kwargs['instance']
     created = kwargs['created']
     if created:
         event_serializer = serializer(instance)
-        consumers.emit_channel_notification(
+        logger.info("Launch Event")
+        logger.info(event_serializer.data)
+        emit_channel_notification(
             '-'.join([event_serializer.get_group_name(instance), str(getattr(instance, relation))]),
             event_serializer.data
         )

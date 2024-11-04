@@ -149,6 +149,7 @@ def run_pexpect(args, cwd, env, logfile, expect_passwords,
         if idle_timeout and (time.time() - last_stdout_update) > idle_timeout:
             child.close(True)
             canceled = True
+    logger.debug("Child Exit Code : {}".format(child.exitstatus))
     if errored:
         return 'error', child.exitstatus
     elif canceled:

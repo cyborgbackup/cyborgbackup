@@ -31,7 +31,7 @@ from ..renderers import BrowsableAPIRenderer, PlainTextRenderer, AnsiTextRendere
     AnsiDownloadRenderer
 from ..serializers.base import EmptySerializer
 from ..serializers.jobs import JobSerializer, JobEventSerializer, JobListSerializer, JobCancelSerializer, \
-    JobStdoutSerializer, JobRelaunchSerializer
+    JobStdoutSerializer, JobRelaunchSerializer, JobCheckSerializer
 
 logger = logging.getLogger('cyborgbackups.api.views.jobs')
 
@@ -241,6 +241,21 @@ class JobCancel(RetrieveAPIView):
         obj = self.get_object()
         if obj.can_cancel:
             obj.cancel()
+            return Response(status=status.HTTP_202_ACCEPTED)
+        else:
+            return self.http_method_not_allowed(request, *args, **kwargs)
+
+
+class JobCheck(RetrieveAPIView):
+    model = Job
+    obj_permission_type = 'check'
+    serializer_class = JobCheckSerializer
+    tags = ['Job']
+
+    def post(self, request, *args, **kwargs):
+        obj = self.get_object()
+        if obj.can_check:
+            obj.launch_check_integrity()
             return Response(status=status.HTTP_202_ACCEPTED)
         else:
             return self.http_method_not_allowed(request, *args, **kwargs)

@@ -157,4 +157,6 @@ class Client(PrimordialModel):
         latest_versions = db.versions.find_one({}, sort=[("check_date", pymongo.DESCENDING)])
         if not latest_versions:
             return False
+        if not self.version:
+            return False
         return parse_version(self.version) < parse_version(latest_versions['version'])

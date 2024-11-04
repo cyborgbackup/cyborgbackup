@@ -1,6 +1,6 @@
 [Unit]
 Description=CyBorgBackup Celery Worker Main Tasks Service
-PartOf=cyborgbackup.service
+PartOf=cyborgbackup.target
 
 [Service]
 Type=simple

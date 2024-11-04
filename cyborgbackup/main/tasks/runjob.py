@@ -1,6 +1,10 @@
 import logging
 import re
 
+# Celery
+from celery.app import app_or_default
+
+# CyBorgBackup
 from cyborgbackup.main.models import Job, JobEvent
 from cyborgbackup.main.tasks.basetask import BaseTask
 from cyborgbackup.main.tasks.builders.backup import _build_args_for_backup
@@ -18,7 +22,7 @@ class RunJob(BaseTask):
     Celery task to run a job.
     """
 
-    name = 'cyborgbackup.main.tasks.run_job'
+    name = 'cyborgbackup.main.tasks.runjob.RunJob'
     model = Job
     event_model = JobEvent
     event_data_key = 'job_id'
@@ -56,3 +60,6 @@ class RunJob(BaseTask):
             d[re.compile(r'Enter passphrase for .*' + k, re.M)] = k
         d[re.compile(r'Bad passphrase, try again for .*:\s*$', re.M)] = ''
         return d
+
+logger.debug('Registering RunJob task.')
+app_or_default().register_task(RunJob())

@@ -3,6 +3,8 @@ import logging
 import os
 import tempfile
 
+from django.conf import settings
+
 from cyborgbackup.main.exceptions import JobCommandBuilderException
 from cyborgbackup.main.models.settings import Setting
 from cyborgbackup.main.tasks.builders.helpers import build_env
@@ -170,7 +172,7 @@ def _build_borg_cmd_for_piped(policy_type, job):
 #   push => ssh borg@backupHost "ssh root@client "pg_dumpall|pg_dump" | borg create /backup::archive -"
 ########
 
-def build_borg_cmd(job):
+def build_borg_cmd(job, data_dir):
     policy_type = job.policy.policy_type
     job_date = job.created
     job_date_string = job_date.strftime("%Y-%m-%d_%H-%M")
@@ -220,11 +222,11 @@ def build_borg_cmd(job):
         path = '.' + path
     args += [path]
 
-    if len(excluded_dirs) > 0:
-        keyword = '--exclude '
-        if job.policy.mode_pull:
-            keyword += '.'
-        args += (keyword + (' ' + keyword).join(excluded_dirs)).split(' ')
+    excluded_dirs.append(data_dir)
+    keyword = '--exclude '
+    if job.policy.mode_pull:
+        keyword += '.'
+    args += (keyword + (' ' + keyword).join(excluded_dirs)).split(' ')
 
     if job.policy.mode_pull:
         (client_uri, repository_path) = job.policy.repository.path.split(':')
@@ -247,9 +249,15 @@ def build_borg_cmd(job):
     return client, client_user, args
 
 
-def _build_args_for_backup(self, job, **kwargs):
+def _build_args_for_backup(job, **kwargs):
     env = build_env(job, **kwargs)
-    (client, client_user, args) = build_borg_cmd(job)
+    (client, client_user, args) = build_borg_cmd(job, data_dir=env['PRIVATE_DATA_DIR'])
+    extra_vars = {}
+    if job.policy.extra_vars != '':
+        try:
+            extra_vars = json.loads(job.policy.extra_vars)
+        except Exception:
+            pass
 
     handle_env, path_env = tempfile.mkstemp()
     f = os.fdopen(handle_env, 'w')
@@ -268,6 +276,19 @@ def _build_args_for_backup(self, job, **kwargs):
     if job.client.port != 22:
         new_args += ['-P' + job.client.port]
 
+    path = None
+    if (job.policy.policy_type == 'rootfs' and 'with_partition_table' in extra_vars.keys()
+            and extra_vars['with_partition_table']):
+        handle, path = tempfile.mkstemp()
+        f = os.fdopen(handle, 'w')
+        base_script = os.path.join(settings.SCRIPTS_DIR, 'cyborgbackup', 'dump_partition_table')
+        with open(base_script) as fs:
+            script = fs.read()
+        f.write(script)
+        f.close()
+
+        new_args += [path]
+
     new_args += [path_env, '{}@{}:{}/'.format(client_user, client, env['PRIVATE_DATA_DIR'])]
     new_args += ['&&', 'rm', '-f', path_env, '&&']
     new_args += ['ssh', '-Ao', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
@@ -276,8 +297,31 @@ def _build_args_for_backup(self, job, **kwargs):
     if job.client.port != 22:
         args += ['-p', job.client.port]
 
+    # Source Env File
     new_args += ['\". ', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
+
+    # Delete Env File
     new_args += ['rm', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
-    new_args += [' '.join(args), '; exitcode=$?;', 'rm', '-rf', env['PRIVATE_DATA_DIR'], '; exit $exitcode\"']
+
+    # Run Pre-Hook
+    #new_args += []
+
+    # Dump Partition Table
+    if (job.policy.policy_type == 'rootfs' and 'with_partition_table' in extra_vars.keys()
+            and extra_vars['with_partition_table']):
+        new_args += ['bash', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path)), '&&',
+                     'rm', '-f', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path)), '&&']
+
+    # Backup Command
+    new_args += [' '.join(args), '; exitcode=$?;']
+
+    # Delete temporary directory
+    new_args += ['rm', '-rf', env['PRIVATE_DATA_DIR'], '/var/tmp/cyborgbackup/cyborg_partitioning.tgz']
+
+    # Run Post-Hook
+    #new_args += []
+
+    # Exit with Backup Exit Code
+    new_args += ['; exit $exitcode\"']
 
     return new_args

@@ -2,6 +2,7 @@ import json
 import logging
 from urllib.parse import parse_qs
 
+import channels.exceptions
 from asgiref.sync import async_to_sync
 from channels.auth import AuthMiddlewareStack
 from channels.db import database_sync_to_async
@@ -49,19 +50,10 @@ class JwtAuthMiddleware(BaseMiddleware):
             UntypedToken(token)
         except (InvalidToken, TokenError) as e:
             # Token is invalid
-            print(e)
-            return None
+            scope["user"] = AnonymousUser()
         else:
             #  Then token is valid, decode it
             decoded_data = jwt_decode(token, settings.SECRET_KEY, algorithms=["HS256"])
-            print(decoded_data)
-            # Will return a dictionary like -
-            # {
-            #     "token_type": "access",
-            #     "exp": 1568770772,
-            #     "jti": "5c15e80d65b04c20ad34d77b6703251b",
-            #     "user_id": 6
-            # }
 
             # Get the user using ID
             scope["user"] = await get_user(validated_token=decoded_data)
@@ -80,80 +72,47 @@ class CyBorgBackupConsumer(WebsocketConsumer):
     def connect(self):
         self.user = self.scope["user"]
         if self.user.is_authenticated:
-            logger.error("User authenticated.")
+            logger.info("User authenticated.")
             self.accept()
         else:
             logger.error("Request user is not authenticated to use websocket.")
             self.close()
 
-    def receive(self, text_data=None, bytes_data=None):
+    def receive(self, text_data=None, bytes_data=None, **kwargs):
         data = json.loads(text_data)
-        print(data)
 
-        # if 'groups' in data:
-        #     discard_groups(message)
-        #     groups = data['groups']
-        #     current_groups = set(message.channel_session.pop('groups') if 'groups' in message.channel_session else [])
-        #     for group_name, v in groups.items():
-        #         if type(v) is list:
-        #             for oid in v:
-        #                 name = '{}-{}'.format(group_name, oid)
-        #                 current_groups.add(name)
-        #                 Group(name).add(message.reply_channel)
-        #         else:
-        #             current_groups.add(group_name)
-        #             Group(group_name).add(message.reply_channel)
-        #     message.channel_session['groups'] = list(current_groups)
+        if 'groups' in data:
+            self.clean_groups()
+            groups = []
+            for group_name, v in data['groups'].items():
+                if type(v) is list:
+                    for oid in v:
+                        name = '{}-{}'.format(group_name, oid)
+                        groups.append(name)
+                else:
+                    groups.append(group_name)
+            self.scope["session"]["groups"] = groups
+            for g in groups:
+                async_to_sync(self.channel_layer.group_add)(
+                    g, self.channel_name
+                )
+
+    def clean_groups(self):
+        if 'groups' in self.scope["session"]:
+            for group in self.scope["session"]["groups"]:
+                async_to_sync(self.channel_layer.group_discard)(
+                    group, self.channel_name
+                )
+
+    def new_message(self, event):
+        logger.debug('New message: {}'.format(event))
+        if type(event['data']) is str:
+            self.send(text_data=event['data'])
+        else:
+            self.send(text_data=json.dumps(event['data'], cls=DjangoJSONEncoder))
 
     def disconnect(self, close_code):
-        print(close_code)
-        # self.channel_layer.group_discard()
-
-
-# def discard_groups(message):
-#     if 'groups' in message.channel_session:
-#         for group in message.channel_session['groups']:
-#             Group(group).discard(message.reply_channel)
-
-
-# @rest_auth
-# def ws_connect(message):
-#     message.reply_channel.send({"accept": True})
-#     message.content['method'] = 'FAKE'
-#     if message.user.is_authenticated:
-#         message.reply_channel.send(
-#             {"text": json.dumps({"accept": True, "user": message.user.id})}
-#         )
-#     else:
-#         logger.error("Request user is not authenticated to use websocket.")
-#         message.reply_channel.send({"close": True})
-#     return None
-
-
-# @channel_session_user
-# def ws_disconnect(message):
-#     discard_groups(message)
-
-
-# @channel_session_user
-# def ws_receive(message):
-#     raw_data = message.content['text']
-#     data = json.loads(raw_data)
-#
-#     if 'groups' in data:
-#         discard_groups(message)
-#         groups = data['groups']
-#         current_groups = set(message.channel_session.pop('groups') if 'groups' in message.channel_session else [])
-#         for group_name, v in groups.items():
-#             if type(v) is list:
-#                 for oid in v:
-#                     name = '{}-{}'.format(group_name, oid)
-#                     current_groups.add(name)
-#                     Group(name).add(message.reply_channel)
-#             else:
-#                 current_groups.add(group_name)
-#                 Group(group_name).add(message.reply_channel)
-#         message.channel_session['groups'] = list(current_groups)
+        self.clean_groups()
 
 
 def emit_channel_notification(group, payload):
@@ -162,7 +121,10 @@ def emit_channel_notification(group, payload):
 
         async_to_sync(channel_layer.group_send)(
             group,
-            {"text": json.dumps(payload, cls=DjangoJSONEncoder)},
+            {"type": "new_message", "data": json.dumps(payload, cls=DjangoJSONEncoder)},
         )
     except ValueError:
         logger.error("Invalid payload emitting channel {} on topic: {}".format(group, payload))
+    except Exception as e:
+        logger.error(e)
+        logger.error("Error emitting channel {} on topic: {}".format(group, payload))

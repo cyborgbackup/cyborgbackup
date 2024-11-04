@@ -11,7 +11,7 @@ echo "Check Curl"
 curl -V 2>&1 1>/dev/null || (apt-get -q update && apt-get -q -y install curl)
 
 echo "Check Python3"
-curl -V 2>&1 1>/dev/null || (apt-get -q update && apt-get -q -y install python3 python3-json python3-requests)
+python3 -V 2>&1 1>/dev/null || (apt-get -q update && apt-get -q -y install python3 python3-json python3-requests)
 
 binary=$(curl -sL https://api.github.com/repos/borgbackup/borg/releases/latest | grep "browser_download_url" | grep 'borg-linux64"' | cut -d : -f 2,3 | tr -d \\\")
 echo "Check Borg"

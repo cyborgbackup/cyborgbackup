@@ -325,7 +325,6 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
 
     archive_name = models.CharField(
         max_length=200,
-        null=True,
         default=None,
         blank=True,
     )
@@ -464,27 +463,6 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
             return config.prompts_dict()
         except JobLaunchConfig.DoesNotExist:
             return None
-
-    def create_config_from_prompts(self, kwargs):
-        """
-        Create a launch configuration entry for this job, given prompts
-        returns None if it can not be created
-        """
-        if self.job_template is None:
-            return None
-        JobLaunchConfig = self._meta.get_field('launch_config').related_model
-        config = JobLaunchConfig(job=self)
-        valid_fields = []
-        # Special cases allowed for workflows
-        kwargs.pop('survey_passwords', None)
-        for field_name, value in kwargs.items():
-            if field_name not in valid_fields:
-                raise Exception('Unrecognized launch config field {}.'.format(field_name))
-            key = field_name
-            setattr(config, key, value)
-        config.save()
-
-        return config
 
     @property
     def event_class(self):
@@ -692,14 +670,12 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
                 setattr(job, fd, val)
 
         # Set the job back-link on the job
-        parent_field_name = job_class._get_parent_field_name()
+        parent_field_name = 'master_job'
         setattr(job, parent_field_name, self)
 
         job.save()
 
         copy_m2m_relationships(self, job, fields, kwargs=kwargs)
-
-        job.create_config_from_prompts(kwargs)
 
         return job
 
@@ -846,6 +822,10 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
     def can_cancel(self):
         return bool(self.status in CAN_CANCEL)
 
+    @property
+    def can_check(self):
+        return bool(self.status == 'successful' and self.archive_name != '')
+
     def _force_cancel(self):
         # Update the status to 'canceled' if we can detect that the job
         # really isn't running (i.e. celery has crashed or forcefully
@@ -907,6 +887,18 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
             if settings.BROKER_URL.startswith('amqp://'):
                 self._force_cancel()
         return self.cancel_flag
+
+    def launch_check_integrity(self):
+        """
+        Launch a new job to check the integrity of the backup.
+        """
+        integrity_job = self.create_job()
+        integrity_job.job_type = 'check'
+        integrity_job.name = "Check backup Client {} Archive {}".format(self.client.hostname, self.archive_name)
+        integrity_job.description = "Client backup Client {} Archive {}".format(self.client.hostname, self.archive_name)
+        integrity_job.save()
+        integrity_job.signal_start()
+        return integrity_job
 
     def dependent_jobs_finished(self):
         for j in self.__class__.objects.filter(dependent_jobs=self.pk):

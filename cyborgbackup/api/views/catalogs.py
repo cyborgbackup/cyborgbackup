@@ -98,8 +98,6 @@ class MongoCatalog(ListAPIView):
     tags = ['Catalog']
 
     def list(self, request, *args, **kwargs):
-        logger.debug(request.data)
-        data = []
         archive_name = request.GET.get('archive_name', None)
         path = request.GET.get('path__regexp', None)
         db = pymongo.MongoClient(dsettings.MONGODB_URL).local
@@ -110,5 +108,5 @@ class MongoCatalog(ListAPIView):
             data = list(obj.sort('path', 1))
             return Response({'count': len(data), 'results': data})
         else:
-            obj = db.catalog.count({'archive_name': archive_name})
+            obj = db.catalog.count_documents({'archive_name': archive_name})
             return Response({'count': obj, 'results': []})

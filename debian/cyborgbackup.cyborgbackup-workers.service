@@ -1,6 +1,6 @@
 [Unit]
 Description=CyBorgBackup Workers Service
-PartOf=cyborgbackup.service
+PartOf=cyborgbackup.target
 
 [Service]
 EnvironmentFile=-/etc/default/cyborgbackup
