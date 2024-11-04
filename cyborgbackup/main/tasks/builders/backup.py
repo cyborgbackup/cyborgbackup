@@ -256,7 +256,7 @@ def _build_args_for_backup(job, **kwargs):
     if job.policy.extra_vars != '':
         try:
             extra_vars = json.loads(job.policy.extra_vars)
-        except Exception:
+        except json.JSONDecodeError:
             pass
 
     handle_env, path_env = tempfile.mkstemp()

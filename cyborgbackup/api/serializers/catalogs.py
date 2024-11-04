@@ -25,7 +25,8 @@ class RestoreLaunchSerializer(BaseSerializer):
 
     class Meta:
         model = Job
-        fields = ('defaults', 'archive_name', 'destination', 'dest_folder', 'dry_run', 'item', 'verbosity', 'retrieve_url')
+        fields = ('defaults', 'archive_name', 'destination', 'dest_folder',
+                  'dry_run', 'item', 'verbosity', 'retrieve_url')
 
     def get_defaults(self, obj):
         defaults_dict = {'verbosity': 0, 'archive_name': '', 'destination': '',

@@ -2,7 +2,6 @@ import json
 import logging
 from urllib.parse import parse_qs
 
-import channels.exceptions
 from asgiref.sync import async_to_sync
 from channels.auth import AuthMiddlewareStack
 from channels.db import database_sync_to_async
@@ -85,7 +84,7 @@ class CyBorgBackupConsumer(WebsocketConsumer):
             self.clean_groups()
             groups = []
             for group_name, v in data['groups'].items():
-                if type(v) is list:
+                if isinstance(v, list):
                     for oid in v:
                         name = '{}-{}'.format(group_name, oid)
                         groups.append(name)
@@ -106,7 +105,7 @@ class CyBorgBackupConsumer(WebsocketConsumer):
 
     def new_message(self, event):
         logger.debug('New message: {}'.format(event))
-        if type(event['data']) is str:
+        if isinstance(event['data'], str):
             self.send(text_data=event['data'])
         else:
             self.send(text_data=json.dumps(event['data'], cls=DjangoJSONEncoder))
