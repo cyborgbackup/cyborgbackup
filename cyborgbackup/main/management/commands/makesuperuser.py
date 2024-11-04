@@ -7,10 +7,8 @@ User = get_user_model()
 
 class Command(BaseCommand):
     def handle(self, *args, **options):
-        username = 'admin'
         email = 'admin@cyborg.local'
         try:
-            u = None
             if (not User.objects.filter(email=email).exists()
                     and not User.objects.filter(is_superuser=True).exists()):
                 print("admin user not found, creating one")

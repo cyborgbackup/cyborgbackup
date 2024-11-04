@@ -555,7 +555,7 @@ def could_be_script(scripts_path, dir_path, filename):
     matchedLib = False
     matchedFunc = False
     try:
-        for n, line in enumerate(open(script_path)):
+        for _, line in enumerate(open(script_path)):
             if 'from cyborgbackup.main.utils.params import Parameters' in line:
                 matchedLib = True
             if 'def mainJob(' in line:

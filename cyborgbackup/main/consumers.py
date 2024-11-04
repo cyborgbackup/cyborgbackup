@@ -47,7 +47,7 @@ class JwtAuthMiddleware(BaseMiddleware):
         try:
             # This will automatically validate the token and raise an error if token is invalid
             UntypedToken(token)
-        except (InvalidToken, TokenError) as e:
+        except (InvalidToken, TokenError):
             # Token is invalid
             scope["user"] = AnonymousUser()
         else:

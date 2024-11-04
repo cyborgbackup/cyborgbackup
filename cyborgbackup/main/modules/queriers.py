@@ -184,7 +184,7 @@ class Querier:
                 idle_timeout=None,
                 pexpect_timeout=getattr(settings, 'PEXPECT_TIMEOUT', 5),
             )
-            status, rc = run.run_pexpect(
+            _, rc = run.run_pexpect(
                 args, cwd, env, stdout_handle, **_kw
             )
             stdout_handle.flush()

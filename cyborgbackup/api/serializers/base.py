@@ -613,7 +613,7 @@ class JobSerializer(BaseSerializer):
                   'dependent_jobs', 'result_traceback', 'event_processing_finished', 'job_type')
 
     def get_types(self):
-        if type(self) is JobSerializer:
+        if isinstance(self, JobSerializer):
             return ['job', ]
         else:
             return super(JobSerializer, self).get_types()
@@ -676,7 +676,7 @@ class JobStdoutSerializer(JobSerializer):
         fields = ('result_stdout',)
 
     def get_types(self):
-        if type(self) is JobStdoutSerializer:
+        if isinstance(self, JobStdoutSerializer):
             return ['job']
         else:
             return super(JobStdoutSerializer, self).get_types()
@@ -725,14 +725,14 @@ class JobListSerializer(DynamicFieldsSerializerMixin, JobSerializer):
         ))
 
     def get_types(self):
-        if type(self) is JobListSerializer:
+        if isinstance(self, JobListSerializer):
             return ['job', ]
         else:
             return super(JobListSerializer, self).get_types()
 
     def to_representation(self, obj):
         serializer_class = None
-        if type(self) is JobListSerializer:
+        if isinstance(self, JobListSerializer):
             if isinstance(obj, Job):
                 serializer_class = JobSerializer
         if serializer_class:
@@ -839,7 +839,7 @@ class SettingListSerializer(SettingSerializer):
         return tuple(x for x in field_names)
 
     def get_types(self):
-        if type(self) is SettingListSerializer:
+        if isinstance(self, SettingListSerializer):
             return ['setting']
         else:
             return super(SettingListSerializer, self).get_types()
@@ -873,7 +873,7 @@ class ClientListSerializer(ClientSerializer):
         return tuple(x for x in field_names)
 
     def get_types(self):
-        if type(self) is ClientListSerializer:
+        if isinstance(self, ClientListSerializer):
             return ['client']
         else:
             return super(ClientListSerializer, self).get_types()
@@ -905,7 +905,7 @@ class ScheduleListSerializer(ScheduleSerializer):
         return tuple(x for x in field_names)
 
     def get_types(self):
-        if type(self) is ScheduleListSerializer:
+        if isinstance(self, ScheduleListSerializer):
             return ['schedule']
         else:
             return super(ScheduleListSerializer, self).get_types()
@@ -938,7 +938,7 @@ class RepositoryListSerializer(RepositorySerializer):
         return tuple(x for x in field_names)
 
     def get_types(self):
-        if type(self) is RepositoryListSerializer:
+        if isinstance(self, RepositoryListSerializer):
             return ['repository']
         else:
             return super(RepositoryListSerializer, self).get_types()
@@ -983,7 +983,7 @@ class PolicyListSerializer(PolicySerializer):
         return tuple(x for x in field_names)
 
     def get_types(self):
-        if type(self) is PolicyListSerializer:
+        if isinstance(self, PolicyListSerializer):
             return ['policy']
         else:
             return super(PolicyListSerializer, self).get_types()

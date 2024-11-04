@@ -121,7 +121,6 @@ class AuthView(APIView):
 
     def get(self, request):
         data = OrderedDict()
-        err_backend, err_message = request.session.get('social_auth_error', (None, None))
         return Response(data)
 
 

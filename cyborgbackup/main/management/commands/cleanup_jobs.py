@@ -50,7 +50,7 @@ class Command(BaseCommand):
 
     def get_password_prompts(self, **kwargs):
         d = OrderedDict()
-        for k, v in kwargs['passwords'].items():
+        for k, _ in kwargs['passwords'].items():
             d[re.compile(r'Enter passphrase for .*' + k + r':\s*?$', re.M)] = k
             d[re.compile(r'Enter passphrase for .*' + k, re.M)] = k
         d[re.compile(r'Bad passphrase, try again for .*:\s*$', re.M)] = ''
@@ -174,7 +174,7 @@ class Command(BaseCommand):
             args = run.wrap_args_with_ssh_agent(args, ssh_key_path, ssh_auth_sock)
             safe_args = run.wrap_args_with_ssh_agent(safe_args, ssh_key_path, ssh_auth_sock)
 
-        status, rc = run.run_pexpect(
+        run.run_pexpect(
             args, cwd, env, stdout_handle, **_kw
         )
 
@@ -202,7 +202,6 @@ class Command(BaseCommand):
                             repoArchives.append(archive_name)
 
             entries = Job.objects.filter(job_type='job')
-            keepJobs = []
             deletedJobs = []
             if entries.exists():
                 for entry in entries:

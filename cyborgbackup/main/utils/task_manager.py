@@ -426,7 +426,7 @@ class TaskManager:
 
         logger.debug("Failing inconsistent running jobs.")
         celery_task_start_time = tz_now()
-        active_task_queues, active_queues, _ = self.get_active_tasks()
+        _, active_queues, _ = self.get_active_tasks()
         cache.set('last_celery_task_cleanup', tz_now())
 
         if active_queues is None:
@@ -437,7 +437,7 @@ class TaskManager:
         Only consider failing tasks on instances for which we obtained a task
         list from celery for.
         '''
-        running_tasks, waiting_tasks = self.get_running_tasks()
+        running_tasks, _ = self.get_running_tasks()
         all_celery_task_ids = []
         all_celery_task_ids.extend(active_queues)
 
