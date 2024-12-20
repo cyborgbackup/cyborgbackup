@@ -56,4 +56,16 @@ then
   nginx -t && nginx -s reload
 fi
 
+check_postgresql() {
+    echo "Check PostgreSQL connexion"
+    PGPASSWORD="$POSTGRES_PASSWORD" psql -h "127.0.0.1" -U "cyborgbackup" -d "cyborgbackup" -c "\q" 2>/dev/null
+    return $?
+}
+
+if ! check_postgresql; then
+    echo "Error: PostgreSQL is not available. Please check database is started"
+    echo "Installation success with warning."
+    exit 0
+fi
+
 systemctl start cyborgbackup
