@@ -1,3 +1,5 @@
+import base64
+
 # Django REST Framework
 from rest_framework import serializers
 
@@ -65,3 +67,12 @@ class VerbatimField(serializers.Field):
 
     def to_representation(self, value):
         return value
+
+
+class BinaryField(serializers.Field):
+
+    def to_representation(self, value):
+        return base64.b64encode(value)
+
+    def to_internal_value(self, data):
+        return base64.b64decode(data)

@@ -1,18 +1,20 @@
 # Python
+import pymongo
+import base64
 import logging
 from collections import OrderedDict
 
-import pymongo
 # Django
 from django.conf import settings as dsettings
-from rest_framework import status
+
 # Django REST Framework
+from rest_framework import status
 from rest_framework.response import Response
 
+# CyBorgBackup
 from cyborgbackup.main.models.catalogs import Catalog
 from cyborgbackup.main.models.jobs import Job
 from cyborgbackup.main.utils.callbacks import CallbackQueueDispatcher
-# CyBorgBackup
 from .generics import ListAPIView, RetrieveUpdateDestroyAPIView, ListCreateAPIView
 from ..serializers.catalogs import RestoreLaunchSerializer, CatalogSerializer, CatalogListSerializer
 from ..serializers.jobs import JobSerializer
@@ -78,6 +80,12 @@ class CatalogList(ListCreateAPIView):
 
     def create(self, request, *args, **kwargs):
         data = request.data
+
+        if 'partitioning' in data.keys() and data['partitioning'] != '' and data['partitioning'] is not None:
+            job = Job.objects.get(pk=data['job'])
+            job.partitioning = base64.b64decode(data['partitioning'])
+            job.save()
+
         if set(data.keys()).intersection(['archive_name', 'job', 'event', 'catalog']):
             callback = CallbackQueueDispatcher()
             callback.dispatch(data)

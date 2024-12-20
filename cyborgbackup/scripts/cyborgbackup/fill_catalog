@@ -34,6 +34,11 @@ archive_name = os.environ.get('CYBORG_JOB_ARCHIVE_NAME')
 
 hoursTimezone = round((round((datetime.now()-datetime.utcnow()).total_seconds())/1800)/2)
 
+partitioning=None
+if os.path.exists('/tmp/cyborg_partitioning_{}.tgz'.format(archive_name)):
+  with open('/tmp/cyborg_partitioning_{}.tgz'.format(archive_name), 'rb') as f:
+    partitioning = base64.b64encode(f.read()).decode('utf-8')
+
 list_entries=[]
 print("Get Entries from Borg")
 for line in sys.stdin:
@@ -59,7 +64,8 @@ if len(list_entries)>0:
     'archive_name': archive_name,
     'event': 'catalog',
     'job': job_id,
-    'catalog': base64.b64encode(gzipped_data).decode('utf-8')
+    'catalog': base64.b64encode(gzipped_data).decode('utf-8'),
+    'partitioning': partitioning,
   }
   headers = {'Authorization': 'Token {}'.format(token)}
   r = requests.post(url, headers=headers, json=post_data)
@@ -71,9 +77,19 @@ export BORG_PASSPHRASE=$CYBORG_BORG_PASSPHRASE
 export BORG_REPO=$CYBORG_BORG_REPOSITORY
 mkdir -p /tmp/cyborg_catalog_cyborg_catalog_$CYBORG_JOB_ARCHIVE_NAME && cd /tmp/cyborg_catalog_cyborg_catalog_$CYBORG_JOB_ARCHIVE_NAME
 borg list --json-lines ::$CYBORG_JOB_ARCHIVE_NAME | split -l 20000 - cyborg_catalog_$CYBORG_JOB_ARCHIVE_NAME_
-for i in $(ls /tmp/cyborg_catalog_cyborg_catalog_$CYBORG_JOB_ARCHIVE_NAME/*);
+for i in /tmp/cyborg_catalog_cyborg_catalog_$CYBORG_JOB_ARCHIVE_NAME/*;
 do
+  partitioning_path=$(cat $i| grep -oE '"([^"]*cyborgbackup/cyborg_partitioning.tgz)"')
+  if [ $? -eq 0 ]
+  then
+    echo $partitioning_path|sed 's/"//g' | xargs borg extract --strip-components=2 --stdout ::$CYBORG_JOB_ARCHIVE_NAME > /tmp/cyborg_partitioning_$CYBORG_JOB_ARCHIVE_NAME.tgz
+  fi
   cat $i|python3 $temp_file && rm -f $i;
 done;
+if [[ -f "/tmp/cyborg_partitioning_$CYBORG_JOB_ARCHIVE_NAME.tgz" ]]
+then
+  rm -f /tmp/cyborg_partitioning_$CYBORG_JOB_ARCHIVE_NAME.tgz
+fi
+rm -f /tmp/cyborg_catalog_cyborg_catalog_$CYBORG_JOB_ARCHIVE_NAME/*
 rmdir /tmp/cyborg_catalog_cyborg_catalog_$CYBORG_JOB_ARCHIVE_NAME
 rm -f $temp_file

@@ -41,12 +41,8 @@ class JobEvent(CreatedModifiedModel):
     class Meta:
         app_label = 'main'
         ordering = ('pk',)
-        index_together = [
-            ('job', 'event'),
-            ('job', 'uuid'),
-            ('job', 'start_line'),
-            ('job', 'end_line'),
-            ('job', 'parent_uuid'),
+        indexes = [
+            models.Index(fields=['job_id', 'event', 'uuid', 'start_line', 'end_line', 'parent_uuid']),
         ]
 
     uuid = models.CharField(

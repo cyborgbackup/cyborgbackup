@@ -114,6 +114,7 @@ class JobDetail(JobDeletionMixin, RetrieveUpdateDestroyAPIView):
 
     def update(self, request, *args, **kwargs):
         obj = self.get_object()
+
         # Only allow changes (PUT/PATCH) when job status is "new".
         if obj.status != 'new':
             return self.http_method_not_allowed(request, *args, **kwargs)

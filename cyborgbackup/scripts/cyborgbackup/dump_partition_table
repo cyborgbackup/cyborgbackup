@@ -12,6 +12,7 @@ lsblk -V 2>&1 1>/dev/null || (echo "lsblk missing command" && exit 1)
 
 temp_file=$(mktemp)
 cat > $temp_file <<EOF
+import os
 import tarfile
 import json
 import subprocess
@@ -30,7 +31,10 @@ except:
   pass
 
 try:
-  subprocess_lvm = subprocess.run(['lvm', 'fullreport', '--reportformat', 'json'], capture_output=True, text=True)
+  cmd = ['lvm', 'fullreport', '--reportformat', 'json']
+  if os.getlogin() != 'root':
+    cmd.insert(0, 'sudo')
+  subprocess_lvm = subprocess.run(cmd, capture_output=True, text=True)
   if subprocess_lvm.returncode == 0:
     data = subprocess_lvm.stdout.encode('utf-8')
     tarinfo = tarfile.TarInfo('lvm.json')
@@ -43,4 +47,5 @@ tar.close()
 
 EOF
 python3 $temp_file
+rm -f temp_file
 echo "done"

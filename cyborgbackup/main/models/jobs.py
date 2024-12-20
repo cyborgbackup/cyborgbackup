@@ -329,6 +329,12 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
         blank=True,
     )
 
+    partitioning = models.BinaryField(
+        null=True,
+        blank=True,
+        default=None
+    )
+
     extra_vars_dict = VarsDictProperty('extra_vars', True)
 
     def get_absolute_url(self, request=None):
