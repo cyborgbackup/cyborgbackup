@@ -9,8 +9,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         email = 'admin@cyborg.local'
         try:
-            if (not User.objects.filter(email=email).exists()
-                    and not User.objects.filter(is_superuser=True).exists()):
+            if not User.objects.filter(email=email).exists() and not User.objects.filter(is_superuser=True).exists():
                 print("admin user not found, creating one")
 
                 new_password = get_random_string(10)

@@ -194,58 +194,133 @@ class Command(BaseCommand):
                 entry.save()
 
     def handle(self, *args, **kwargs):
-        if self.get_running_jobs().exists():
+        if self._is_job_running():
             print('A job is already running, exiting.')
             return
 
-        repos = self.get_enabled_repos()
+        repos = self._get_enabled_repos()
         if repos.exists():
-            repo_archives = self.generate_repo_archives(repos, **kwargs)
-            entries = self.get_successful_jobs()
+            repo_archives = self._generate_repo_archives(repos, **kwargs)
+            entries = self._get_successful_jobs()
             if entries.exists():
-                self.handle_non_archived_entries(entries, repo_archives)
+                self._handle_non_archived_entries(entries, repo_archives)
 
-            for repo in repos:
-                jobs = Job.objects.filter(policy__repository_id=repo.pk,
-                                          status='successful',
-                                          job_type='job').order_by('-finished')
-                if jobs.exists():
-                    for job in jobs:
-                        if job.archive_name \
-                                and job.archive_name != '' \
-                                and job.archive_name == 'rootfs-dave.milkywan.cloud-2019-02-22_02-00':
-                            lines = self.launch_command(["borg",
-                                                         "list",
-                                                         "--json-lines",
-                                                         "::{}".format(job.archive_name)],
-                                                        repo,
-                                                        repo.repository_key,
-                                                        repo.path,
-                                                        **kwargs)
-                            hours_timezone = round(
-                                (round((datetime.datetime.now() - datetime.datetime.now(
-                                    datetime.UTC)).total_seconds()) / 1800) / 2)
-                            with transaction.atomic():
-                                for line in lines:
-                                    try:
-                                        data = json.loads(line)
-                                        entries = Catalog.objects.filter(archive_name=job.archive_name,
-                                                                         path=data['path'],
-                                                                         size=data['size'])
-                                        if not entries.exists():
-                                            entry = Catalog()
-                                            entry.path = data['path']
-                                            entry.job = job
-                                            entry.archive_name = job.archive_name
-                                            entry.mode = data['mode']
-                                            entry.owner = data['user']
-                                            entry.group = data['group']
-                                            entry.type = data['type']
-                                            entry.size = data['size']
-                                            entry.healthy = data['healthy']
-                                            entry.mtime = '{}+0{}00'.format(data['mtime'].replace('T', ' '),
-                                                                            hours_timezone)
-                                            entry.save()
-                                    except Exception as e:
-                                        print(e)
-                                        continue
+            self._process_repos(repos, **kwargs)
+
+    def _is_job_running(self):
+        return self.get_running_jobs().exists()
+
+    def _get_enabled_repos(self):
+        return self.get_enabled_repos()
+
+    def _generate_repo_archives(self, repos, **kwargs):
+        return self.generate_repo_archives(repos, **kwargs)
+
+    def _get_successful_jobs(self):
+        return self.get_successful_jobs()
+
+    def _handle_non_archived_entries(self, entries, repo_archives):
+        self.handle_non_archived_entries(entries, repo_archives)
+
+    def _process_repos(self, repos, **kwargs):
+        for repo in repos:
+            jobs = Job.objects.filter(policy__repository_id=repo.pk,
+                                      status='successful',
+                                      job_type='job').order_by('-finished')
+            if jobs.exists():
+                for job in jobs:
+                    if self._is_valid_job(job):
+                        lines = self._launch_borg_list_command(job, repo, **kwargs)
+                        self._process_borg_list_output(lines, job)
+
+    def _is_valid_job(self, job):
+        return job.archive_name and job.archive_name != '' and job.archive_name == 'rootfs-dave.milkywan.cloud-2019-02-22_02-00'
+
+    def _launch_borg_list_command(self, job, repo, **kwargs):
+        return self.launch_command(["borg", "list", "--json-lines", "::{}".format(job.archive_name)],
+                                   repo, repo.repository_key, repo.path, **kwargs)
+
+    def _process_borg_list_output(self, lines, job):
+        hours_timezone = round(
+            (round((datetime.datetime.now() - datetime.datetime.now(datetime.UTC)).total_seconds()) / 1800) / 2)
+        with transaction.atomic():
+            for line in lines:
+                try:
+                    data = json.loads(line)
+                    self._create_catalog_entry(data, job, hours_timezone)
+                except Exception as e:
+                    print(e)
+                    continue
+
+    def _create_catalog_entry(self, data, job, hours_timezone):
+        entries = Catalog.objects.filter(archive_name=job.archive_name, path=data['path'], size=data['size'])
+        if not entries.exists():
+            entry = Catalog()
+            entry.path = data['path']
+            entry.job = job
+            entry.archive_name = job.archive_name
+            entry.mode = data['mode']
+            entry.owner = data['user']
+            entry.group = data['group']
+            entry.type = data['type']
+            entry.size = data['size']
+            entry.healthy = data['healthy']
+            entry.mtime = '{}+0{}00'.format(data['mtime'].replace('T', ' '), hours_timezone)
+            entry.save()
+
+    # def handle(self, *args, **kwargs):
+    #     if self.get_running_jobs().exists():
+    #         print('A job is already running, exiting.')
+    #         return
+    #
+    #     repos = self.get_enabled_repos()
+    #     if repos.exists():
+    #         repo_archives = self.generate_repo_archives(repos, **kwargs)
+    #         entries = self.get_successful_jobs()
+    #         if entries.exists():
+    #             self.handle_non_archived_entries(entries, repo_archives)
+    #
+    #         for repo in repos:
+    #             jobs = Job.objects.filter(policy__repository_id=repo.pk,
+    #                                       status='successful',
+    #                                       job_type='job').order_by('-finished')
+    #             if jobs.exists():
+    #                 for job in jobs:
+    #                     if job.archive_name \
+    #                             and job.archive_name != '' \
+    #                             and job.archive_name == 'rootfs-dave.milkywan.cloud-2019-02-22_02-00':
+    #                         lines = self.launch_command(["borg",
+    #                                                      "list",
+    #                                                      "--json-lines",
+    #                                                      "::{}".format(job.archive_name)],
+    #                                                     repo,
+    #                                                     repo.repository_key,
+    #                                                     repo.path,
+    #                                                     **kwargs)
+    #                         hours_timezone = round(
+    #                             (round((datetime.datetime.now() - datetime.datetime.now(
+    #                                 datetime.UTC)).total_seconds()) / 1800) / 2)
+    #                         with transaction.atomic():
+    #                             for line in lines:
+    #                                 try:
+    #                                     data = json.loads(line)
+    #                                     entries = Catalog.objects.filter(archive_name=job.archive_name,
+    #                                                                      path=data['path'],
+    #                                                                      size=data['size'])
+    #                                     if not entries.exists():
+    #                                         entry = Catalog()
+    #                                         entry.path = data['path']
+    #                                         entry.job = job
+    #                                         entry.archive_name = job.archive_name
+    #                                         entry.mode = data['mode']
+    #                                         entry.owner = data['user']
+    #                                         entry.group = data['group']
+    #                                         entry.type = data['type']
+    #                                         entry.size = data['size']
+    #                                         entry.healthy = data['healthy']
+    #                                         entry.mtime = '{}+0{}00'.format(data['mtime'].replace('T', ' '),
+    #                                                                         hours_timezone)
+    #                                         entry.save()
+    #                                 except Exception as e:
+    #                                     print(e)
+    #                                     continue

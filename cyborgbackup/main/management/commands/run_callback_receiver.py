@@ -122,102 +122,216 @@ class CallbackBrokerWorker(ConsumerMixin):
         signal_handler = WorkerSignalHandler()
         while not signal_handler.kill_now:
             try:
-                body = queue_actual.get(block=True, timeout=1)
+                body = self._get_queue_body(queue_actual)
             except QueueEmpty:
                 continue
             except Exception as e:
                 logger.error("Exception on worker thread, restarting: " + str(e))
                 continue
             try:
-
-                event_map = {
-                    'job_id': JobEvent,
-                    'catalog': Catalog,
-                }
-
-                if not any([key in body for key in event_map]):
-                    raise Exception('Payload does not have a job identifier')
-                if settings.DEBUG:
-                    from pygments import highlight
-                    from pygments.lexers import PythonLexer
-                    from pygments.formatters import Terminal256Formatter
-                    from pprint import pformat
-                    logger.info('Body: {}'.format(
-                        highlight(pformat(body, width=160), PythonLexer(), Terminal256Formatter(style='friendly'))
-                    )[:1024 * 4])
-
-                def _save_event_data():
-                    for key, cls in event_map.items():
-                        if key in body:
-                            cls.create_from_data(**body)
-
-                job_identifier = 'unknown job'
-                for key in event_map.keys():
-                    if key in body:
-                        job_identifier = body[key]
-                        break
-
-                if body.get('event') == 'EOF':
-                    try:
-                        msg = 'Event processing is finished for Job {}, sending notifications'
-                        logger.info(msg.format(job_identifier))
-                        # EOF events are sent when stdout for the running task is
-                        # closed. don't actually persist them to the database; we
-                        # just use them to report `summary` websocket events as an
-                        # approximation for when a job is "done"
-                        emit_channel_notification(
-                            'jobs-summary',
-                            dict(group_name='jobs', job_id=job_identifier)
-                        )
-                        # Additionally, when we've processed all events, we should
-                        # have all the data we need to send out success/failure
-                        # notification templates
-                        j = Job.objects.get(pk=job_identifier)
-                        if hasattr(j, 'send_notification_templates'):
-                            retries = 0
-                            while retries < 5:
-                                if j.finished:
-                                    state = 'succeeded' if j.status == 'successful' else 'failed'
-                                    j.send_notification_templates(state)
-                                    break
-                                else:
-                                    # wait a few seconds to avoid a race where the
-                                    # events are persisted _before_ the UJ.status
-                                    # changes from running -> successful
-                                    retries += 1
-                                    time.sleep(1)
-                                    j = Job.objects.get(pk=job_identifier)
-                    except Exception:
-                        logger.exception('Worker failed to emit notifications: Job {}'.format(job_identifier))
-                    continue
-
-                retries = 0
-                while retries <= self.MAX_RETRIES:
-                    try:
-                        _save_event_data()
-                        break
-                    except (OperationalError, InterfaceError, InternalError):
-                        if retries >= self.MAX_RETRIES:
-                            msg = 'Worker could not re-establish database connection, shutting down gracefully: Job {}'
-                            logger.exception(msg.format(job_identifier))
-                            os.kill(os.getppid(), signal.SIGINT)
-                            return
-                        delay = 60 * retries
-                        logger.exception('Database Error Saving Job Event, retry #{i} in {delay} seconds:'.format(
-                            i=retries + 1,
-                            delay=delay
-                        ))
-                        django_connection.close()
-                        time.sleep(delay)
-                        retries += 1
-                    except DatabaseError:
-                        logger.exception('Database Error Saving Job Event for Job {}'.format(job_identifier))
-                        break
+                self._process_body(body)
             except Exception as exc:
-                import traceback
-                tb = traceback.format_exc()
-                logger.error('Callback Task Processor Raised Exception: %r', exc)
-                logger.error('Detail: {}'.format(tb))
+                self._log_exception(exc)
+
+    def _get_queue_body(self, queue_actual):
+        return queue_actual.get(block=True, timeout=1)
+
+    def _process_body(self, body):
+        event_map = {
+            'job_id': JobEvent,
+            'catalog': Catalog,
+        }
+
+        if not any([key in body for key in event_map]):
+            raise Exception('Payload does not have a job identifier')
+
+        if settings.DEBUG:
+            self._log_debug_body(body)
+
+        job_identifier = self._get_job_identifier(body, event_map)
+
+        if body.get('event') == 'EOF':
+            self._handle_eof_event(job_identifier)
+            return
+
+        self._save_event_data(body, event_map, job_identifier)
+
+    def _log_debug_body(self, body):
+        from pygments import highlight
+        from pygments.lexers import PythonLexer
+        from pygments.formatters import Terminal256Formatter
+        from pprint import pformat
+        logger.info('Body: {}'.format(
+            highlight(pformat(body, width=160), PythonLexer(), Terminal256Formatter(style='friendly'))
+        )[:1024 * 4])
+
+    def _get_job_identifier(self, body, event_map):
+        for key in event_map.keys():
+            if key in body:
+                return body[key]
+        return 'unknown job'
+
+    def _handle_eof_event(self, job_identifier):
+        try:
+            msg = 'Event processing is finished for Job {}, sending notifications'
+            logger.info(msg.format(job_identifier))
+            emit_channel_notification(
+                'jobs-summary',
+                dict(group_name='jobs', job_id=job_identifier)
+            )
+            j = Job.objects.get(pk=job_identifier)
+            if hasattr(j, 'send_notification_templates'):
+                self._send_notification_templates(j)
+        except Exception:
+            logger.exception('Worker failed to emit notifications: Job {}'.format(job_identifier))
+
+    def _send_notification_templates(self, job):
+        retries = 0
+        while retries < 5:
+            if job.finished:
+                state = 'succeeded' if job.status == 'successful' else 'failed'
+                job.send_notification_templates(state)
+                break
+            else:
+                retries += 1
+                time.sleep(1)
+                job = Job.objects.get(pk=job.pk)
+
+    def _save_event_data(self, body, event_map, job_identifier):
+        retries = 0
+        while retries <= self.MAX_RETRIES:
+            try:
+                for key, cls in event_map.items():
+                    if key in body:
+                        cls.create_from_data(**body)
+                break
+            except (OperationalError, InterfaceError, InternalError):
+                self._handle_db_error(retries, job_identifier)
+                retries += 1
+            except DatabaseError:
+                logger.exception('Database Error Saving Job Event for Job {}'.format(job_identifier))
+                break
+
+    def _handle_db_error(self, retries, job_identifier):
+        if retries >= self.MAX_RETRIES:
+            msg = 'Worker could not re-establish database connection, shutting down gracefully: Job {}'
+            logger.exception(msg.format(job_identifier))
+            os.kill(os.getppid(), signal.SIGINT)
+            return
+        delay = 60 * retries
+        logger.exception('Database Error Saving Job Event, retry #{i} in {delay} seconds:'.format(
+            i=retries + 1,
+            delay=delay
+        ))
+        django_connection.close()
+        time.sleep(delay)
+
+    def _log_exception(self, exc):
+        import traceback
+        tb = traceback.format_exc()
+        logger.error('Callback Task Processor Raised Exception: %r', exc)
+        logger.error('Detail: {}'.format(tb))
+
+    # def callback_worker(self, queue_actual, idx):
+    #     signal_handler = WorkerSignalHandler()
+    #     while not signal_handler.kill_now:
+    #         try:
+    #             body = queue_actual.get(block=True, timeout=1)
+    #         except QueueEmpty:
+    #             continue
+    #         except Exception as e:
+    #             logger.error("Exception on worker thread, restarting: " + str(e))
+    #             continue
+    #         try:
+    #
+    #             event_map = {
+    #                 'job_id': JobEvent,
+    #                 'catalog': Catalog,
+    #             }
+    #
+    #             if not any([key in body for key in event_map]):
+    #                 raise Exception('Payload does not have a job identifier')
+    #             if settings.DEBUG:
+    #                 from pygments import highlight
+    #                 from pygments.lexers import PythonLexer
+    #                 from pygments.formatters import Terminal256Formatter
+    #                 from pprint import pformat
+    #                 logger.info('Body: {}'.format(
+    #                     highlight(pformat(body, width=160), PythonLexer(), Terminal256Formatter(style='friendly'))
+    #                 )[:1024 * 4])
+    #
+    #             def _save_event_data():
+    #                 for key, cls in event_map.items():
+    #                     if key in body:
+    #                         cls.create_from_data(**body)
+    #
+    #             job_identifier = 'unknown job'
+    #             for key in event_map.keys():
+    #                 if key in body:
+    #                     job_identifier = body[key]
+    #                     break
+    #
+    #             if body.get('event') == 'EOF':
+    #                 try:
+    #                     msg = 'Event processing is finished for Job {}, sending notifications'
+    #                     logger.info(msg.format(job_identifier))
+    #                     # EOF events are sent when stdout for the running task is
+    #                     # closed. don't actually persist them to the database; we
+    #                     # just use them to report `summary` websocket events as an
+    #                     # approximation for when a job is "done"
+    #                     emit_channel_notification(
+    #                         'jobs-summary',
+    #                         dict(group_name='jobs', job_id=job_identifier)
+    #                     )
+    #                     # Additionally, when we've processed all events, we should
+    #                     # have all the data we need to send out success/failure
+    #                     # notification templates
+    #                     j = Job.objects.get(pk=job_identifier)
+    #                     if hasattr(j, 'send_notification_templates'):
+    #                         retries = 0
+    #                         while retries < 5:
+    #                             if j.finished:
+    #                                 state = 'succeeded' if j.status == 'successful' else 'failed'
+    #                                 j.send_notification_templates(state)
+    #                                 break
+    #                             else:
+    #                                 # wait a few seconds to avoid a race where the
+    #                                 # events are persisted _before_ the UJ.status
+    #                                 # changes from running -> successful
+    #                                 retries += 1
+    #                                 time.sleep(1)
+    #                                 j = Job.objects.get(pk=job_identifier)
+    #                 except Exception:
+    #                     logger.exception('Worker failed to emit notifications: Job {}'.format(job_identifier))
+    #                 continue
+    #
+    #             retries = 0
+    #             while retries <= self.MAX_RETRIES:
+    #                 try:
+    #                     _save_event_data()
+    #                     break
+    #                 except (OperationalError, InterfaceError, InternalError):
+    #                     if retries >= self.MAX_RETRIES:
+    #                         msg = 'Worker could not re-establish database connection, shutting down gracefully: Job {}'
+    #                         logger.exception(msg.format(job_identifier))
+    #                         os.kill(os.getppid(), signal.SIGINT)
+    #                         return
+    #                     delay = 60 * retries
+    #                     logger.exception('Database Error Saving Job Event, retry #{i} in {delay} seconds:'.format(
+    #                         i=retries + 1,
+    #                         delay=delay
+    #                     ))
+    #                     django_connection.close()
+    #                     time.sleep(delay)
+    #                     retries += 1
+    #                 except DatabaseError:
+    #                     logger.exception('Database Error Saving Job Event for Job {}'.format(job_identifier))
+    #                     break
+    #         except Exception as exc:
+    #             import traceback
+    #             tb = traceback.format_exc()
+    #             logger.error('Callback Task Processor Raised Exception: %r', exc)
+    #             logger.error('Detail: {}'.format(tb))
 
 
 class Command(BaseCommand):

@@ -83,7 +83,8 @@ class TaskManager:
 
         same_repo_jobs_count = Job.objects.filter(repository=task.policy.repository.pk,
                                                   status__in=('starting', 'running',)).count()
-        same_client_jobs_count = Job.objects.filter(client=task.client.pk, status__in=('starting', 'running',)).count() if task.client else 0
+        same_client_jobs_count = Job.objects.filter(client=task.client.pk,
+                                                    status__in=('starting', 'running',)).count() if task.client else 0
 
         logger.info('Found %d jobs with same repository that task %s.', same_repo_jobs_count, task.log_format)
         logger.info('Found %d jobs with same client that task %s.', same_client_jobs_count, task.log_format)
@@ -113,10 +114,10 @@ class TaskManager:
         execution_nodes = {}
         waiting_jobs = []
         now = tz_now()
-        jobs = Job.objects.filter((Q(status='running') |
-                                   Q(status='starting') |
-                                   Q(status='waiting',
-                                     modified__lte=now - timedelta(seconds=60))))
+        jobs = Job.objects.filter((Q(status='running')
+                                   | Q(status='starting')
+                                   | Q(status='waiting',
+                                       modified__lte=now - timedelta(seconds=60))))
         for j in jobs:
             waiting_jobs.append(j)
         return execution_nodes, waiting_jobs
@@ -390,11 +391,11 @@ class TaskManager:
                                    isolated=False):
         for task in node_jobs:
             if (
-                    task.celery_task_id not in active_tasks
-                    and (
+                task.celery_task_id not in active_tasks
+                and (
                     not hasattr(settings, 'IGNORE_CELERY_INSPECTOR')
                     or not getattr(settings, 'IGNORE_CELERY_INSPECTOR')
-            )
+                )
             ):
                 if task.modified > celery_task_start_time:
                     continue
@@ -449,9 +450,11 @@ class TaskManager:
                 active_tasks = active_queues[node]
             else:
                 if node is None:
-                    logger.error("Execution node Instance {} not found in database. "
-                                 "The node is currently executing jobs {}".format(
-                        node, [j.log_format for j in node_jobs]))
+                    logger.error(
+                        "Execution node Instance {} not found in database. The node is currently executing jobs {}".format(
+                            node, [j.log_format for j in node_jobs]
+                        )
+                    )
                     active_tasks = []
                 else:
                     continue

@@ -143,67 +143,77 @@ class JobStdout(RetrieveAPIView):
         try:
             target_format = request.accepted_renderer.format
             if target_format in ('html', 'api', 'json'):
-                content_format = request.query_params.get('content_format', 'html')
-                content_encoding = request.query_params.get('content_encoding', None)
-                start_line = request.query_params.get('start_line', 0)
-                end_line = request.query_params.get('end_line', None)
-                dark_val = request.query_params.get('dark', '')
-                dark = bool(dark_val and dark_val[0].lower() in ('1', 't', 'y'))
-                content_only = bool(target_format in ('api', 'json'))
-                dark_bg = (content_only and dark) or (not content_only and (dark or not dark_val))
-                content, start, end, absolute_end = job.result_stdout_raw_limited(start_line, end_line)
-
-                # Remove any ANSI escape sequences containing job event data.
-                content = re.sub(r'\x1b\[K(?:[A-Za-z0-9+/=]+\x1b\[\d+D)+\x1b\[K', '', content)
-
-                body = ansiconv.to_html(cgi.escape(content))
-
-                context = {
-                    'title': get_view_name(self.__class__),
-                    'body': mark_safe(body),
-                    'dark': dark_bg,
-                    'content_only': content_only,
-                }
-                data = render_to_string('api/stdout.html', context).strip()
-
-                if target_format == 'api':
-                    return Response(mark_safe(data))
-                if target_format == 'json':
-                    if content_encoding == 'base64' and content_format == 'ansi':
-                        return Response({'range': {'start': start, 'end': end, 'absolute_end': absolute_end},
-                                         'content': b64encode(content.encode('utf-8'))})
-                    elif content_format == 'html':
-                        return Response({'range': {'start': start, 'end': end, 'absolute_end': absolute_end},
-                                         'content': body})
-                return Response(data)
+                return self._handle_html_api_json(request, job, target_format)
             elif target_format == 'txt':
                 return Response(job.result_stdout)
             elif target_format == 'ansi':
                 return Response(job.result_stdout_raw)
             elif target_format in {'txt_download', 'ansi_download'}:
-                filename = '{type}_{pk}{suffix}.txt'.format(
-                    type=camelcase_to_underscore(job.__class__.__name__),
-                    pk=job.id,
-                    suffix='.ansi' if target_format == 'ansi_download' else ''
-                )
-                content_fd = job.result_stdout_raw_handle(enforce_max_bytes=False)
-                if target_format == 'txt_download':
-                    content_fd = StdoutANSIFilter(content_fd)
-                response = HttpResponse(FileWrapper(content_fd), content_type='text/plain')
-                response["Content-Disposition"] = 'attachment; filename="{}"'.format(filename)
-                return response
+                return self._handle_download(request, job, target_format)
             else:
                 return super(JobStdout, self).retrieve(request, *args, **kwargs)
         except StdoutMaxBytesExceeded as e:
-            response_message = _(
-                "Standard Output too large to display ({text_size} bytes), "
-                "only download supported for sizes over {supported_size} bytes.").format(
-                text_size=e.total, supported_size=e.supported
-            )
-            if request.accepted_renderer.format == 'json':
-                return Response({'range': {'start': 0, 'end': 1, 'absolute_end': 1}, 'content': response_message})
-            else:
-                return Response(response_message)
+            return self._handle_max_bytes_exceeded(request, e)
+
+    def _handle_html_api_json(self, request, job, target_format):
+        content_format = request.query_params.get('content_format', 'html')
+        content_encoding = request.query_params.get('content_encoding', None)
+        start_line = request.query_params.get('start_line', 0)
+        end_line = request.query_params.get('end_line', None)
+        dark_val = request.query_params.get('dark', '')
+        dark = bool(dark_val and dark_val[0].lower() in ('1', 't', 'y'))
+        content_only = bool(target_format in ('api', 'json'))
+        dark_bg = (content_only and dark) or (not content_only and (dark or not dark_val))
+        content, start, end, absolute_end = job.result_stdout_raw_limited(start_line, end_line)
+
+        content = re.sub(r'\x1b\[K(?:[A-Za-z0-9+/=]+\x1b\[\d+D)+\x1b\[K', '', content)
+        body = ansiconv.to_html(cgi.escape(content))
+
+        context = {
+            'title': get_view_name(self.__class__),
+            'body': mark_safe(body),
+            'dark': dark_bg,
+            'content_only': content_only,
+        }
+        data = render_to_string('api/stdout.html', context).strip()
+
+        if target_format == 'api':
+            return Response(mark_safe(data))
+        if target_format == 'json':
+            return self._handle_json_response(content_encoding, content_format, start, end, absolute_end, body, content)
+        return Response(data)
+
+    def _handle_json_response(self, content_encoding, content_format, start, end, absolute_end, body, content):
+        if content_encoding == 'base64' and content_format == 'ansi':
+            return Response({'range': {'start': start, 'end': end, 'absolute_end': absolute_end},
+                             'content': b64encode(content.encode('utf-8'))})
+        elif content_format == 'html':
+            return Response({'range': {'start': start, 'end': end, 'absolute_end': absolute_end},
+                             'content': body})
+
+    def _handle_download(self, request, job, target_format):
+        filename = '{type}_{pk}{suffix}.txt'.format(
+            type=camelcase_to_underscore(job.__class__.__name__),
+            pk=job.id,
+            suffix='.ansi' if target_format == 'ansi_download' else ''
+        )
+        content_fd = job.result_stdout_raw_handle(enforce_max_bytes=False)
+        if target_format == 'txt_download':
+            content_fd = StdoutANSIFilter(content_fd)
+        response = HttpResponse(FileWrapper(content_fd), content_type='text/plain')
+        response["Content-Disposition"] = 'attachment; filename=\"{}\""'.format(filename)
+        return response
+
+    def _handle_max_bytes_exceeded(self, request, e):
+        response_message = _(
+            "Standard Output too large to display ({text_size} bytes), "
+            "only download supported for sizes over {supported_size} bytes.").format(
+            text_size=e.total, supported_size=e.supported
+        )
+        if request.accepted_renderer.format == 'json':
+            return Response({'range': {'start': 0, 'end': 1, 'absolute_end': 1}, 'content': response_message})
+        else:
+            return Response(response_message)
 
 
 class JobStart(GenericAPIView):

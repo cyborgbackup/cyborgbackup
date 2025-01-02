@@ -6,7 +6,7 @@ from cyborgbackup.main.models import Job
 
 try:
     from elasticsearch import Elasticsearch
-except:
+except ModuleNotFoundError:
     print('ElasticSearch module not installed. Exit')
     exit(0)
 

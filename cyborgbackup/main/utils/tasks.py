@@ -8,6 +8,7 @@ from django.conf import settings
 
 # CyBorgBackup
 from cyborgbackup.main.utils.task_manager import TaskManager
+from cyborgbackup.main.tasks.shared import compute_borg_size
 
 logger = logging.getLogger('cyborgbackup.main.utils.task_manager')
 
@@ -41,7 +42,7 @@ def run_job_launch(job_id):
 @shared_task(base=LogErrorsTask)
 def run_job_complete(job_id):
     compute_borg_size.s()
-    #TaskManager().schedule()
+    # TaskManager().schedule()
 
 
 @shared_task(base=LogErrorsTask)

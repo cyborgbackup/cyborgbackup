@@ -88,124 +88,247 @@ class Querier:
             return -1
 
     def _run(self, cmd, sudo=False, queryargs=None):
-        args = []
-        rc = -1
-        finalOutput = []
+        args = self._prepare_args(cmd, sudo)
+        kwargs = self._prepare_kwargs()
+        env = self._prepare_env()
+        private_data_files = self._prepare_private_data_files(kwargs)
+        args = self._wrap_args_with_ssh_agent(args, private_data_files, kwargs)
+        expect_passwords = self._prepare_expect_passwords(kwargs, queryargs)
+        stdout_handle = io.StringIO()
 
-        if self.client_user != 'root' and sudo:
-            args = ['sudo', '-E'] + args
-        args += cmd
-
-        kwargs = {}
         try:
-            env = {}
-            for attr in dir(settings):
-                if attr == attr.upper() and attr.startswith('CYBORGBACKUP_'):
-                    env[attr] = str(getattr(settings, attr))
-
-            path = tempfile.mkdtemp(prefix='cyborgbackup_module', dir='/var/tmp/cyborgbackup/')
-            os.chmod(path, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
-            kwargs['private_data_dir'] = path
-
-            if 'private_data_dir' in kwargs.keys():
-                env['PRIVATE_DATA_DIR'] = kwargs['private_data_dir']
-            passwords = {}
-            for setting in Setting.objects.filter(key__contains='ssh_key'):
-                set = Setting.objects.get(key=setting.key.replace('ssh_key', 'ssh_password'))
-                passwords['credential_{}'.format(setting.key)] = decrypt_field(set, 'value')
-            kwargs['passwords'] = passwords
-
-            private_data = {'credentials': {}}
-            for sets in Setting.objects.filter(key__contains='ssh_key'):
-                # If we were sent SSH credentials, decrypt them and send them
-                # back (they will be written to a temporary file).
-                private_data['credentials'][sets] = decrypt_field(sets, 'value') or ''
-            private_data_files = {'credentials': {}}
-            if private_data is not None:
-                listpaths = []
-                for sets, data in private_data.get('credentials', {}).items():
-                    # OpenSSH formatted keys must have a trailing newline to be
-                    # accepted by ssh-add.
-                    if 'OPENSSH PRIVATE KEY' in data and not data.endswith('\n'):
-                        data += '\n'
-                    # For credentials used with ssh-add, write to a named pipe which
-                    # will be read then closed, instead of leaving the SSH key on disk.
-                    if sets:
-                        name = 'credential_{}'.format(sets.key)
-                        path = os.path.join(kwargs['private_data_dir'], name)
-                        run.open_fifo_write(path, data)
-                        listpaths.append(path)
-                if len(listpaths) > 1:
-                    private_data_files['credentials']['ssh'] = listpaths
-                elif len(listpaths) == 1:
-                    private_data_files['credentials']['ssh'] = listpaths[0]
-
-            # May have to serialize the value
-            kwargs['private_data_files'] = private_data_files
-            cwd = '/var/tmp/cyborgbackup'
-
-            new_args = []
-            new_args += ['ssh', '-Ao', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
-            new_args += ['{}@{}'.format(self.client_user, self.client.hostname)]
-            new_args += ['\"echo \'####CYBMOD#####\';', ' '.join(args),
-                         '; exitcode=\$?; echo \'####CYBMOD#####\'; exit \$exitcode\"']
-            args = new_args
-
-            # If there is an SSH key path defined, wrap args with ssh-agent.
-            private_data_files = kwargs.get('private_data_files', {})
-            if 'ssh' in private_data_files.get('credentials', {}):
-                ssh_key_path = private_data_files['credentials']['ssh']
-            else:
-                ssh_key_path = ''
-            if ssh_key_path:
-                ssh_auth_sock = os.path.join(kwargs['private_data_dir'], 'ssh_auth.sock')
-                args = run.wrap_args_with_ssh_agent(args, ssh_key_path, ssh_auth_sock)
-            # args = cmd
-
-            expect_passwords = {}
-            d = {}
-
-            for k, v in kwargs['passwords'].items():
-                d[re.compile(r'Enter passphrase for .*' + k + r':\s*?$', re.M)] = k
-                d[re.compile(r'Enter passphrase for .*' + k, re.M)] = k
-            d[re.compile(r'Bad passphrase, try again for .*:\s*?$', re.M)] = ''
-
-            for k, v in d.items():
-                expect_passwords[k] = kwargs['passwords'].get(v, '') or ''
-
-            if queryargs and 'password' in queryargs.keys():
-                expect_passwords[re.compile(r'Enter password: \s*?$', re.M)] = queryargs['password']
-
-            stdout_handle = io.StringIO()
-
-            _kw = dict(
-                expect_passwords=expect_passwords,
-                job_timeout=120,
-                idle_timeout=None,
-                pexpect_timeout=getattr(settings, 'PEXPECT_TIMEOUT', 5),
-            )
-            _, rc = run.run_pexpect(
-                args, cwd, env, stdout_handle, **_kw
-            )
-            stdout_handle.flush()
-            output = stdout_handle.getvalue().split('\r\n')
-            finalOutput = []
-            start = False
-            for line in output:
-                if 'Enter password: ' in line:
-                    line = line.replace('Enter password: ', '')
-                if line == '####CYBMOD#####' and not start:
-                    start = True
-                if start and line != '####CYBMOD#####' and line != '':
-                    finalOutput += [line]
-
+            output, rc = self._execute_command(args, env, stdout_handle, expect_passwords)
+            final_output = self._process_output(output)
             shutil.rmtree(kwargs['private_data_dir'])
         except Exception:
             if settings.DEBUG:
                 logger.exception('Exception occurred while running task')
+            final_output, rc = [], -1
         finally:
-            try:
-                logger.info('finished running, producing  events.')
-            except Exception:
-                logger.exception('Error flushing stdout and saving event count.')
-        return finalOutput, rc
+            self._finalize_stdout_handle()
+        return final_output, rc
+
+    def _prepare_args(self, cmd, sudo):
+        args = []
+        if self.client_user != 'root' and sudo:
+            args = ['sudo', '-E'] + args
+        args += cmd
+        return args
+
+    def _prepare_kwargs(self):
+        kwargs = {}
+        path = tempfile.mkdtemp(prefix='cyborgbackup_module', dir='/var/tmp/cyborgbackup/')
+        os.chmod(path, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
+        kwargs['private_data_dir'] = path
+        return kwargs
+
+    def _prepare_env(self):
+        env = {}
+        for attr in dir(settings):
+            if attr == attr.upper() and attr.startswith('CYBORGBACKUP_'):
+                env[attr] = str(getattr(settings, attr))
+        return env
+
+    def _prepare_private_data_files(self, kwargs):
+        passwords = {}
+        for setting in Setting.objects.filter(key__contains='ssh_key'):
+            setts = Setting.objects.get(key=setting.key.replace('ssh_key', 'ssh_password'))
+            passwords['credential_{}'.format(setting.key)] = decrypt_field(setts, 'value')
+        kwargs['passwords'] = passwords
+
+        private_data = {'credentials': {}}
+        for sets in Setting.objects.filter(key__contains='ssh_key'):
+            private_data['credentials'][sets] = decrypt_field(sets, 'value') or ''
+        private_data_files = {'credentials': {}}
+        listpaths = []
+        for sets, data in private_data.get('credentials', {}).items():
+            if 'OPENSSH PRIVATE KEY' in data and not data.endswith('\n'):
+                data += '\n'
+            if sets:
+                name = 'credential_{}'.format(sets.key)
+                path = os.path.join(kwargs['private_data_dir'], name)
+                run.open_fifo_write(path, data)
+                listpaths.append(path)
+        if len(listpaths) > 1:
+            private_data_files['credentials']['ssh'] = listpaths
+        elif len(listpaths) == 1:
+            private_data_files['credentials']['ssh'] = listpaths[0]
+        kwargs['private_data_files'] = private_data_files
+        return private_data_files
+
+    def _wrap_args_with_ssh_agent(self, args, private_data_files, kwargs):
+        if 'ssh' in private_data_files.get('credentials', {}):
+            ssh_key_path = private_data_files['credentials']['ssh']
+        else:
+            ssh_key_path = ''
+        if ssh_key_path:
+            ssh_auth_sock = os.path.join(kwargs['private_data_dir'], 'ssh_auth.sock')
+            args = run.wrap_args_with_ssh_agent(args, ssh_key_path, ssh_auth_sock)
+        return args
+
+    def _prepare_expect_passwords(self, kwargs, queryargs):
+        expect_passwords = {}
+        d = {}
+        for k, v in kwargs['passwords'].items():
+            d[re.compile(r'Enter passphrase for .*' + k + r':\s*?$', re.M)] = k
+            d[re.compile(r'Enter passphrase for .*' + k, re.M)] = k
+        d[re.compile(r'Bad passphrase, try again for .*:\s*?$', re.M)] = ''
+        for k, v in d.items():
+            expect_passwords[k] = kwargs['passwords'].get(v, '') or ''
+        if queryargs and 'password' in queryargs.keys():
+            expect_passwords[re.compile(r'Enter password: \s*?$', re.M)] = queryargs['password']
+        return expect_passwords
+
+    def _execute_command(self, args, env, stdout_handle, expect_passwords):
+        cwd = '/var/tmp/cyborgbackup'
+        _kw = dict(
+            expect_passwords=expect_passwords,
+            job_timeout=120,
+            idle_timeout=None,
+            pexpect_timeout=getattr(settings, 'PEXPECT_TIMEOUT', 5),
+        )
+        _, rc = run.run_pexpect(args, cwd, env, stdout_handle, **_kw)
+        stdout_handle.flush()
+        output = stdout_handle.getvalue().split('\r\n')
+        return output, rc
+
+    def _process_output(self, output):
+        final_output = []
+        start = False
+        for line in output:
+            if 'Enter password: ' in line:
+                line = line.replace('Enter password: ', '')
+            if line == '####CYBMOD#####' and not start:
+                start = True
+            if start and line != '####CYBMOD#####' and line != '':
+                final_output += [line]
+        return final_output
+
+    def _finalize_stdout_handle(self):
+        try:
+            logger.info('finished running, producing events.')
+        except Exception:
+            logger.exception('Error flushing stdout and saving event count.')
+
+    # def _run(self, cmd, sudo=False, queryargs=None):
+    #     args = []
+    #     rc = -1
+    #     finalOutput = []
+    #
+    #     if self.client_user != 'root' and sudo:
+    #         args = ['sudo', '-E'] + args
+    #     args += cmd
+    #
+    #     kwargs = {}
+    #     try:
+    #         env = {}
+    #         for attr in dir(settings):
+    #             if attr == attr.upper() and attr.startswith('CYBORGBACKUP_'):
+    #                 env[attr] = str(getattr(settings, attr))
+    #
+    #         path = tempfile.mkdtemp(prefix='cyborgbackup_module', dir='/var/tmp/cyborgbackup/')
+    #         os.chmod(path, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
+    #         kwargs['private_data_dir'] = path
+    #
+    #         if 'private_data_dir' in kwargs.keys():
+    #             env['PRIVATE_DATA_DIR'] = kwargs['private_data_dir']
+    #         passwords = {}
+    #         for setting in Setting.objects.filter(key__contains='ssh_key'):
+    #             set = Setting.objects.get(key=setting.key.replace('ssh_key', 'ssh_password'))
+    #             passwords['credential_{}'.format(setting.key)] = decrypt_field(set, 'value')
+    #         kwargs['passwords'] = passwords
+    #
+    #         private_data = {'credentials': {}}
+    #         for sets in Setting.objects.filter(key__contains='ssh_key'):
+    #             # If we were sent SSH credentials, decrypt them and send them
+    #             # back (they will be written to a temporary file).
+    #             private_data['credentials'][sets] = decrypt_field(sets, 'value') or ''
+    #         private_data_files = {'credentials': {}}
+    #         if private_data is not None:
+    #             listpaths = []
+    #             for sets, data in private_data.get('credentials', {}).items():
+    #                 # OpenSSH formatted keys must have a trailing newline to be
+    #                 # accepted by ssh-add.
+    #                 if 'OPENSSH PRIVATE KEY' in data and not data.endswith('\n'):
+    #                     data += '\n'
+    #                 # For credentials used with ssh-add, write to a named pipe which
+    #                 # will be read then closed, instead of leaving the SSH key on disk.
+    #                 if sets:
+    #                     name = 'credential_{}'.format(sets.key)
+    #                     path = os.path.join(kwargs['private_data_dir'], name)
+    #                     run.open_fifo_write(path, data)
+    #                     listpaths.append(path)
+    #             if len(listpaths) > 1:
+    #                 private_data_files['credentials']['ssh'] = listpaths
+    #             elif len(listpaths) == 1:
+    #                 private_data_files['credentials']['ssh'] = listpaths[0]
+    #
+    #         # May have to serialize the value
+    #         kwargs['private_data_files'] = private_data_files
+    #         cwd = '/var/tmp/cyborgbackup'
+    #
+    #         new_args = []
+    #         new_args += ['ssh', '-Ao', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
+    #         new_args += ['{}@{}'.format(self.client_user, self.client.hostname)]
+    #         new_args += ['\"echo \'####CYBMOD#####\';', ' '.join(args),
+    #                      '; exitcode=\$?; echo \'####CYBMOD#####\'; exit \$exitcode\"']
+    #         args = new_args
+    #
+    #         # If there is an SSH key path defined, wrap args with ssh-agent.
+    #         private_data_files = kwargs.get('private_data_files', {})
+    #         if 'ssh' in private_data_files.get('credentials', {}):
+    #             ssh_key_path = private_data_files['credentials']['ssh']
+    #         else:
+    #             ssh_key_path = ''
+    #         if ssh_key_path:
+    #             ssh_auth_sock = os.path.join(kwargs['private_data_dir'], 'ssh_auth.sock')
+    #             args = run.wrap_args_with_ssh_agent(args, ssh_key_path, ssh_auth_sock)
+    #         # args = cmd
+    #
+    #         expect_passwords = {}
+    #         d = {}
+    #
+    #         for k, v in kwargs['passwords'].items():
+    #             d[re.compile(r'Enter passphrase for .*' + k + r':\s*?$', re.M)] = k
+    #             d[re.compile(r'Enter passphrase for .*' + k, re.M)] = k
+    #         d[re.compile(r'Bad passphrase, try again for .*:\s*?$', re.M)] = ''
+    #
+    #         for k, v in d.items():
+    #             expect_passwords[k] = kwargs['passwords'].get(v, '') or ''
+    #
+    #         if queryargs and 'password' in queryargs.keys():
+    #             expect_passwords[re.compile(r'Enter password: \s*?$', re.M)] = queryargs['password']
+    #
+    #         stdout_handle = io.StringIO()
+    #
+    #         _kw = dict(
+    #             expect_passwords=expect_passwords,
+    #             job_timeout=120,
+    #             idle_timeout=None,
+    #             pexpect_timeout=getattr(settings, 'PEXPECT_TIMEOUT', 5),
+    #         )
+    #         _, rc = run.run_pexpect(
+    #             args, cwd, env, stdout_handle, **_kw
+    #         )
+    #         stdout_handle.flush()
+    #         output = stdout_handle.getvalue().split('\r\n')
+    #         finalOutput = []
+    #         start = False
+    #         for line in output:
+    #             if 'Enter password: ' in line:
+    #                 line = line.replace('Enter password: ', '')
+    #             if line == '####CYBMOD#####' and not start:
+    #                 start = True
+    #             if start and line != '####CYBMOD#####' and line != '':
+    #                 finalOutput += [line]
+    #
+    #         shutil.rmtree(kwargs['private_data_dir'])
+    #     except Exception:
+    #         if settings.DEBUG:
+    #             logger.exception('Exception occurred while running task')
+    #     finally:
+    #         try:
+    #             logger.info('finished running, producing  events.')
+    #         except Exception:
+    #             logger.exception('Error flushing stdout and saving event count.')
+    #     return finalOutput, rc

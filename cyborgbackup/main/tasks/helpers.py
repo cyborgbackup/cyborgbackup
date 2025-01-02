@@ -18,76 +18,189 @@ def parseSize(size):
 
 def _cyborgbackup_notifier_summary(policy_pk):
     logger.debug('Summary')
-    users = User.objects.filter(notify_backup_summary=True)
+    users = _get_users_to_notify()
     policy = Policy.objects.get(pk=policy_pk)
+    catalog_enabled = _is_catalog_enabled()
+    auto_prune_enabled = _is_auto_prune_enabled()
+    report = _build_report(policy, catalog_enabled, auto_prune_enabled)
+    return report, users
 
+
+def _get_users_to_notify():
+    return User.objects.filter(notify_backup_summary=True)
+
+
+def _is_catalog_enabled():
     try:
         setting = Setting.objects.get(key='cyborgbackup_catalog_enabled')
-        if setting.value == 'True':
-            catalog_enabled = True
-        else:
-            catalog_enabled = False
+        return setting.value == 'True'
     except Exception:
-        catalog_enabled = True
+        return True
 
+
+def _is_auto_prune_enabled():
     try:
         setting = Setting.objects.get(key='cyborgbackup_auto_prune')
-        if setting.value == 'True':
-            auto_prune_enabled = True
-        else:
-            auto_prune_enabled = False
+        return setting.value == 'True'
     except Exception:
-        auto_prune_enabled = True
+        return True
+
+
+def _build_report(policy, catalog_enabled, auto_prune_enabled):
     report = {'lines': []}
     order = 1
-    report['lines'].append({
-        'order': str(order),
-        'title': 'Policy {}'.format(policy.name),
-        'type': 'policy'
-    })
+    report['lines'].append(_build_policy_line(policy, order))
     order += 1
     if not policy.repository.ready:
-        report['lines'].append({
-            'order': str(order),
-            'title': "Prepare Repository {}".format(policy.repository.name),
-            'type': "repository"
-        })
-    have_prune_info = (policy.keep_hourly or policy.keep_daily
-                       or policy.keep_weekly or policy.keep_monthly or policy.keep_yearly)
+        report['lines'].append(_build_repository_line(policy, order))
+    have_prune_info = _has_prune_info(policy)
     for client in policy.clients.all():
         if not client.ready:
             order += 1
-            report['lines'].append({
-                'order': str(order),
-                'title': "Prepare Client {}".format(client.hostname),
-                'type': "client"
-            })
+            report['lines'].append(_build_client_line(client, order))
         order += 1
-        report['lines'].append({
-            'order': str(order),
-            'title': "Backup Job {} {}".format(policy.name, client.hostname),
-            'type': policy.policy_type
-        })
+        report['lines'].append(_build_backup_job_line(policy, client, order))
         if catalog_enabled:
             order += 1
-            report['lines'].append({
-                'order': str(order),
-                'title': "Catalog Job {} {}".format(policy.name, client.hostname),
-                'type': "catalog"
-            })
+            report['lines'].append(_build_catalog_job_line(policy, client, order))
         if auto_prune_enabled and have_prune_info:
             order += 1
-            report['lines'].append({
-                'order': str(order),
-                'title': "Prune Job {} {}".format(policy.name, client.hostname),
-                'type': "prune"
-            })
-    report['columns'] = [
+            report['lines'].append(_build_prune_job_line(policy, client, order))
+    report['columns'] = _build_report_columns()
+    return report
+
+
+def _build_policy_line(policy, order):
+    return {
+        'order': str(order),
+        'title': 'Policy {}'.format(policy.name),
+        'type': 'policy'
+    }
+
+
+def _build_repository_line(policy, order):
+    return {
+        'order': str(order),
+        'title': "Prepare Repository {}".format(policy.repository.name),
+        'type': "repository"
+    }
+
+
+def _has_prune_info(policy):
+    return (policy.keep_hourly or policy.keep_daily or policy.keep_weekly or policy.keep_monthly or policy.keep_yearly)
+
+
+def _build_client_line(client, order):
+    return {
+        'order': str(order),
+        'title': "Prepare Client {}".format(client.hostname),
+        'type': "client"
+    }
+
+
+def _build_backup_job_line(policy, client, order):
+    return {
+        'order': str(order),
+        'title': "Backup Job {} {}".format(policy.name, client.hostname),
+        'type': policy.policy_type
+    }
+
+
+def _build_catalog_job_line(policy, client, order):
+    return {
+        'order': str(order),
+        'title': "Catalog Job {} {}".format(policy.name, client.hostname),
+        'type': "catalog"
+    }
+
+
+def _build_prune_job_line(policy, client, order):
+    return {
+        'order': str(order),
+        'title': "Prune Job {} {}".format(policy.name, client.hostname),
+        'type': "prune"
+    }
+
+
+def _build_report_columns():
+    return [
         {'title': 'Order', 'key': 'order', 'minsize': 7},
         {'title': 'Title', 'key': 'title', 'minsize': 7},
         {'title': 'Type', 'key': 'type', 'minsize': 6}
     ]
-    return report, users
+
+
+# def _cyborgbackup_notifier_summary(policy_pk):
+#     logger.debug('Summary')
+#     users = User.objects.filter(notify_backup_summary=True)
+#     policy = Policy.objects.get(pk=policy_pk)
+#
+#     try:
+#         setting = Setting.objects.get(key='cyborgbackup_catalog_enabled')
+#         if setting.value == 'True':
+#             catalog_enabled = True
+#         else:
+#             catalog_enabled = False
+#     except Exception:
+#         catalog_enabled = True
+#
+#     try:
+#         setting = Setting.objects.get(key='cyborgbackup_auto_prune')
+#         if setting.value == 'True':
+#             auto_prune_enabled = True
+#         else:
+#             auto_prune_enabled = False
+#     except Exception:
+#         auto_prune_enabled = True
+#     report = {'lines': []}
+#     order = 1
+#     report['lines'].append({
+#         'order': str(order),
+#         'title': 'Policy {}'.format(policy.name),
+#         'type': 'policy'
+#     })
+#     order += 1
+#     if not policy.repository.ready:
+#         report['lines'].append({
+#             'order': str(order),
+#             'title': "Prepare Repository {}".format(policy.repository.name),
+#             'type': "repository"
+#         })
+#     have_prune_info = (policy.keep_hourly or policy.keep_daily or policy.keep_weekly or policy.keep_monthly or policy.keep_yearly)
+#     for client in policy.clients.all():
+#         if not client.ready:
+#             order += 1
+#             report['lines'].append({
+#                 'order': str(order),
+#                 'title': "Prepare Client {}".format(client.hostname),
+#                 'type': "client"
+#             })
+#         order += 1
+#         report['lines'].append({
+#             'order': str(order),
+#             'title': "Backup Job {} {}".format(policy.name, client.hostname),
+#             'type': policy.policy_type
+#         })
+#         if catalog_enabled:
+#             order += 1
+#             report['lines'].append({
+#                 'order': str(order),
+#                 'title': "Catalog Job {} {}".format(policy.name, client.hostname),
+#                 'type': "catalog"
+#             })
+#         if auto_prune_enabled and have_prune_info:
+#             order += 1
+#             report['lines'].append({
+#                 'order': str(order),
+#                 'title': "Prune Job {} {}".format(policy.name, client.hostname),
+#                 'type': "prune"
+#             })
+#     report['columns'] = [
+#         {'title': 'Order', 'key': 'order', 'minsize': 7},
+#         {'title': 'Title', 'key': 'title', 'minsize': 7},
+#         {'title': 'Type', 'key': 'type', 'minsize': 6}
+#     ]
+#     return report, users
 
 
 def _cyborgbackup_notifier_after(job_pk):

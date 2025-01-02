@@ -16,7 +16,7 @@ logger = logging.getLogger('cyborgbackup.api.serializers.repositories')
 
 class RepositorySerializer(BaseSerializer):
     force_ready = serializers.BooleanField(required=False, default=False, write_only=True,
-                                     help_text=_('Write-only field used to force ready on the object.'))
+                                           help_text=_('Write-only field used to force ready on the object.'))
 
     class Meta:
         model = Repository

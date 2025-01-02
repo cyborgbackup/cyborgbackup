@@ -5,7 +5,6 @@ import re
 import stat
 import tempfile
 from collections import OrderedDict
-from io import StringIO
 
 import pymongo
 from django.conf import settings
@@ -127,124 +126,218 @@ class Command(BaseCommand):
 
         return private_data_files
 
-        cwd = '/tmp/'
-        env = {'BORG_PASSPHRASE': key, 'BORG_REPO': path, 'BORG_RELOCATED_REPO_ACCESS_IS_OK': 'yes',
-               'BORG_RSH': 'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'}
-        args = cmd
-        safe_args = args
-
-        kwargs['private_data_dir'] = self.build_private_data_dir(instance, **kwargs)
-        kwargs['private_data_files'] = self.build_private_data_files(instance, **kwargs)
-        kwargs['passwords'] = self.build_passwords(instance, **kwargs)
-
-        expect_passwords = {}
-        for k, v in self.get_password_prompts(**kwargs).items():
-            expect_passwords[k] = kwargs['passwords'].get(v, '') or ''
-
-        _kw = dict(
-            expect_passwords=expect_passwords,
-            job_timeout=getattr(settings, 'DEFAULT_JOB_TIMEOUT', 0),
-            idle_timeout=getattr(settings, 'JOB_RUN_IDLE_TIMEOUT', None),
-            extra_update_fields={},
-            pexpect_timeout=getattr(settings, 'PEXPECT_TIMEOUT', 5),
-        )
-        stdout_handle = StringIO()
-
-        ssh_key_path = self.get_ssh_key_path(instance, **kwargs)
-        # If we're executing on an isolated host, don't bother adding the
-        # key to the agent in this environment
-        if ssh_key_path:
-            ssh_auth_sock = os.path.join(kwargs['private_data_dir'], 'ssh_auth.sock')
-            args = run.wrap_args_with_ssh_agent(args, ssh_key_path, ssh_auth_sock)
-            safe_args = run.wrap_args_with_ssh_agent(safe_args, ssh_key_path, ssh_auth_sock)
-
-        status, rc = run.run_pexpect(
-            args, cwd, env, stdout_handle, **_kw
-        )
-
-        lines = stdout_handle.getvalue().splitlines()
-        return lines
+        # cwd = '/tmp/'
+        # env = {'BORG_PASSPHRASE': key, 'BORG_REPO': path, 'BORG_RELOCATED_REPO_ACCESS_IS_OK': 'yes',
+        #        'BORG_RSH': 'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'}
+        # args = cmd
+        # safe_args = args
+        #
+        # kwargs['private_data_dir'] = self.build_private_data_dir(instance, **kwargs)
+        # kwargs['private_data_files'] = self.build_private_data_files(instance, **kwargs)
+        # kwargs['passwords'] = self.build_passwords(instance, **kwargs)
+        #
+        # expect_passwords = {}
+        # for k, v in self.get_password_prompts(**kwargs).items():
+        #     expect_passwords[k] = kwargs['passwords'].get(v, '') or ''
+        #
+        # _kw = dict(
+        #     expect_passwords=expect_passwords,
+        #     job_timeout=getattr(settings, 'DEFAULT_JOB_TIMEOUT', 0),
+        #     idle_timeout=getattr(settings, 'JOB_RUN_IDLE_TIMEOUT', None),
+        #     extra_update_fields={},
+        #     pexpect_timeout=getattr(settings, 'PEXPECT_TIMEOUT', 5),
+        # )
+        # stdout_handle = StringIO()
+        #
+        # ssh_key_path = self.get_ssh_key_path(instance, **kwargs)
+        # # If we're executing on an isolated host, don't bother adding the
+        # # key to the agent in this environment
+        # if ssh_key_path:
+        #     ssh_auth_sock = os.path.join(kwargs['private_data_dir'], 'ssh_auth.sock')
+        #     args = run.wrap_args_with_ssh_agent(args, ssh_key_path, ssh_auth_sock)
+        #     safe_args = run.wrap_args_with_ssh_agent(safe_args, ssh_key_path, ssh_auth_sock)
+        #
+        # status, rc = run.run_pexpect(
+        #     args, cwd, env, stdout_handle, **_kw
+        # )
+        #
+        # lines = stdout_handle.getvalue().splitlines()
+        # return lines
 
     def handle(self, *args, **kwargs):
-        # Sanity check: Is there already a running job on the System?
-        jobs = Job.objects.filter(status="running")
-        if jobs.exists():
+        if self.is_job_running():
             print('A job is already running, exiting.')
             return
 
         repos = Repository.objects.filter(enabled=True)
+        repoArchives = self.get_repo_archives(repos, **kwargs)
+
+        self.cleanup_catalog_entries(repoArchives)
+
+        for repo in repos:
+            self.process_repository(repo, **kwargs)
+
+    def is_job_running(self):
+        jobs = Job.objects.filter(status="running")
+        return jobs.exists()
+
+    def get_repo_archives(self, repos, **kwargs):
         repoArchives = []
-        if repos.exists():
-            for repo in repos:
-                lines = self.launch_command(["borg", "list", "::"], repo, repo.repository_key, repo.path, **kwargs)
+        for repo in repos:
+            lines = self.launch_command(["borg", "list", "::"], repo, repo.repository_key, repo.path, **kwargs)
+            repoArchives.extend(self.extract_archive_names(lines))
+        return repoArchives
 
-                for line in lines:
-                    archive_name = line.split(' ')[0]  #
-                    for archtype in ('rootfs', 'vm', 'mysql', 'postgresql', 'config', 'piped', 'mail', 'folders'):
-                        if '{}-'.format(archtype) in archive_name:
-                            repoArchives.append(archive_name)
+    def extract_archive_names(self, lines):
+        archive_names = []
+        for line in lines:
+            archive_name = line.split(' ')[0]
+            for archtype in ('rootfs', 'vm', 'mysql', 'postgresql', 'config', 'piped', 'mail', 'folders'):
+                if '{}-'.format(archtype) in archive_name:
+                    archive_names.append(archive_name)
+        return archive_names
 
-            entries = Job.objects.filter(job_type='job', status='successful')
-            if entries.exists():
-                for entry in entries:
-                    if entry.archive_name != '' and entry.archive_name not in repoArchives:
-                        print('Delete {} from catalog'.format(entry.archive_name))
-                        # Catalog.objects.filter(archive_name=entry.archive_name).delete()
-                        # entry.archive_name = ''
-                        # entry.save()
+    def cleanup_catalog_entries(self, repoArchives):
+        entries = Job.objects.filter(job_type='job', status='successful')
+        if entries.exists():
+            for entry in entries:
+                if entry.archive_name != '' and entry.archive_name not in repoArchives:
+                    print('Delete {} from catalog'.format(entry.archive_name))
+                    # Catalog.objects.filter(archive_name=entry.archive_name).delete()
+                    # entry.archive_name = ''
+                    # entry.save()
 
-            for repo in repos:
-                jobs = Job.objects.filter(policy__repository_id=repo.pk,
-                                          status='successful',
-                                          job_type='job').order_by('-finished')
-                if jobs.exists():
-                    for job in jobs:
-                        if job.archive_name and job.archive_name != '':
-                            lines = self.launch_command(["borg",
-                                                         "list",
-                                                         "--json-lines",
-                                                         "::{}".format(job.archive_name)],
-                                                        repo,
-                                                        repo.repository_key,
-                                                        repo.path,
-                                                        **kwargs)
-                            hoursTimezone = round(
-                                (round(
-                                    (datetime.datetime.now() - datetime.datetime.now(
-                                        datetime.UTC)).total_seconds()) / 1800)
-                                / 2)
+    def process_repository(self, repo, **kwargs):
+        jobs = Job.objects.filter(policy__repository_id=repo.pk, status='successful', job_type='job').order_by(
+            '-finished')
+        if jobs.exists():
+            for job in jobs:
+                if job.archive_name and job.archive_name != '':
+                    lines = self.launch_command(["borg", "list", "--json-lines", "::{}".format(job.archive_name)], repo,
+                                                repo.repository_key, repo.path, **kwargs)
+                    self.clean_and_insert_catalog_entries(job, lines)
 
-                            print('Clean archive {} catalog entries.'.format(job.archive_name))
-                            db.catalog.delete_many({'archive_name': job.archive_name})
+    def clean_and_insert_catalog_entries(self, job, lines):
+        print('Clean archive {} catalog entries.'.format(job.archive_name))
+        db.catalog.delete_many({'archive_name': job.archive_name})
 
-                            list_entries = []
-                            for line in lines:
-                                try:
-                                    json_entry = json.loads(line)
-                                    new_entry = {
-                                        'archive_name': job.archive_name,
-                                        'job_id': job.pk,
-                                        'mode': json_entry['mode'],
-                                        'path': json_entry['path'],
-                                        'owner': json_entry['user'],
-                                        'group': json_entry['group'],
-                                        'type': json_entry['type'],
-                                        'size': json_entry['size'],
-                                        'healthy': json_entry['healthy'],
-                                        'mtime': '{}+0{}00'.format(json_entry['mtime'].replace('T', ' '), hoursTimezone)
-                                    }
-                                    list_entries.append(new_entry)
-                                except Exception:
-                                    continue
+        list_entries = self.build_catalog_entries(job, lines)
+        if list_entries:
+            print('Insert {} entries from {} archive'.format(len(list_entries), job.archive_name))
+            db.catalog.insert_many(list_entries)
+            self.ensure_catalog_indexes()
 
-                            if len(list_entries) > 0:
-                                print('Insert {} entries from {} archive'.format(len(list_entries), job.archive_name))
-                                db.catalog.insert_many(list_entries)
-                                if 'archive_name_text_path_text' not in db.catalog.index_information().keys():
-                                    db.catalog.create_index([
-                                        ('archive_name', pymongo.TEXT),
-                                        ('path', pymongo.TEXT)
-                                    ], name='archive_name_text_path_text', default_language='english')
-                                if 'archive_name_1' not in db.catalog.index_information().keys():
-                                    db.catalog.create_index('archive_name', name='archive_name_1',
-                                                            default_language='english')
+    def build_catalog_entries(self, job, lines):
+        hours_timezone = round(
+            (round((datetime.datetime.now() - datetime.datetime.now(datetime.UTC)).total_seconds()) / 1800) / 2)
+        list_entries = []
+        for line in lines:
+            try:
+                json_entry = json.loads(line)
+                new_entry = {
+                    'archive_name': job.archive_name,
+                    'job_id': job.pk,
+                    'mode': json_entry['mode'],
+                    'path': json_entry['path'],
+                    'owner': json_entry['user'],
+                    'group': json_entry['group'],
+                    'type': json_entry['type'],
+                    'size': json_entry['size'],
+                    'healthy': json_entry['healthy'],
+                    'mtime': '{}+0{}00'.format(json_entry['mtime'].replace('T', ' '), hours_timezone)
+                }
+                list_entries.append(new_entry)
+            except Exception:
+                continue
+        return list_entries
+
+    def ensure_catalog_indexes(self):
+        if 'archive_name_text_path_text' not in db.catalog.index_information().keys():
+            db.catalog.create_index([('archive_name', pymongo.TEXT), ('path', pymongo.TEXT)],
+                                    name='archive_name_text_path_text', default_language='english')
+        if 'archive_name_1' not in db.catalog.index_information().keys():
+            db.catalog.create_index('archive_name', name='archive_name_1', default_language='english')
+
+    # def handle(self, *args, **kwargs):
+    #     # Sanity check: Is there already a running job on the System?
+    #     jobs = Job.objects.filter(status="running")
+    #     if jobs.exists():
+    #         print('A job is already running, exiting.')
+    #         return
+    #
+    #     repos = Repository.objects.filter(enabled=True)
+    #     repoArchives = []
+    #     if repos.exists():
+    #         for repo in repos:
+    #             lines = self.launch_command(["borg", "list", "::"], repo, repo.repository_key, repo.path, **kwargs)
+    #
+    #             for line in lines:
+    #                 archive_name = line.split(' ')[0]  #
+    #                 for archtype in ('rootfs', 'vm', 'mysql', 'postgresql', 'config', 'piped', 'mail', 'folders'):
+    #                     if '{}-'.format(archtype) in archive_name:
+    #                         repoArchives.append(archive_name)
+    #
+    #         entries = Job.objects.filter(job_type='job', status='successful')
+    #         if entries.exists():
+    #             for entry in entries:
+    #                 if entry.archive_name != '' and entry.archive_name not in repoArchives:
+    #                     print('Delete {} from catalog'.format(entry.archive_name))
+    #                     # Catalog.objects.filter(archive_name=entry.archive_name).delete()
+    #                     # entry.archive_name = ''
+    #                     # entry.save()
+    #
+    #         for repo in repos:
+    #             jobs = Job.objects.filter(policy__repository_id=repo.pk,
+    #                                       status='successful',
+    #                                       job_type='job').order_by('-finished')
+    #             if jobs.exists():
+    #                 for job in jobs:
+    #                     if job.archive_name and job.archive_name != '':
+    #                         lines = self.launch_command(["borg",
+    #                                                      "list",
+    #                                                      "--json-lines",
+    #                                                      "::{}".format(job.archive_name)],
+    #                                                     repo,
+    #                                                     repo.repository_key,
+    #                                                     repo.path,
+    #                                                     **kwargs)
+    #                         hoursTimezone = round(
+    #                             (round(
+    #                                 (datetime.datetime.now() - datetime.datetime.now(
+    #                                     datetime.UTC)).total_seconds()) / 1800)
+    #                             / 2)
+    #
+    #                         print('Clean archive {} catalog entries.'.format(job.archive_name))
+    #                         db.catalog.delete_many({'archive_name': job.archive_name})
+    #
+    #                         list_entries = []
+    #                         for line in lines:
+    #                             try:
+    #                                 json_entry = json.loads(line)
+    #                                 new_entry = {
+    #                                     'archive_name': job.archive_name,
+    #                                     'job_id': job.pk,
+    #                                     'mode': json_entry['mode'],
+    #                                     'path': json_entry['path'],
+    #                                     'owner': json_entry['user'],
+    #                                     'group': json_entry['group'],
+    #                                     'type': json_entry['type'],
+    #                                     'size': json_entry['size'],
+    #                                     'healthy': json_entry['healthy'],
+    #                                     'mtime': '{}+0{}00'.format(json_entry['mtime'].replace('T', ' '), hoursTimezone)
+    #                                 }
+    #                                 list_entries.append(new_entry)
+    #                             except Exception:
+    #                                 continue
+    #
+    #                         if len(list_entries) > 0:
+    #                             print('Insert {} entries from {} archive'.format(len(list_entries), job.archive_name))
+    #                             db.catalog.insert_many(list_entries)
+    #                             if 'archive_name_text_path_text' not in db.catalog.index_information().keys():
+    #                                 db.catalog.create_index([
+    #                                     ('archive_name', pymongo.TEXT),
+    #                                     ('path', pymongo.TEXT)
+    #                                 ], name='archive_name_text_path_text', default_language='english')
+    #                             if 'archive_name_1' not in db.catalog.index_information().keys():
+    #                                 db.catalog.create_index('archive_name', name='archive_name_1',
+    #                                                         default_language='english')

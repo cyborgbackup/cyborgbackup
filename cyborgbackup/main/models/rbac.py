@@ -115,11 +115,11 @@ class Role(models.Model):
         return reverse('api:role_detail', kwargs={'pk': self.pk}, request=request)
 
     def __contains__(self, accessor):
-        if type(accessor) == User:
+        if isinstance(accessor, User):
             return self.ancestors.filter(members=accessor).exists()
         elif accessor.__class__.__name__ == 'Team':
             return self.ancestors.filter(pk=accessor.member_role.id).exists()
-        elif type(accessor) == Role:
+        elif isinstance(accessor, Role):
             return self.ancestors.filter(pk=accessor).exists()
         else:
             accessor_type = ContentType.objects.get_for_model(accessor)
@@ -144,7 +144,7 @@ class Role(models.Model):
             model_name = re.sub(r'([a-z])([A-Z])', r'\1 \2', model.__name__).lower()
 
         value = description
-        if type(description) == dict:
+        if isinstance(description, dict):
             value = description.get(model_name)
             if value is None:
                 value = description.get('default')
@@ -183,7 +183,7 @@ def role_summary_fields_generator(content_object, role_field):
         model_name = re.sub(r'([a-z])([A-Z])', r'\1 \2', model.__name__).lower()
 
     value = description
-    if type(description) == dict:
+    if isinstance(description, dict):
         value = None
         if model_name:
             value = description.get(model_name)
@@ -206,9 +206,9 @@ def get_roles_on_resource(resource, accessor):
     contains one or more Roles associated with it.
     """
 
-    if type(accessor) == User:
+    if isinstance(accessor, User):
         roles = accessor.roles.all()
-    elif type(accessor) == Role:
+    elif isinstance(accessor, Role):
         roles = [accessor]
     else:
         accessor_type = ContentType.objects.get_for_model(accessor)

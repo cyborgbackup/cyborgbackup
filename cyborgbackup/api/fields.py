@@ -3,9 +3,6 @@ import base64
 # Django REST Framework
 from rest_framework import serializers
 
-# CyBorgBackup
-# from cyborgbackup.main.fields import *
-
 __all__ = ['BooleanNullField', 'CharNullField', 'ChoiceNullField', 'VerbatimField']
 
 

@@ -250,7 +250,7 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.coreapi.AutoSchema',
     'DEFAULT_METADATA_CLASS': 'cyborgbackup.api.metadata.Metadata',
-    #'VIEW_NAME_FUNCTION': 'cyborgbackup.api.helpers.get_view_name',
+    # 'VIEW_NAME_FUNCTION': 'cyborgbackup.api.helpers.get_view_name',
     'VIEW_DESCRIPTION_FUNCTION': 'cyborgbackup.api.helpers.get_view_description',
     'NON_FIELD_ERRORS_KEY': '__all__',
     'DEFAULT_VERSION': 'v1',
@@ -460,11 +460,11 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': timedelta(seconds=30),
         'options': {'expires': 20} | main_tasks_route
     },
-    #'cyborgbackup_compute_Size': {
-    #    'task': 'cyborgbackup.main.tasks.shared.compute_borg_size',
-    #    'schedule': timedelta(seconds=10),
-    #    'options': {'expires': 20} | main_tasks_route
-    #},
+    # 'cyborgbackup_compute_size': {
+    #     'task': 'cyborgbackup.main.tasks.shared.compute_borg_size',
+    #     'schedule': timedelta(seconds=10),
+    #     'options': {'expires': 20} | main_tasks_route
+    # },
     'cyborgbackup_prune_catalog': {
         'task': 'cyborgbackup.main.tasks.shared.prune_catalog',
         'schedule': crontab(minute='30'),

@@ -195,112 +195,239 @@ class Policy(PrimordialModel):
         return Job
 
     def create_job(self, **kwargs):
-        """
-        Create a new job based on this policy.
-        """
-
         job_class = self._get_job_class()
         fields = ('extra_vars', 'job_type')
+        self._validate_fields(kwargs, fields)
+
+        catalog_enabled = self._is_catalog_enabled()
+        auto_prune_enabled = self._is_auto_prune_enabled()
+        app.send_task('cyborgbackup.main.tasks.cyborgbackup_notifier', args=('summary', self.pk))
+
+        have_prune_info = self._has_prune_info()
+        jobs, previous_job = [], None
+
+        for client in self.clients.filter(enabled=True):
+            job, catalog_job, prune_job = self._create_jobs_for_client(client, job_class, fields, kwargs,
+                                                                       catalog_enabled, auto_prune_enabled,
+                                                                       have_prune_info)
+            previous_job = self._update_dependent_jobs(previous_job, job, catalog_job, prune_job, catalog_enabled,
+                                                       auto_prune_enabled, have_prune_info)
+            jobs.append(job)
+
+        return self._finalize_jobs(jobs)
+
+    def _validate_fields(self, kwargs, fields):
         unallowed_fields = set(kwargs.keys()) - set(fields)
         if unallowed_fields:
             logger.warning('Fields {} are not allowed as overrides.'.format(unallowed_fields))
             map(kwargs.pop, unallowed_fields)
 
+    def _is_catalog_enabled(self):
         try:
             setting = Setting.objects.get(key='cyborgbackup_catalog_enabled')
-            if setting.value == 'True':
-                catalog_enabled = True
-            else:
-                catalog_enabled = False
+            return setting.value == 'True'
         except Exception:
-            catalog_enabled = True
+            return True
 
+    def _is_auto_prune_enabled(self):
         try:
             setting = Setting.objects.get(key='cyborgbackup_auto_prune')
-            if setting.value == 'True':
-                auto_prune_enabled = True
-            else:
-                auto_prune_enabled = False
+            return setting.value == 'True'
         except Exception:
-            auto_prune_enabled = True
+            return True
 
-        app.send_task('cyborgbackup.main.tasks.cyborgbackup_notifier', args=('summary', self.pk))
+    def _has_prune_info(self):
+        return self.keep_hourly or self.keep_daily or self.keep_weekly or self.keep_monthly or self.keep_yearly
 
-        have_prune_info = (self.keep_hourly or self.keep_daily
-                           or self.keep_weekly or self.keep_monthly or self.keep_yearly)
+    def _create_jobs_for_client(self, client, job_class, fields, kwargs, catalog_enabled, auto_prune_enabled,
+                                have_prune_info):
+        job = self._create_job_instance(client, job_class, fields, kwargs)
+        catalog_job = self._create_catalog_job(client, job_class, fields, kwargs, catalog_enabled, job)
+        prune_job = self._create_prune_job(client, job_class, fields, kwargs, auto_prune_enabled, have_prune_info,
+                                           catalog_enabled, job, catalog_job)
+        return job, catalog_job, prune_job
 
-        jobs = []
-        previous_job = None
-        catalog_job = None
-        prune_job = None
-        for client in self.clients.filter(enabled=True):
-            job = copy_model_by_class(self, job_class, fields, kwargs)
-            job.policy_id = self.pk
-            job.repository_id = self.repository.pk
-            job.client_id = client.pk
-            job.status = 'pending'
-            job.name = "Backup Job {} {}".format(self.name, client.hostname)
-            job.description = "Backup Job for Policy {} of client {}".format(self.name, client.hostname)
+    def _create_job_instance(self, client, job_class, fields, kwargs):
+        job = copy_model_by_class(self, job_class, fields, kwargs)
+        job.policy_id = self.pk
+        job.repository_id = self.repository.pk
+        job.client_id = client.pk
+        job.status = 'pending'
+        job.name = "Backup Job {} {}".format(self.name, client.hostname)
+        job.description = "Backup Job for Policy {} of client {}".format(self.name, client.hostname)
+        job.save()
+        return job
+
+    def _create_catalog_job(self, client, job_class, fields, kwargs, catalog_enabled, job):
+        if catalog_enabled:
+            catalog_job = copy_model_by_class(self, job_class, fields, kwargs)
+            catalog_job.policy_id = self.pk
+            catalog_job.repository_id = self.repository.pk
+            catalog_job.client_id = client.pk
+            catalog_job.status = 'waiting'
+            catalog_job.job_type = 'catalog'
+            catalog_job.name = "Catalog Job {} {}".format(self.name, client.hostname)
+            catalog_job.description = "Catalog Job for Policy {} of client {}".format(self.name, client.hostname)
+            catalog_job.master_job = job
+            catalog_job.save()
+            job.dependent_jobs = catalog_job
             job.save()
+            return catalog_job
+        return None
+
+    def _create_prune_job(self, client, job_class, fields, kwargs, auto_prune_enabled, have_prune_info, catalog_enabled,
+                          job, catalog_job):
+        if auto_prune_enabled and have_prune_info:
+            prune_job = copy_model_by_class(self, job_class, fields, kwargs)
+            prune_job.policy_id = self.pk
+            prune_job.repository_id = self.repository.pk
+            prune_job.client_id = client.pk
+            prune_job.status = 'waiting'
+            prune_job.job_type = 'prune'
+            prune_job.name = "Prune Job {} {}".format(self.name, client.hostname)
+            prune_job.description = "Prune Job for Policy {} of client {}".format(self.name, client.hostname)
+            prune_job.master_job = catalog_job if catalog_enabled else job
+            prune_job.save()
             if catalog_enabled:
-                catalog_job = copy_model_by_class(self, job_class, fields, kwargs)
-                catalog_job.policy_id = self.pk
-                catalog_job.repository_id = self.repository.pk
-                catalog_job.client_id = client.pk
-                catalog_job.status = 'waiting'
-                catalog_job.job_type = 'catalog'
-                catalog_job.name = "Catalog Job {} {}".format(self.name, client.hostname)
-                catalog_job.description = "Catalog Job for Policy {} of client {}".format(self.name, client.hostname)
-                catalog_job.master_job = job
+                catalog_job.dependent_jobs = prune_job
                 catalog_job.save()
-                job.dependent_jobs = catalog_job
-                job.save()
-            if auto_prune_enabled:
-                if have_prune_info:
-                    prune_job = copy_model_by_class(self, job_class, fields, kwargs)
-                    prune_job.policy_id = self.pk
-                    prune_job.repository_id = self.repository.pk
-                    prune_job.client_id = client.pk
-                    prune_job.status = 'waiting'
-                    prune_job.job_type = 'prune'
-                    prune_job.name = "Prune Job {} {}".format(self.name, client.hostname)
-                    prune_job.description = "Prune Job for Policy {} of client {}".format(self.name, client.hostname)
-                    if catalog_enabled:
-                        prune_job.master_job = catalog_job
-                    else:
-                        prune_job.master_job = job
-                    prune_job.save()
-                    if catalog_enabled:
-                        catalog_job.dependent_jobs = prune_job
-                        catalog_job.save()
-                    else:
-                        job.dependent_jobs = prune_job
-                        job.save()
-
-            if auto_prune_enabled:
-                if have_prune_info:
-                    if previous_job:
-                        previous_job.dependent_jobs = prune_job
-                        previous_job.save()
-                    previous_job = prune_job
-            elif catalog_enabled:
-                if previous_job:
-                    previous_job.dependent_jobs = catalog_job
-                    previous_job.save()
-                previous_job = catalog_job
             else:
-                if previous_job:
-                    previous_job.dependent_jobs = job
-                    previous_job.save()
-                previous_job = job
+                job.dependent_jobs = prune_job
+                job.save()
+            return prune_job
+        return None
 
-            jobs.append(job)
-        if len(jobs) > 0:
+    def _update_dependent_jobs(self, previous_job, job, catalog_job, prune_job, catalog_enabled, auto_prune_enabled,
+                               have_prune_info):
+        if auto_prune_enabled and have_prune_info:
+            if previous_job:
+                previous_job.dependent_jobs = prune_job
+                previous_job.save()
+            return prune_job
+        elif catalog_enabled:
+            if previous_job:
+                previous_job.dependent_jobs = catalog_job
+                previous_job.save()
+            return catalog_job
+        else:
+            if previous_job:
+                previous_job.dependent_jobs = job
+                previous_job.save()
+            return job
+
+    def _finalize_jobs(self, jobs):
+        if jobs:
             jobs[0].status = 'new'
             jobs[0].save()
             return jobs[0]
-        else:
-            return None
+        return None
+
+    # def create_job(self, **kwargs):
+    #     """
+    #     Create a new job based on this policy.
+    #     """
+    #
+    #     job_class = self._get_job_class()
+    #     fields = ('extra_vars', 'job_type')
+    #     unallowed_fields = set(kwargs.keys()) - set(fields)
+    #     if unallowed_fields:
+    #         logger.warning('Fields {} are not allowed as overrides.'.format(unallowed_fields))
+    #         map(kwargs.pop, unallowed_fields)
+    #
+    #     try:
+    #         setting = Setting.objects.get(key='cyborgbackup_catalog_enabled')
+    #         if setting.value == 'True':
+    #             catalog_enabled = True
+    #         else:
+    #             catalog_enabled = False
+    #     except Exception:
+    #         catalog_enabled = True
+    #
+    #     try:
+    #         setting = Setting.objects.get(key='cyborgbackup_auto_prune')
+    #         if setting.value == 'True':
+    #             auto_prune_enabled = True
+    #         else:
+    #             auto_prune_enabled = False
+    #     except Exception:
+    #         auto_prune_enabled = True
+    #
+    #     app.send_task('cyborgbackup.main.tasks.cyborgbackup_notifier', args=('summary', self.pk))
+    #
+    #     have_prune_info = (self.keep_hourly or self.keep_daily or self.keep_weekly or self.keep_monthly or self.keep_yearly)
+    #
+    #     jobs = []
+    #     previous_job = None
+    #     catalog_job = None
+    #     prune_job = None
+    #     for client in self.clients.filter(enabled=True):
+    #         job = copy_model_by_class(self, job_class, fields, kwargs)
+    #         job.policy_id = self.pk
+    #         job.repository_id = self.repository.pk
+    #         job.client_id = client.pk
+    #         job.status = 'pending'
+    #         job.name = "Backup Job {} {}".format(self.name, client.hostname)
+    #         job.description = "Backup Job for Policy {} of client {}".format(self.name, client.hostname)
+    #         job.save()
+    #         if catalog_enabled:
+    #             catalog_job = copy_model_by_class(self, job_class, fields, kwargs)
+    #             catalog_job.policy_id = self.pk
+    #             catalog_job.repository_id = self.repository.pk
+    #             catalog_job.client_id = client.pk
+    #             catalog_job.status = 'waiting'
+    #             catalog_job.job_type = 'catalog'
+    #             catalog_job.name = "Catalog Job {} {}".format(self.name, client.hostname)
+    #             catalog_job.description = "Catalog Job for Policy {} of client {}".format(self.name, client.hostname)
+    #             catalog_job.master_job = job
+    #             catalog_job.save()
+    #             job.dependent_jobs = catalog_job
+    #             job.save()
+    #         if auto_prune_enabled:
+    #             if have_prune_info:
+    #                 prune_job = copy_model_by_class(self, job_class, fields, kwargs)
+    #                 prune_job.policy_id = self.pk
+    #                 prune_job.repository_id = self.repository.pk
+    #                 prune_job.client_id = client.pk
+    #                 prune_job.status = 'waiting'
+    #                 prune_job.job_type = 'prune'
+    #                 prune_job.name = "Prune Job {} {}".format(self.name, client.hostname)
+    #                 prune_job.description = "Prune Job for Policy {} of client {}".format(self.name, client.hostname)
+    #                 if catalog_enabled:
+    #                     prune_job.master_job = catalog_job
+    #                 else:
+    #                     prune_job.master_job = job
+    #                 prune_job.save()
+    #                 if catalog_enabled:
+    #                     catalog_job.dependent_jobs = prune_job
+    #                     catalog_job.save()
+    #                 else:
+    #                     job.dependent_jobs = prune_job
+    #                     job.save()
+    #
+    #         if auto_prune_enabled:
+    #             if have_prune_info:
+    #                 if previous_job:
+    #                     previous_job.dependent_jobs = prune_job
+    #                     previous_job.save()
+    #                 previous_job = prune_job
+    #         elif catalog_enabled:
+    #             if previous_job:
+    #                 previous_job.dependent_jobs = catalog_job
+    #                 previous_job.save()
+    #             previous_job = catalog_job
+    #         else:
+    #             if previous_job:
+    #                 previous_job.dependent_jobs = job
+    #                 previous_job.save()
+    #             previous_job = job
+    #
+    #         jobs.append(job)
+    #     if len(jobs) > 0:
+    #         jobs[0].status = 'new'
+    #         jobs[0].save()
+    #         return jobs[0]
+    #     else:
+    #         return None
 
     def create_restore_job(self, source_job, **kwargs):
         job_class = self._get_job_class()

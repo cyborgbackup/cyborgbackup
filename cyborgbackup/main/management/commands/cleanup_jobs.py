@@ -183,51 +183,111 @@ class Command(BaseCommand):
         return lines
 
     def cleanup_jobs(self):
-        # Sanity check: Is there already a running job on the System?
-        jobs = Job.objects.filter(status="running")
-        if jobs.exists():
+        if self._is_job_running():
             print('A job is already running, exiting.')
             return
 
+        repo_archives = self._get_repo_archives()
+        self._cleanup_entries(repo_archives)
+        self._cleanup_orphan_jobs()
+
+        return 0, 0
+
+    def _is_job_running(self):
+        return Job.objects.filter(status="running").exists()
+
+    def _get_repo_archives(self):
+        repo_archives = []
         repos = Repository.objects.filter()
-        repoArchives = []
         if repos.exists():
             for repo in repos:
                 lines = self.launch_command(["borg", "list", "::"], repo, repo.repository_key, repo.path)
-
                 for line in lines:
-                    archive_name = line.split(' ')[0]  #
-                    for type in ('rootfs', 'vm', 'mysql', 'postgresql', 'config', 'piped', 'mail', 'folders'):
-                        if '{}-'.format(type) in archive_name:
-                            repoArchives.append(archive_name)
+                    archive_name = line.split(' ')[0]
+                    if any(f'{type}-' in archive_name for type in
+                           ('rootfs', 'vm', 'mysql', 'postgresql', 'config', 'piped', 'mail', 'folders')):
+                        repo_archives.append(archive_name)
+        return repo_archives
 
-            entries = Job.objects.filter(job_type='job')
-            deletedJobs = []
-            if entries.exists():
-                for entry in entries:
-                    if entry.archive_name != '' and entry.archive_name and entry.archive_name not in repoArchives:
-                        action_text = 'would delete' if self.dry_run else 'deleting'
-                        print('{} {}'.format(action_text, entry.archive_name))
-                        if not self.dry_run:
-                            db.catalog.delete_many({'archive_name': entry.archive_name})
-                            deletedJobs.append(entry)
-                            entry.delete()
-                    else:
-                        if entry.archive_name is None and entry.created < (
-                                timezone.now() - datetime.timedelta(days=settings.JOB_RETENTION)):
-                            action_text = 'would delete' if self.dry_run else 'deleting'
-                            print('{} orphan JobID={} => {}'.format(action_text, entry.pk, entry.name))
-                            if not self.dry_run:
-                                entry.delete()
+    def _cleanup_entries(self, repo_archives):
+        deleted_jobs = []
+        entries = Job.objects.filter(job_type='job')
+        if entries.exists():
+            for entry in entries:
+                if self._should_delete_entry(entry, repo_archives):
+                    action_text = 'would delete' if self.dry_run else 'deleting'
+                    print(f'{action_text} {entry.archive_name}')
+                    if not self.dry_run:
+                        db.catalog.delete_many({'archive_name': entry.archive_name})
+                        deleted_jobs.append(entry)
+                        entry.delete()
+                elif self._is_orphan_entry(entry):
+                    action_text = 'would delete' if self.dry_run else 'deleting'
+                    print(f'{action_text} orphan JobID={entry.pk} => {entry.name}')
+                    if not self.dry_run:
+                        entry.delete()
+        return deleted_jobs
 
-            if not self.dry_run:
-                Job.objects.exclude(job_type='job') \
-                    .filter(dependent_jobs_id__isnull=True,
-                            master_job_id__isnull=True,
-                            created__lt=(timezone.now() - datetime.timedelta(days=settings.JOB_RETENTION))) \
-                    .delete()
+    def _should_delete_entry(self, entry, repo_archives):
+        return entry.archive_name and entry.archive_name not in repo_archives
 
-        return 0, 0
+    def _is_orphan_entry(self, entry):
+        return (entry.archive_name is None
+                and entry.created < (timezone.now() - datetime.timedelta(days=settings.JOB_RETENTION)))
+
+    def _cleanup_orphan_jobs(self):
+        if not self.dry_run:
+            Job.objects.exclude(job_type='job') \
+                .filter(dependent_jobs_id__isnull=True, master_job_id__isnull=True,
+                        created__lt=(timezone.now() - datetime.timedelta(days=settings.JOB_RETENTION))) \
+                .delete()
+
+    # def cleanup_jobs(self):
+    #     # Sanity check: Is there already a running job on the System?
+    #     jobs = Job.objects.filter(status="running")
+    #     if jobs.exists():
+    #         print('A job is already running, exiting.')
+    #         return
+    #
+    #     repos = Repository.objects.filter()
+    #     repoArchives = []
+    #     if repos.exists():
+    #         for repo in repos:
+    #             lines = self.launch_command(["borg", "list", "::"], repo, repo.repository_key, repo.path)
+    #
+    #             for line in lines:
+    #                 archive_name = line.split(' ')[0]  #
+    #                 for type in ('rootfs', 'vm', 'mysql', 'postgresql', 'config', 'piped', 'mail', 'folders'):
+    #                     if '{}-'.format(type) in archive_name:
+    #                         repoArchives.append(archive_name)
+    #
+    #         entries = Job.objects.filter(job_type='job')
+    #         deletedJobs = []
+    #         if entries.exists():
+    #             for entry in entries:
+    #                 if entry.archive_name != '' and entry.archive_name and entry.archive_name not in repoArchives:
+    #                     action_text = 'would delete' if self.dry_run else 'deleting'
+    #                     print('{} {}'.format(action_text, entry.archive_name))
+    #                     if not self.dry_run:
+    #                         db.catalog.delete_many({'archive_name': entry.archive_name})
+    #                         deletedJobs.append(entry)
+    #                         entry.delete()
+    #                 else:
+    #                     if entry.archive_name is None and entry.created < (
+    #                             timezone.now() - datetime.timedelta(days=settings.JOB_RETENTION)):
+    #                         action_text = 'would delete' if self.dry_run else 'deleting'
+    #                         print('{} orphan JobID={} => {}'.format(action_text, entry.pk, entry.name))
+    #                         if not self.dry_run:
+    #                             entry.delete()
+    #
+    #         if not self.dry_run:
+    #             Job.objects.exclude(job_type='job') \
+    #                 .filter(dependent_jobs_id__isnull=True,
+    #                         master_job_id__isnull=True,
+    #                         created__lt=(timezone.now() - datetime.timedelta(days=settings.JOB_RETENTION))) \
+    #                 .delete()
+    #
+    #     return 0, 0
 
     @transaction.atomic
     def handle(self, *args, **options):

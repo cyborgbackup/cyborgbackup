@@ -75,7 +75,7 @@ def encrypt_field(instance, field_name, ask=False, subfield=None, skip_utf8=Fals
     if skip_utf8:
         utf8 = False
     else:
-        utf8 = type(value) == str
+        utf8 = isinstance(value, str)
     value = smart_str(value)
     key = get_encryption_key(field_name, getattr(instance, 'pk', None))
     f = Fernet256(key)

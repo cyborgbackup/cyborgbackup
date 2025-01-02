@@ -41,11 +41,9 @@ class ClientDetail(RetrieveUpdateDestroyAPIView):
         policies = Policy.objects.all()
         if policies.exists() and 'policies' in request.data.keys():
             for pol in policies:
-                if (pol.id in request.data['policies'] and
-                        len([x for x in pol.clients.all() if x.id == obj.id]) == 0):
+                if pol.id in request.data['policies'] and len([x for x in pol.clients.all() if x.id == obj.id]) == 0:
                     logger.debug('Add client to policy {}'.format(pol.name))
-                if (len([x for x in pol.clients.all() if x.id == obj.id]) > 0
-                        and pol.id not in request.data['policies']):
+                if len([x for x in pol.clients.all() if x.id == obj.id]) > 0 and pol.id not in request.data['policies']:
                     logger.debug('Remove client from policy {}'.format(pol.name))
 
         return super(ClientDetail, self).patch(request, *args, **kwargs)

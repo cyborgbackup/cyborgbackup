@@ -45,33 +45,84 @@ def _build_borg_cmd_for_mail():
 
 def _build_borg_cmd_for_piped_mysql(job):
     piped = 'mysqldump'
-    database_specify = False
-    if job.policy.extra_vars != '':
-        mysql_json = json.loads(job.policy.extra_vars)
-        if 'extended_mysql' in mysql_json and str(job.client.pk) in mysql_json['extended_mysql'].keys():
-            mysql_vars = mysql_json['extended_mysql'][str(job.client.pk)]
-            if 'user' in mysql_vars['credential'] and mysql_vars['credential']['user']:
-                piped += " -u{}".format(mysql_vars['credential']['user'])
-            if 'password' in mysql_vars['credential'] and mysql_vars['credential']['password']:
-                piped += " -p'{}'".format(mysql_vars['credential']['password'].replace("'", r"\'"))
-            if 'databases' in mysql_vars and mysql_vars['databases']:
-                database_specify = True
-                piped += " --databases {}".format(' '.join(mysql_vars['databases']))
-        else:
-            if 'user' in mysql_json and mysql_json['user']:
-                piped += " -u{}".format(mysql_json['user'])
-            if 'password' in mysql_json and mysql_json['password']:
-                piped += " -p'{}'".format(mysql_json['password'].replace("'", r"\'"))
-            if 'databases' in mysql_json and mysql_json['databases']:
-                database_specify = True
-                if isinstance(mysql_json['databases'], list):
-                    piped += " --databases {}".format(' '.join(mysql_json['databases']))
-                else:
-                    piped += " {}".format(mysql_json['databases'])
+    mysql_json = _load_mysql_json(job)
+    piped = database_specify = _add_mysql_credentials(piped, mysql_json, job)
+    _add_mysql_databases(piped, mysql_json, database_specify)
+    return piped
 
+
+def _load_mysql_json(job):
+    if job.policy.extra_vars != '':
+        return json.loads(job.policy.extra_vars)
+    return {}
+
+
+def _add_mysql_credentials(piped, mysql_json, job):
+    database_specify = False
+    if 'extended_mysql' in mysql_json and str(job.client.pk) in mysql_json['extended_mysql'].keys():
+        return _extended_mysql_credential(piped, mysql_json, job)
+    else:
+        if 'user' in mysql_json and mysql_json['user']:
+            piped += " -u{}".format(mysql_json['user'])
+        if 'password' in mysql_json and mysql_json['password']:
+            piped += " -p'{}'".format(mysql_json['password'].replace("'", r"\'"))
+    return piped, database_specify
+
+
+def _extended_mysql_credential(piped, mysql_json, job):
+    database_specify = False
+    mysql_vars = mysql_json['extended_mysql'][str(job.client.pk)]
+    if 'user' in mysql_vars['credential'] and mysql_vars['credential']['user']:
+        piped += " -u{}".format(mysql_vars['credential']['user'])
+    if 'password' in mysql_vars['credential'] and mysql_vars['credential']['password']:
+        piped += " -p'{}'".format(mysql_vars['credential']['password'].replace("'", r"\'"))
+    if 'databases' in mysql_vars and mysql_vars['databases']:
+        database_specify = True
+        piped += " --databases {}".format(' '.join(mysql_vars['databases']))
+    return piped, database_specify
+
+
+def _add_mysql_databases(piped, mysql_json, database_specify):
+    if 'databases' in mysql_json and mysql_json['databases']:
+        database_specify = True
+        if isinstance(mysql_json['databases'], list):
+            piped += " --databases {}".format(' '.join(mysql_json['databases']))
+        else:
+            piped += " {}".format(mysql_json['databases'])
     if not database_specify:
         piped += " --all-databases"
     return piped
+
+
+# def _build_borg_cmd_for_piped_mysql(job):
+#     piped = 'mysqldump'
+#     database_specify = False
+#     if job.policy.extra_vars != '':
+#         mysql_json = json.loads(job.policy.extra_vars)
+#         if 'extended_mysql' in mysql_json and str(job.client.pk) in mysql_json['extended_mysql'].keys():
+#             mysql_vars = mysql_json['extended_mysql'][str(job.client.pk)]
+#             if 'user' in mysql_vars['credential'] and mysql_vars['credential']['user']:
+#                 piped += " -u{}".format(mysql_vars['credential']['user'])
+#             if 'password' in mysql_vars['credential'] and mysql_vars['credential']['password']:
+#                 piped += " -p'{}'".format(mysql_vars['credential']['password'].replace("'", r"\'"))
+#             if 'databases' in mysql_vars and mysql_vars['databases']:
+#                 database_specify = True
+#                 piped += " --databases {}".format(' '.join(mysql_vars['databases']))
+#         else:
+#             if 'user' in mysql_json and mysql_json['user']:
+#                 piped += " -u{}".format(mysql_json['user'])
+#             if 'password' in mysql_json and mysql_json['password']:
+#                 piped += " -p'{}'".format(mysql_json['password'].replace("'", r"\'"))
+#             if 'databases' in mysql_json and mysql_json['databases']:
+#                 database_specify = True
+#                 if isinstance(mysql_json['databases'], list):
+#                     piped += " --databases {}".format(' '.join(mysql_json['databases']))
+#                 else:
+#                     piped += " {}".format(mysql_json['databases'])
+#
+#     if not database_specify:
+#         piped += " --all-databases"
+#     return piped
 
 
 def _build_borg_cmd_for_piped_postgresql(job):
@@ -96,7 +147,7 @@ def _build_borg_cmd_for_piped_postgresql(job):
 def _build_borg_cmd_for_piped_vm(job):
     """ @todo : Build backup system for RAW VM"""
     provider = load_module_provider(job.policy.vmprovider)
-    client = provider.get_client(job.client.hostname)
+    provider.get_client(job.client.hostname)
     piped_list = ['/var/cache/cyborgbackup/borg_backup_vm']
     return ' '.join(piped_list)
 
@@ -172,81 +223,170 @@ def _build_borg_cmd_for_piped(policy_type, job):
 #   push => ssh borg@backupHost "ssh root@client "pg_dumpall|pg_dump" | borg create /backup::archive -"
 ########
 
+
 def build_borg_cmd(job, data_dir):
     policy_type = job.policy.policy_type
-    job_date = job.created
-    job_date_string = job_date.strftime("%Y-%m-%d_%H-%M")
-    excluded_dirs = []
-    args = []
-    piped = ''
-    path = ''
-    client = job.client.hostname
-    client_hostname = client
-    try:
-        setting_client_user = Setting.objects.get(key='cyborgbackup_backup_user')
-        client_user = setting_client_user.value
-    except Exception:
-        client_user = 'root'
-    if client_user != 'root':
-        args = ['sudo', '-E'] + args
-    args += ['borg']
-    args += ['create']
-    repository_path = ''
-    if not job.policy.mode_pull:
-        repository_path = job.policy.repository.path
-    args += ['--debug', '-v', '--stats']
+    job_date_string = job.created.strftime("%Y-%m-%d_%H-%M")
+    client_user = _get_client_user()
+    args = _initialize_args(client_user)
+    repository_path = _get_repository_path(job)
     archive_client_name = job.client.hostname
-    if policy_type == 'rootfs':
-        path, excluded_dirs = _build_borg_cmd_for_rootfs()
-    if policy_type == 'config':
-        path, excluded_dirs = _build_borg_cmd_for_config()
-    if policy_type == 'folders':
-        path, excluded_dirs = _build_borg_cmd_for_folders(job)
-    if policy_type in ('rootfs', 'config', 'folders'):
-        obj_folders = json.loads(job.policy.extra_vars)
-        if 'exclude' in obj_folders.keys():
-            for item in obj_folders['exclude']:
-                if item not in excluded_dirs:
-                    excluded_dirs.append(item)
-    if policy_type == 'mail':
-        path, excluded_dirs = _build_borg_cmd_for_mail()
-    if policy_type in ('mysql', 'postgresql', 'piped', 'vm', 'proxmox'):
-        path = '-'
-        piped = _build_borg_cmd_for_piped(policy_type, job)
-        if not job.policy.mode_pull:
-            args = [piped, '|'] + args
 
-    args += ['{}::{}-{}-{}'.format(repository_path, policy_type, archive_client_name, job_date_string)]
-
-    if job.policy.mode_pull and policy_type in ('rootfs', 'config', 'mail'):
-        path = '.' + path
-    args += [path]
-
-    excluded_dirs.append(data_dir)
-    keyword = '--exclude '
-    if job.policy.mode_pull:
-        keyword += '.'
-    args += (keyword + (' ' + keyword).join(excluded_dirs)).split(' ')
+    path, excluded_dirs, piped = _get_backup_paths_and_commands(policy_type, job)
+    args += _build_borg_create_args(repository_path, policy_type, archive_client_name, job_date_string, path,
+                                    excluded_dirs, data_dir, job.policy.mode_pull)
 
     if job.policy.mode_pull:
-        (client_uri, repository_path) = job.policy.repository.path.split(':')
-        client = client_uri.split('@')[1]
-        client_user = client_uri.split('@')[0]
-        if policy_type in ('rootfs', 'config', 'mail', 'folders'):
-            sshfs_directory = '/var/tmp/cyborgbackup/sshfs_{}_{}'.format(client_hostname, job_date_string)
-            pull_cmd = ['mkdir', '-p', sshfs_directory]
-            pull_cmd += ['&&', 'sshfs', 'root@{}:{}'.format(client_hostname, path[1::]), sshfs_directory]
-            pull_cmd += ['&&', 'cd', sshfs_directory]
-            pull_cmd += ['&&'] + args
-            args = pull_cmd
-        if policy_type in ('mysql', 'postgresql', 'piped', 'vm'):
-            pull_cmd = ['ssh', '{}@{}'.format(client_user, client_hostname)]
-            if client_user != 'root':
-                piped = 'sudo -E ' + piped
-            pull_cmd += ["'" + piped + "'|" + ' '.join(args)]
-            args = pull_cmd
+        client, client_user, args = _build_pull_command(job, policy_type, path, args, job_date_string, piped)
+    else:
+        client = job.client.hostname
 
     return client, client_user, args
+
+
+def _get_client_user():
+    try:
+        setting_client_user = Setting.objects.get(key='cyborgbackup_backup_user')
+        return setting_client_user.value
+    except Exception:
+        return 'root'
+
+
+def _initialize_args(client_user):
+    args = []
+    if client_user != 'root':
+        args = ['sudo', '-E']
+    args += ['borg', 'create', '--debug', '-v', '--stats']
+    return args
+
+
+def _get_repository_path(job):
+    if not job.policy.mode_pull:
+        return job.policy.repository.path
+    return ''
+
+
+def _get_backup_paths_and_commands(policy_type, job):
+    if policy_type == 'rootfs':
+        return _build_borg_cmd_for_rootfs() + ('',)
+    if policy_type == 'config':
+        return _build_borg_cmd_for_config() + ('',)
+    if policy_type == 'folders':
+        return _build_borg_cmd_for_folders(job) + ('',)
+    if policy_type == 'mail':
+        return _build_borg_cmd_for_mail() + ('',)
+    if policy_type in ('mysql', 'postgresql', 'piped', 'vm', 'proxmox'):
+        return '-', [], _build_borg_cmd_for_piped(policy_type, job)
+    raise JobCommandBuilderException('Unsupported policy type')
+
+
+def _build_borg_create_args(repository_path, policy_type, archive_client_name, job_date_string, path, excluded_dirs,
+                            data_dir, mode_pull):
+    args = ['{}::{}-{}-{}'.format(repository_path, policy_type, archive_client_name, job_date_string)]
+    if mode_pull and policy_type in ('rootfs', 'config', 'mail'):
+        path = '.' + path
+    args.append(path)
+    excluded_dirs.append(data_dir)
+    keyword = '--exclude '
+    if mode_pull:
+        keyword += '.'
+    args += (keyword + (' ' + keyword).join(excluded_dirs)).split(' ')
+    return args
+
+
+def _build_pull_command(job, policy_type, path, args, job_date_string, piped):
+    client_uri, _ = job.policy.repository.path.split(':')
+    client = client_uri.split('@')[1]
+    client_user = client_uri.split('@')[0]
+    if policy_type in ('rootfs', 'config', 'mail', 'folders'):
+        sshfs_directory = '/var/tmp/cyborgbackup/sshfs_{}_{}'.format(client, job_date_string)
+        pull_cmd = ['mkdir', '-p', sshfs_directory, '&&', 'sshfs', 'root@{}:{}'.format(client, path[1:]),
+                    sshfs_directory, '&&', 'cd', sshfs_directory, '&&'] + args
+        args = pull_cmd
+    if policy_type in ('mysql', 'postgresql', 'piped', 'vm'):
+        pull_cmd = ['ssh', '{}@{}'.format(client_user, client)]
+        if client_user != 'root':
+            piped = 'sudo -E ' + piped
+        pull_cmd += ["'" + piped + "'|" + ' '.join(args)]
+        args = pull_cmd
+    return client, client_user, args
+
+
+# def build_borg_cmd(job, data_dir):
+#     policy_type = job.policy.policy_type
+#     job_date = job.created
+#     job_date_string = job_date.strftime("%Y-%m-%d_%H-%M")
+#     excluded_dirs = []
+#     args = []
+#     piped = ''
+#     path = ''
+#     client = job.client.hostname
+#     client_hostname = client
+#     try:
+#         setting_client_user = Setting.objects.get(key='cyborgbackup_backup_user')
+#         client_user = setting_client_user.value
+#     except Exception:
+#         client_user = 'root'
+#     if client_user != 'root':
+#         args = ['sudo', '-E'] + args
+#     args += ['borg']
+#     args += ['create']
+#     repository_path = ''
+#     if not job.policy.mode_pull:
+#         repository_path = job.policy.repository.path
+#     args += ['--debug', '-v', '--stats']
+#     archive_client_name = job.client.hostname
+#     if policy_type == 'rootfs':
+#         path, excluded_dirs = _build_borg_cmd_for_rootfs()
+#     if policy_type == 'config':
+#         path, excluded_dirs = _build_borg_cmd_for_config()
+#     if policy_type == 'folders':
+#         path, excluded_dirs = _build_borg_cmd_for_folders(job)
+#     if policy_type in ('rootfs', 'config', 'folders'):
+#         obj_folders = json.loads(job.policy.extra_vars)
+#         if 'exclude' in obj_folders.keys():
+#             for item in obj_folders['exclude']:
+#                 if item not in excluded_dirs:
+#                     excluded_dirs.append(item)
+#     if policy_type == 'mail':
+#         path, excluded_dirs = _build_borg_cmd_for_mail()
+#     if policy_type in ('mysql', 'postgresql', 'piped', 'vm', 'proxmox'):
+#         path = '-'
+#         piped = _build_borg_cmd_for_piped(policy_type, job)
+#         if not job.policy.mode_pull:
+#             args = [piped, '|'] + args
+#
+#     args += ['{}::{}-{}-{}'.format(repository_path, policy_type, archive_client_name, job_date_string)]
+#
+#     if job.policy.mode_pull and policy_type in ('rootfs', 'config', 'mail'):
+#         path = '.' + path
+#     args += [path]
+#
+#     excluded_dirs.append(data_dir)
+#     keyword = '--exclude '
+#     if job.policy.mode_pull:
+#         keyword += '.'
+#     args += (keyword + (' ' + keyword).join(excluded_dirs)).split(' ')
+#
+#     if job.policy.mode_pull:
+#         (client_uri, repository_path) = job.policy.repository.path.split(':')
+#         client = client_uri.split('@')[1]
+#         client_user = client_uri.split('@')[0]
+#         if policy_type in ('rootfs', 'config', 'mail', 'folders'):
+#             sshfs_directory = '/var/tmp/cyborgbackup/sshfs_{}_{}'.format(client_hostname, job_date_string)
+#             pull_cmd = ['mkdir', '-p', sshfs_directory]
+#             pull_cmd += ['&&', 'sshfs', 'root@{}:{}'.format(client_hostname, path[1::]), sshfs_directory]
+#             pull_cmd += ['&&', 'cd', sshfs_directory]
+#             pull_cmd += ['&&'] + args
+#             args = pull_cmd
+#         if policy_type in ('mysql', 'postgresql', 'piped', 'vm'):
+#             pull_cmd = ['ssh', '{}@{}'.format(client_user, client_hostname)]
+#             if client_user != 'root':
+#                 piped = 'sudo -E ' + piped
+#             pull_cmd += ["'" + piped + "'|" + ' '.join(args)]
+#             args = pull_cmd
+#
+#     return client, client_user, args
 
 
 def _build_args_for_backup(job, **kwargs):
@@ -304,7 +444,7 @@ def _build_args_for_backup(job, **kwargs):
     new_args += ['rm', os.path.join(env['PRIVATE_DATA_DIR'], os.path.basename(path_env)), '&&']
 
     # Run Pre-Hook
-    #new_args += []
+    # new_args += []
 
     # Dump Partition Table
     if (job.policy.policy_type == 'rootfs' and 'with_partition_table' in extra_vars.keys()
@@ -319,7 +459,7 @@ def _build_args_for_backup(job, **kwargs):
     new_args += ['rm', '-rf', env['PRIVATE_DATA_DIR'], '/var/tmp/cyborgbackup/cyborg_partitioning.tgz']
 
     # Run Post-Hook
-    #new_args += []
+    # new_args += []
 
     # Exit with Backup Exit Code
     new_args += ['; exit $exitcode\"']

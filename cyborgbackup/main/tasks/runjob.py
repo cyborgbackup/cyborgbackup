@@ -61,5 +61,6 @@ class RunJob(BaseTask):
         d[re.compile(r'Bad passphrase, try again for .*:\s*$', re.M)] = ''
         return d
 
+
 logger.debug('Registering RunJob task.')
 app_or_default().register_task(RunJob())

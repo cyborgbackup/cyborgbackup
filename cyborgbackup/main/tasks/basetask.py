@@ -33,9 +33,8 @@ class LogErrorsTask(Task):
         if getattr(exc, 'is_cyborgbackup_task_error', False):
             logger.warning(str("{}").format(exc))
         elif isinstance(self, BaseTask):
-            logger.exception(str(
-                '{!s} {!s} execution encountered exception.')
-                             .format(get_type_for_model(self.model), args[0]))
+            logger.exception(
+                str('{!s} {!s} execution encountered exception.').format(get_type_for_model(self.model), args[0]))
         else:
             logger.exception(str('Task {} encountered exception.').format(self.name), exc_info=exc)
         super(LogErrorsTask, self).on_failure(exc, task_id, args, kwargs, einfo)
@@ -224,86 +223,61 @@ class BaseTask(LogErrorsTask):
 
     @with_path_cleanup
     def run(self, pk, isolated_host=None, **kwargs):
-        """
-        Run the job/task and capture its output.
-        """
-        instance = self.update_model(pk, status='running', start_args='')
+        instance = self._initialize_run(pk, isolated_host, **kwargs)
+        status, rc, tb, event_ct, extra_update_fields = self._execute_task(instance, **kwargs)
+        self._finalize_run(instance, pk, status, tb, event_ct, extra_update_fields, rc, **kwargs)
 
+    def _initialize_run(self, pk, isolated_host, **kwargs):
+        instance = self.update_model(pk, status='running', start_args='')
         instance.websocket_emit_status("running")
+        kwargs['isolated'] = isolated_host is not None
+        self.pre_run_hook(instance, **kwargs)
+        if instance.cancel_flag:
+            instance = self.update_model(instance.pk, status='canceled')
+        if instance.status != 'running':
+            if hasattr(settings, 'CELERY_UNIT_TEST'):
+                return
+            else:
+                instance = self.update_model(pk)
+                raise RuntimeError('not starting %s task' % instance.status)
+        return instance
+
+    def _execute_task(self, instance, **kwargs):
         status, rc, tb = 'error', None, ''
         stdout_handle = None
-        output_replacements = []
         extra_update_fields = {}
         event_ct = 0
         try:
-            kwargs['isolated'] = isolated_host is not None
-            self.pre_run_hook(instance, **kwargs)
-            if instance.cancel_flag:
-                instance = self.update_model(instance.pk, status='canceled')
-            if instance.status != 'running':
-                if hasattr(settings, 'CELERY_UNIT_TEST'):
-                    return
-                else:
-                    # Stop the task chain and prevent starting the job if it has
-                    # already been canceled.
-                    instance = self.update_model(pk)
-                    status = instance.status
-                    raise RuntimeError('not starting %s task' % instance.status)
-
             kwargs['private_data_dir'] = self.build_private_data_dir(instance, **kwargs)
-            # May have to serialize the value
             kwargs['private_data_files'] = self.build_private_data_files(instance, **kwargs)
             kwargs['passwords'] = build_passwords()
             args = self.build_args(instance, **kwargs)
             safe_args = self.build_safe_args(instance, **kwargs)
-            output_replacements = self.build_output_replacements(instance, **kwargs)
             cwd = build_cwd(instance, **kwargs)
             env = build_env(instance, **kwargs)
             instance = self.update_model(instance.pk, job_args=' '.join(args), job_cwd=cwd, job_env=json.dumps(env))
-
             stdout_handle = self.get_stdout_handle(instance)
-            # If there is an SSH key path defined, wrap args with ssh-agent.
             ssh_key_path = self.get_ssh_key_path(instance, **kwargs)
-            # If we're executing on an isolated host, don't bother adding the
-            # key to the agent in this environment
             if ssh_key_path:
                 ssh_auth_sock = os.path.join(kwargs['private_data_dir'], 'ssh_auth.sock')
                 args = run.wrap_args_with_ssh_agent(args, ssh_key_path, ssh_auth_sock)
-                safe_args = run.wrap_args_with_ssh_agent(safe_args, ssh_key_path, ssh_auth_sock)
-
-            expect_passwords = {}
-            for k, v in self.get_password_prompts(**kwargs).items():
-                expect_passwords[k] = kwargs['passwords'].get(v, '') or ''
-            _kw = dict(
-                expect_passwords=expect_passwords,
-                cancelled_callback=lambda: self.update_model(instance.pk).cancel_flag,
-                job_timeout=self.get_instance_timeout(instance),
-                idle_timeout=self.get_idle_timeout(),
-                extra_update_fields=extra_update_fields,
-                pexpect_timeout=getattr(settings, 'PEXPECT_TIMEOUT', 5),
-            )
-            status, rc = run.run_pexpect(
-                args, cwd, env, stdout_handle, **_kw
-            )
+                run.wrap_args_with_ssh_agent(safe_args, ssh_key_path, ssh_auth_sock)
+            expect_passwords = self._get_expect_passwords(kwargs)
+            status, rc = run.run_pexpect(args, cwd, env, stdout_handle,
+                                         **self._get_run_pexpect_kwargs(instance, expect_passwords,
+                                                                        extra_update_fields))
         except JobException:
             if status != 'canceled':
                 tb = traceback.format_exc()
                 if settings.DEBUG:
                     logger.exception('%s Exception occurred while running task', instance.log_format)
         finally:
-            try:
-                shutil.rmtree(kwargs['private_data_dir'])
-            except Exception:
-                logger.exception('Error flushing Private Data dir')
-            try:
-                stdout_handle.flush()
-                stdout_handle.close()
-                event_ct = getattr(stdout_handle, '_event_ct', 0)
-                logger.info('%s finished running, producing %s events.',
-                            instance.log_format, event_ct)
-            except Exception:
-                logger.exception('Error flushing job stdout and saving event count.')
+            self._cleanup_private_data(kwargs)
+            self._finalize_stdout_handle(stdout_handle, instance)
+        return status, rc, tb, event_ct, extra_update_fields
 
+    def _finalize_run(self, instance, pk, status, tb, event_ct, extra_update_fields, rc, **kwargs):
+        output_replacements = self.build_output_replacements(instance, **kwargs)
         try:
             self.post_run_hook(instance, status, **kwargs)
         except JobHookException:
@@ -311,23 +285,155 @@ class BaseTask(LogErrorsTask):
         instance = self.update_model(pk)
         if instance.cancel_flag:
             status = 'canceled'
-
-        instance = self.update_model(pk, status=status, result_traceback=tb,
-                                     output_replacements=output_replacements,
-                                     emitted_events=event_ct,
-                                     **extra_update_fields)
+        instance = self.update_model(pk, status=status, result_traceback=tb, output_replacements=output_replacements,
+                                     emitted_events=event_ct, **extra_update_fields)
         try:
             self.final_run_hook(instance, status, **kwargs)
         except JobHookException:
             logger.exception(str('{} Final run hook errored.').format(instance.log_format))
         instance.websocket_emit_status(status)
         if status != 'successful' and not hasattr(settings, 'CELERY_UNIT_TEST'):
-            # Raising an exception will mark the job as 'failed' in celery
-            # and will stop a task chain from continuing to execute
             if status == 'canceled':
                 raise CyBorgBackupTaskError.TaskCancel(instance, rc)
             else:
                 raise CyBorgBackupTaskError.TaskError(instance, rc)
+
+    def _get_expect_passwords(self, kwargs):
+        expect_passwords = {}
+        for k, v in self.get_password_prompts(**kwargs).items():
+            expect_passwords[k] = kwargs['passwords'].get(v, '') or ''
+        return expect_passwords
+
+    def _get_run_pexpect_kwargs(self, instance, expect_passwords, extra_update_fields):
+        return dict(
+            expect_passwords=expect_passwords,
+            cancelled_callback=lambda: self.update_model(instance.pk).cancel_flag,
+            job_timeout=self.get_instance_timeout(instance),
+            idle_timeout=self.get_idle_timeout(),
+            extra_update_fields=extra_update_fields,
+            pexpect_timeout=getattr(settings, 'PEXPECT_TIMEOUT', 5),
+        )
+
+    def _cleanup_private_data(self, kwargs):
+        try:
+            shutil.rmtree(kwargs['private_data_dir'])
+        except Exception:
+            logger.exception('Error flushing Private Data dir')
+
+    def _finalize_stdout_handle(self, stdout_handle, instance):
+        try:
+            stdout_handle.flush()
+            stdout_handle.close()
+            event_ct = getattr(stdout_handle, '_event_ct', 0)
+            logger.info('%s finished running, producing %s events.', instance.log_format, event_ct)
+        except Exception:
+            logger.exception('Error flushing job stdout and saving event count.')
+
+    # def run(self, pk, isolated_host=None, **kwargs):
+    #     """
+    #     Run the job/task and capture its output.
+    #     """
+    #     instance = self.update_model(pk, status='running', start_args='')
+    #
+    #     instance.websocket_emit_status("running")
+    #     status, rc, tb = 'error', None, ''
+    #     stdout_handle = None
+    #     output_replacements = []
+    #     extra_update_fields = {}
+    #     event_ct = 0
+    #     try:
+    #         kwargs['isolated'] = isolated_host is not None
+    #         self.pre_run_hook(instance, **kwargs)
+    #         if instance.cancel_flag:
+    #             instance = self.update_model(instance.pk, status='canceled')
+    #         if instance.status != 'running':
+    #             if hasattr(settings, 'CELERY_UNIT_TEST'):
+    #                 return
+    #             else:
+    #                 # Stop the task chain and prevent starting the job if it has
+    #                 # already been canceled.
+    #                 instance = self.update_model(pk)
+    #                 status = instance.status
+    #                 raise RuntimeError('not starting %s task' % instance.status)
+    #
+    #         kwargs['private_data_dir'] = self.build_private_data_dir(instance, **kwargs)
+    #         # May have to serialize the value
+    #         kwargs['private_data_files'] = self.build_private_data_files(instance, **kwargs)
+    #         kwargs['passwords'] = build_passwords()
+    #         args = self.build_args(instance, **kwargs)
+    #         safe_args = self.build_safe_args(instance, **kwargs)
+    #         output_replacements = self.build_output_replacements(instance, **kwargs)
+    #         cwd = build_cwd(instance, **kwargs)
+    #         env = build_env(instance, **kwargs)
+    #         instance = self.update_model(instance.pk, job_args=' '.join(args), job_cwd=cwd, job_env=json.dumps(env))
+    #
+    #         stdout_handle = self.get_stdout_handle(instance)
+    #         # If there is an SSH key path defined, wrap args with ssh-agent.
+    #         ssh_key_path = self.get_ssh_key_path(instance, **kwargs)
+    #         # If we're executing on an isolated host, don't bother adding the
+    #         # key to the agent in this environment
+    #         if ssh_key_path:
+    #             ssh_auth_sock = os.path.join(kwargs['private_data_dir'], 'ssh_auth.sock')
+    #             args = run.wrap_args_with_ssh_agent(args, ssh_key_path, ssh_auth_sock)
+    #             safe_args = run.wrap_args_with_ssh_agent(safe_args, ssh_key_path, ssh_auth_sock)
+    #
+    #         expect_passwords = {}
+    #         for k, v in self.get_password_prompts(**kwargs).items():
+    #             expect_passwords[k] = kwargs['passwords'].get(v, '') or ''
+    #         _kw = dict(
+    #             expect_passwords=expect_passwords,
+    #             cancelled_callback=lambda: self.update_model(instance.pk).cancel_flag,
+    #             job_timeout=self.get_instance_timeout(instance),
+    #             idle_timeout=self.get_idle_timeout(),
+    #             extra_update_fields=extra_update_fields,
+    #             pexpect_timeout=getattr(settings, 'PEXPECT_TIMEOUT', 5),
+    #         )
+    #         status, rc = run.run_pexpect(
+    #             args, cwd, env, stdout_handle, **_kw
+    #         )
+    #     except JobException:
+    #         if status != 'canceled':
+    #             tb = traceback.format_exc()
+    #             if settings.DEBUG:
+    #                 logger.exception('%s Exception occurred while running task', instance.log_format)
+    #     finally:
+    #         try:
+    #             shutil.rmtree(kwargs['private_data_dir'])
+    #         except Exception:
+    #             logger.exception('Error flushing Private Data dir')
+    #         try:
+    #             stdout_handle.flush()
+    #             stdout_handle.close()
+    #             event_ct = getattr(stdout_handle, '_event_ct', 0)
+    #             logger.info('%s finished running, producing %s events.',
+    #                         instance.log_format, event_ct)
+    #         except Exception:
+    #             logger.exception('Error flushing job stdout and saving event count.')
+    #
+    #     try:
+    #         self.post_run_hook(instance, status, **kwargs)
+    #     except JobHookException:
+    #         logger.exception(str('{} Post run hook errored.').format(instance.log_format))
+    #     instance = self.update_model(pk)
+    #     if instance.cancel_flag:
+    #         status = 'canceled'
+    #
+    #     instance = self.update_model(pk, status=status, result_traceback=tb,
+    #                                  output_replacements=output_replacements,
+    #                                  emitted_events=event_ct,
+    #                                  **extra_update_fields)
+    #     try:
+    #         self.final_run_hook(instance, status, **kwargs)
+    #     except JobHookException:
+    #         logger.exception(str('{} Final run hook errored.').format(instance.log_format))
+    #     instance.websocket_emit_status(status)
+    #     if status != 'successful' and not hasattr(settings, 'CELERY_UNIT_TEST'):
+    #         # Raising an exception will mark the job as 'failed' in celery
+    #         # and will stop a task chain from continuing to execute
+    #         if status == 'canceled':
+    #             raise CyBorgBackupTaskError.TaskCancel(instance, rc)
+    #         else:
+    #             raise CyBorgBackupTaskError.TaskError(instance, rc)
 
     def get_ssh_key_path(self, instance, **kwargs):
         """

@@ -394,54 +394,45 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
         return self.update_fields(status=status, save=save)
 
     def save(self, *args, **kwargs):
-        """Save the job, with current status, to the database.
-        Ensure that all data is consistent before doing so.
-        """
-        # If update_fields has been specified, add our field names to it,
-        # if it hasn't been specified, then we're just doing a normal save.
         update_fields = kwargs.get('update_fields', [])
+        update_fields = self._update_status_and_last_job_run(update_fields)
+        update_fields = self._sanity_check_failed(update_fields)
+        update_fields = self._sanity_check_started(update_fields)
+        update_fields = self._sanity_check_finished(update_fields)
+        self._calculate_elapsed_time(update_fields)
+        result = super(Job, self).save(*args, **kwargs)
+        return result
 
-        # Update status and last_updated fields.
+    def _update_status_and_last_job_run(self, update_fields):
         updated_fields = self._set_status_and_last_job_run(save=False)
         for field in updated_fields:
             if field not in update_fields:
                 update_fields.append(field)
+        return update_fields
 
-        # Get status before save...
-        # status_before = self.status or 'new'
-
-        # If this job already exists in the database, retrieve a copy of
-        # the job in its prior state.
-        # if self.pk:
-        #     self_before = self.__class__.objects.get(pk=self.pk)
-        #     if self_before.status != self.status:
-        #         status_before = self_before.status
-
-        # Sanity check: Is this a failure? Ensure that the failure value
-        # matches the status.
+    def _sanity_check_failed(self, update_fields):
         failed = bool(self.status in ('failed', 'error', 'canceled'))
         if self.failed != failed:
             self.failed = failed
             if 'failed' not in update_fields:
                 update_fields.append('failed')
+        return update_fields
 
-        # Sanity check: Has the job just started? If so, mark down its start
-        # time.
+    def _sanity_check_started(self, update_fields):
         if self.status == 'running' and not self.started:
             self.started = now()
             if 'started' not in update_fields:
                 update_fields.append('started')
+        return update_fields
 
-        # Sanity check: Has the job just completed? If so, mark down its
-        # completion time, and record its output to the database.
+    def _sanity_check_finished(self, update_fields):
         if self.status in ('successful', 'failed', 'error', 'canceled') and not self.finished:
-            # Record the `finished` time.
             self.finished = now()
             if 'finished' not in update_fields:
                 update_fields.append('finished')
+        return update_fields
 
-        # If we have a start and finished time, and haven't already calculated
-        # out the time that elapsed, do so.
+    def _calculate_elapsed_time(self, update_fields):
         if self.started and self.finished:
             td = self.finished - self.started
             elapsed = (td.microseconds + (td.seconds + td.days * 24 * 3600) * 10 ** 6) / (10 ** 6 * 1.0)
@@ -451,12 +442,72 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
             self.elapsed = str(elapsed)
             if 'elapsed' not in update_fields:
                 update_fields.append('elapsed')
+        return update_fields
 
-        # Okay; we're done. Perform the actual save.
-        result = super(Job, self).save(*args, **kwargs)
-
-        # Done.
-        return result
+    # def save(self, *args, **kwargs):
+    #     """Save the job, with current status, to the database.
+    #     Ensure that all data is consistent before doing so.
+    #     """
+    #     # If update_fields has been specified, add our field names to it,
+    #     # if it hasn't been specified, then we're just doing a normal save.
+    #     update_fields = kwargs.get('update_fields', [])
+    #
+    #     # Update status and last_updated fields.
+    #     updated_fields = self._set_status_and_last_job_run(save=False)
+    #     for field in updated_fields:
+    #         if field not in update_fields:
+    #             update_fields.append(field)
+    #
+    #     # Get status before save...
+    #     # status_before = self.status or 'new'
+    #
+    #     # If this job already exists in the database, retrieve a copy of
+    #     # the job in its prior state.
+    #     # if self.pk:
+    #     #     self_before = self.__class__.objects.get(pk=self.pk)
+    #     #     if self_before.status != self.status:
+    #     #         status_before = self_before.status
+    #
+    #     # Sanity check: Is this a failure? Ensure that the failure value
+    #     # matches the status.
+    #     failed = bool(self.status in ('failed', 'error', 'canceled'))
+    #     if self.failed != failed:
+    #         self.failed = failed
+    #         if 'failed' not in update_fields:
+    #             update_fields.append('failed')
+    #
+    #     # Sanity check: Has the job just started? If so, mark down its start
+    #     # time.
+    #     if self.status == 'running' and not self.started:
+    #         self.started = now()
+    #         if 'started' not in update_fields:
+    #             update_fields.append('started')
+    #
+    #     # Sanity check: Has the job just completed? If so, mark down its
+    #     # completion time, and record its output to the database.
+    #     if self.status in ('successful', 'failed', 'error', 'canceled') and not self.finished:
+    #         # Record the `finished` time.
+    #         self.finished = now()
+    #         if 'finished' not in update_fields:
+    #             update_fields.append('finished')
+    #
+    #     # If we have a start and finished time, and haven't already calculated
+    #     # out the time that elapsed, do so.
+    #     if self.started and self.finished:
+    #         td = self.finished - self.started
+    #         elapsed = (td.microseconds + (td.seconds + td.days * 24 * 3600) * 10 ** 6) / (10 ** 6 * 1.0)
+    #     else:
+    #         elapsed = 0.0
+    #     if self.elapsed != elapsed:
+    #         self.elapsed = str(elapsed)
+    #         if 'elapsed' not in update_fields:
+    #             update_fields.append('elapsed')
+    #
+    #     # Okay; we're done. Perform the actual save.
+    #     result = super(Job, self).save(*args, **kwargs)
+    #
+    #     # Done.
+    #     return result
 
     def launch_prompts(self):
         """
@@ -833,29 +884,41 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
         return bool(self.status == 'successful' and self.archive_name != '')
 
     def _force_cancel(self):
-        # Update the status to 'canceled' if we can detect that the job
-        # really isn't running (i.e. celery has crashed or forcefully
-        # killed the worker).
-        task_statuses = ('STARTED', 'SUCCESS', 'FAILED', 'RETRY', 'REVOKED')
+        taskmeta = self._get_taskmeta()
+        if not self._is_task_cancelable(taskmeta):
+            return
+
+        if self._is_task_running(taskmeta):
+            return
+
+        self._cancel_instance()
+
+    def _get_taskmeta(self):
         try:
-            taskmeta = self.celery_task
-            print(self.celery_task)
-            if not taskmeta or taskmeta.status not in task_statuses:
-                return
-            from celery import current_app
-            i = current_app.control.inspect()
-            for v in (i.active() or {}).values():
-                if taskmeta.task_id in [x['id'] for x in v]:
-                    return
-            for v in (i.reserved() or {}).values():
-                if taskmeta.task_id in [x['id'] for x in v]:
-                    return
-            for v in (i.revoked() or {}).values():
-                if taskmeta.task_id in [x['id'] for x in v]:
-                    return
-            for v in (i.scheduled() or {}).values():
-                if taskmeta.task_id in [x['id'] for x in v]:
-                    return
+            return self.celery_task
+        except TaskResult.DoesNotExist:
+            return None
+
+    def _is_task_cancelable(self, taskmeta):
+        task_statuses = ('STARTED', 'SUCCESS', 'FAILED', 'RETRY', 'REVOKED')
+        return taskmeta and taskmeta.status in task_statuses
+
+    def _is_task_running(self, taskmeta):
+        from celery import current_app
+        i = current_app.control.inspect()
+        for state in ('active', 'reserved', 'revoked', 'scheduled'):
+            if self._is_task_in_state(taskmeta, i, state):
+                return True
+        return False
+
+    def _is_task_in_state(self, taskmeta, inspector, state):
+        for v in (getattr(inspector, state)() or {}).values():
+            if taskmeta.task_id in [x['id'] for x in v]:
+                return True
+        return False
+
+    def _cancel_instance(self):
+        try:
             instance = self.__class__.objects.get(pk=self.pk)
             if instance.can_cancel:
                 instance.status = 'canceled'
@@ -868,6 +931,43 @@ class Job(CommonModelNameNotUnique, JobTypeStringMixin, TaskManagerJobMixin):
         except Exception:
             if settings.DEBUG:
                 raise
+
+    # def _force_cancel(self):
+    #     # Update the status to 'canceled' if we can detect that the job
+    #     # really isn't running (i.e. celery has crashed or forcefully
+    #     # killed the worker).
+    #     task_statuses = ('STARTED', 'SUCCESS', 'FAILED', 'RETRY', 'REVOKED')
+    #     try:
+    #         taskmeta = self.celery_task
+    #         print(self.celery_task)
+    #         if not taskmeta or taskmeta.status not in task_statuses:
+    #             return
+    #         from celery import current_app
+    #         i = current_app.control.inspect()
+    #         for v in (i.active() or {}).values():
+    #             if taskmeta.task_id in [x['id'] for x in v]:
+    #                 return
+    #         for v in (i.reserved() or {}).values():
+    #             if taskmeta.task_id in [x['id'] for x in v]:
+    #                 return
+    #         for v in (i.revoked() or {}).values():
+    #             if taskmeta.task_id in [x['id'] for x in v]:
+    #                 return
+    #         for v in (i.scheduled() or {}).values():
+    #             if taskmeta.task_id in [x['id'] for x in v]:
+    #                 return
+    #         instance = self.__class__.objects.get(pk=self.pk)
+    #         if instance.can_cancel:
+    #             instance.status = 'canceled'
+    #             update_fields = ['status']
+    #             if not instance.job_explanation:
+    #                 instance.job_explanation = 'Forced cancel'
+    #                 update_fields.append('job_explanation')
+    #             instance.save(update_fields=update_fields)
+    #             self.websocket_emit_status("canceled")
+    #     except Exception:
+    #         if settings.DEBUG:
+    #             raise
 
     def _build_job_explanation(self):
         if not self.job_explanation:

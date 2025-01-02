@@ -79,7 +79,7 @@ def run_pexpect(args, cwd, env, logfile, expect_passwords,
                                 - signifying if the job has been prematurely
                                   cancelled
     :param expect_passwords:    a dict of regular expression password prompts
-                                to input values, i.e., {r'Password:\s*?$':
+                                to input values, i.e., {r'Password:s*?$':
                                 'some_password'}
     :param extra_update_fields: a dict used to specify DB fields which should
                                 be updated on the underlying model
@@ -99,11 +99,6 @@ def run_pexpect(args, cwd, env, logfile, expect_passwords,
     expect_passwords[pexpect.EOF] = None
 
     if not isinstance(expect_passwords, collections.OrderedDict):
-        # We iterate over `expect_passwords.keys()` and
-        # `expect_passwords.values()` separately to map matched inputs to
-        # patterns and choose the proper string to send to the subprocess;
-        # enforce usage of an OrderedDict so that the ordering of elements in
-        # `keys()` matches `values()`.
         expect_passwords = collections.OrderedDict(expect_passwords)
     password_patterns = list(expect_passwords.keys())
     password_values = list(expect_passwords.values())
@@ -118,28 +113,26 @@ def run_pexpect(args, cwd, env, logfile, expect_passwords,
         encoding='utf-8', echo=False,
     )
     child.logfile_read = logfile
+
+    return _monitor_child_process(child, password_patterns, password_values, cancelled_callback,
+                                  extra_update_fields, idle_timeout, job_timeout, pexpect_timeout, proot_cmd)
+
+
+def _monitor_child_process(child, password_patterns, password_values, cancelled_callback, extra_update_fields,
+                           idle_timeout, job_timeout, pexpect_timeout, proot_cmd):
     canceled = False
     timed_out = False
     errored = False
     last_stdout_update = time.time()
-
     job_start = time.time()
+
     while child.isalive():
         result_id = child.expect(password_patterns, timeout=pexpect_timeout, searchwindowsize=200)
-        password: str | None = password_values[result_id]
+        password = password_values[result_id]
         if password:
             child.sendline(password)
             last_stdout_update = time.time()
-        if cancelled_callback:
-            try:
-                canceled = cancelled_callback()
-            except Exception:
-                logger.exception('Could not check cancel callback - canceling immediately')
-                if isinstance(extra_update_fields, dict):
-                    extra_update_fields['job_explanation'] = "System error during job execution, check system logs"
-                errored = True
-        else:
-            canceled = False
+        canceled, errored = _check_cancellation(cancelled_callback, extra_update_fields)
         if not canceled and job_timeout != 0 and (time.time() - job_start) > job_timeout:
             timed_out = True
             if isinstance(extra_update_fields, dict):
@@ -149,7 +142,26 @@ def run_pexpect(args, cwd, env, logfile, expect_passwords,
         if idle_timeout and (time.time() - last_stdout_update) > idle_timeout:
             child.close(True)
             canceled = True
+
     logger.debug("Child Exit Code : {}".format(child.exitstatus))
+    return _determine_final_status(errored, canceled, child, timed_out)
+
+
+def _check_cancellation(cancelled_callback, extra_update_fields):
+    canceled = False
+    errored = False
+    if cancelled_callback:
+        try:
+            canceled = cancelled_callback()
+        except Exception:
+            logger.exception('Could not check cancel callback - canceling immediately')
+            if isinstance(extra_update_fields, dict):
+                extra_update_fields['job_explanation'] = "System error during job execution, check system logs"
+            errored = True
+    return canceled, errored
+
+
+def _determine_final_status(errored, canceled, child, timed_out):
     if errored:
         return 'error', child.exitstatus
     elif canceled:
@@ -158,6 +170,106 @@ def run_pexpect(args, cwd, env, logfile, expect_passwords,
         return 'successful', child.exitstatus
     else:
         return 'failed', child.exitstatus
+
+
+# def run_pexpect(args, cwd, env, logfile, expect_passwords,
+#                 cancelled_callback=None, extra_update_fields=None,
+#                 idle_timeout=None, job_timeout=0,
+#                 pexpect_timeout=5, proot_cmd='bwrap'):
+#     """
+#     Run the given command using pexpect to capture output and provide
+#     passwords when requested.
+#
+#     :param args:                a list of `subprocess.call`-style arguments
+#                                 representing a subprocess e.g., ['ls', '-la']
+#     :param cwd:                 the directory in which the subprocess should
+#                                 run
+#     :param env:                 a dict containing environment variables for the
+#                                 subprocess, ala `os.environ`
+#     :param logfile:             a file-like object for capturing stdout
+#     :param cancelled_callback:  a callable - which returns `True` or `False`
+#                                 - signifying if the job has been prematurely
+#                                   cancelled
+#     :param expect_passwords:    a dict of regular expression password prompts
+#                                 to input values, i.e., {r'Password:s*?$':
+#                                 'some_password'}
+#     :param extra_update_fields: a dict used to specify DB fields which should
+#                                 be updated on the underlying model
+#                                 object after execution completes
+#     :param idle_timeout         a timeout (in seconds); if new output is not
+#                                 sent to stdout in this interval, the process
+#                                 will be terminated
+#     :param job_timeout          a timeout (in seconds); if the total job runtime
+#                                 exceeds this, the process will be killed
+#     :param pexpect_timeout      a timeout (in seconds) to wait on
+#                                 `pexpect.spawn().expect()` calls
+#     :param proot_cmd            the command used to isolate processes, `bwrap`
+#
+#     Returns a tuple (status, return_code) i.e., `('successful', 0)`
+#     """
+#     expect_passwords[pexpect.TIMEOUT] = None
+#     expect_passwords[pexpect.EOF] = None
+#
+#     if not isinstance(expect_passwords, collections.OrderedDict):
+#         # We iterate over `expect_passwords.keys()` and
+#         # `expect_passwords.values()` separately to map matched inputs to
+#         # patterns and choose the proper string to send to the subprocess;
+#         # enforce usage of an OrderedDict so that the ordering of elements in
+#         # `keys()` matches `values()`.
+#         expect_passwords = collections.OrderedDict(expect_passwords)
+#     password_patterns = list(expect_passwords.keys())
+#     password_values = list(expect_passwords.values())
+#
+#     logger.debug('Launch Command')
+#     logger.debug(args)
+#     logger.debug('With Environment')
+#     logger.debug(env)
+#
+#     child = pexpect.spawn(
+#         args[0], args[1:], cwd=cwd, env=env, ignore_sighup=True,
+#         encoding='utf-8', echo=False,
+#     )
+#     child.logfile_read = logfile
+#     canceled = False
+#     timed_out = False
+#     errored = False
+#     last_stdout_update = time.time()
+#
+#     job_start = time.time()
+#     while child.isalive():
+#         result_id = child.expect(password_patterns, timeout=pexpect_timeout, searchwindowsize=200)
+#         password: str | None = password_values[result_id]
+#         if password:
+#             child.sendline(password)
+#             last_stdout_update = time.time()
+#         if cancelled_callback:
+#             try:
+#                 canceled = cancelled_callback()
+#             except Exception:
+#                 logger.exception('Could not check cancel callback - canceling immediately')
+#                 if isinstance(extra_update_fields, dict):
+#                     extra_update_fields['job_explanation'] = "System error during job execution, check system logs"
+#                 errored = True
+#         else:
+#             canceled = False
+#         if not canceled and job_timeout != 0 and (time.time() - job_start) > job_timeout:
+#             timed_out = True
+#             if isinstance(extra_update_fields, dict):
+#                 extra_update_fields['job_explanation'] = "Job terminated due to timeout"
+#         if canceled or timed_out or errored:
+#             handle_termination(child.pid, child.args, proot_cmd, is_cancel=canceled)
+#         if idle_timeout and (time.time() - last_stdout_update) > idle_timeout:
+#             child.close(True)
+#             canceled = True
+#     logger.debug("Child Exit Code : {}".format(child.exitstatus))
+#     if errored:
+#         return 'error', child.exitstatus
+#     elif canceled:
+#         return 'canceled', child.exitstatus
+#     elif child.exitstatus == 0 and not timed_out:
+#         return 'successful', child.exitstatus
+#     else:
+#         return 'failed', child.exitstatus
 
 
 def handle_termination(pid, args, proot_cmd, is_cancel=True):
@@ -219,6 +331,40 @@ def __run__(private_data_dir):
             f.write(str(data))
 
 
+def start():
+    stderr_path = os.path.join(private_data_dir, 'artifacts', 'daemon.log')
+    if not os.path.exists(stderr_path):
+        os.mknod(stderr_path, stat.S_IFREG | stat.S_IRUSR | stat.S_IWUSR)
+    stderr = open(stderr_path, 'w+')
+
+    import daemon
+    from daemon.pidfile import TimeoutPIDLockFile
+
+    context = daemon.DaemonContext(
+        pidfile=TimeoutPIDLockFile(pidfile),
+        stderr=stderr
+    )
+    with context:
+        __run__(private_data_dir)
+    sys.exit(0)
+
+
+def stop():
+    try:
+        with open(os.path.join(private_data_dir, 'args'), 'r') as args:
+            handle_termination(pid, json.load(args), 'bwrap')
+    except IOError:
+        handle_termination(pid, [], 'bwrap')
+
+
+def is_alive():
+    try:
+        os.kill(pid, signal.SIG_DFL)
+        sys.exit(0)
+    except OSError:
+        sys.exit(1)
+
+
 if __name__ == '__main__':
     import cyborgbackup
 
@@ -233,23 +379,7 @@ if __name__ == '__main__':
     pidfile = os.path.join(private_data_dir, 'pid')
 
     if args.command == 'start':
-        # create a file to log stderr in case the daemonized process throws
-        # an exception before it gets to `pexpect.spawn`
-        stderr_path = os.path.join(private_data_dir, 'artifacts', 'daemon.log')
-        if not os.path.exists(stderr_path):
-            os.mknod(stderr_path, stat.S_IFREG | stat.S_IRUSR | stat.S_IWUSR)
-        stderr = open(stderr_path, 'w+')
-
-        import daemon
-        from daemon.pidfile import TimeoutPIDLockFile
-
-        context = daemon.DaemonContext(
-            pidfile=TimeoutPIDLockFile(pidfile),
-            stderr=stderr
-        )
-        with context:
-            __run__(private_data_dir)
-        sys.exit(0)
+        start()
 
     try:
         with open(pidfile, 'r') as f:
@@ -258,14 +388,6 @@ if __name__ == '__main__':
         sys.exit(1)
 
     if args.command == 'stop':
-        try:
-            with open(os.path.join(private_data_dir, 'args'), 'r') as args:
-                handle_termination(pid, json.load(args), 'bwrap')
-        except IOError:
-            handle_termination(pid, [], 'bwrap')
+        stop()
     elif args.command == 'is-alive':
-        try:
-            os.kill(pid, signal.SIG_DFL)
-            sys.exit(0)
-        except OSError:
-            sys.exit(1)
+        is_alive()

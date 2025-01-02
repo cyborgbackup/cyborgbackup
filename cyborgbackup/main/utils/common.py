@@ -6,7 +6,6 @@ import re
 import subprocess
 from functools import reduce
 from io import StringIO
-from itertools import chain
 
 import yaml
 # Django
@@ -20,7 +19,8 @@ from django.db.models import Q
 from django.db.models.fields.related import ForeignObjectRel, ManyToManyField
 from django.db.models.query import QuerySet
 from django.utils.encoding import smart_str
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext_lazy as t
+from itertools import chain
 # Django REST Framework
 from rest_framework.exceptions import ParseError, PermissionDenied
 
@@ -142,10 +142,7 @@ def _convert_model_field_for_display(obj, field_name, password_fields=None):
         return '<missing {}>-{}'.format(obj._meta.verbose_name, getattr(obj, '{}_id'.format(field_name)))
     if password_fields is None:
         password_fields = set(getattr(type(obj), 'PASSWORD_FIELDS', [])) | {'password'}
-    if field_name in password_fields or (
-            isinstance(field_val, str) and
-            field_val.startswith('$encrypted$')
-    ):
+    if field_name in password_fields or (isinstance(field_val, str) and field_val.startswith('$encrypted$')):
         return u'hidden'
     if hasattr(obj, 'display_%s' % field_name):
         field_val = getattr(obj, 'display_%s' % field_name)()
@@ -217,7 +214,7 @@ def to_python_boolean(value, allow_none=False):
     elif allow_none and value.lower() in ('none', 'null'):
         return None
     else:
-        raise ValueError(_(u'Unable to convert "%s" to boolean') % str(value))
+        raise ValueError(t(u'Unable to convert "%s" to boolean') % str(value))
 
 
 def camelcase_to_underscore(s):
@@ -265,7 +262,7 @@ def validate_vars_type(vars_obj):
         else:
             data_type = str(vars_type)
         raise AssertionError(
-            _('Input type `{data_type}` is not a dictionary').format(
+            t('Input type `{data_type}` is not a dictionary').format(
                 data_type=data_type)
         )
 
@@ -295,7 +292,7 @@ def parse_yaml_or_json(vars_str, silent_failure=True):
         except (yaml.YAMLError, TypeError, AttributeError, AssertionError) as yaml_err:
             if silent_failure:
                 return {}
-            raise ParseError(_(
+            raise ParseError(t(
                 'Cannot parse as JSON (error: {json_error}) or '
                 'YAML (error: {yaml_error}).').format(
                 json_error=str(json_err), yaml_error=str(yaml_err)))
@@ -329,40 +326,89 @@ def get_cyborgbackup_migration_version():
 
 def filter_insights_api_response(json):
     new_json = {}
-    '''
-    'last_check_in',
-    'reports.[].rule.severity',
-    'reports.[].rule.description',
-    'reports.[].rule.category',
-    'reports.[].rule.summary',
-    'reports.[].maintenance_actions.[].maintenance_plan.name',
-    'reports.[].maintenance_actions.[].maintenance_plan.maintenance_id',
-    '''
+    _filter_last_check_in(json, new_json)
+    _filter_reports(json, new_json)
+    return new_json
 
+
+def _filter_last_check_in(json, new_json):
     if 'last_check_in' in json:
         new_json['last_check_in'] = json['last_check_in']
+
+
+def _filter_reports(json, new_json):
     if 'reports' in json:
         new_json['reports'] = []
         for rep in json['reports']:
-            new_report = {
-                'rule': {},
-                'maintenance_actions': []
-            }
-            if 'rule' in rep:
-                for k in ['severity', 'description', 'category', 'summary']:
-                    if k in rep['rule']:
-                        new_report['rule'][k] = rep['rule'][k]
-
-            for action in rep.get('maintenance_actions', []):
-                new_action = {'maintenance_plan': {}}
-                if 'maintenance_plan' in action:
-                    for k in ['name', 'maintenance_id']:
-                        if k in action['maintenance_plan']:
-                            new_action['maintenance_plan'][k] = action['maintenance_plan'][k]
-                new_report['maintenance_actions'].append(new_action)
-
+            new_report = _build_new_report(rep)
             new_json['reports'].append(new_report)
-    return new_json
+
+
+def _build_new_report(rep):
+    new_report = {
+        'rule': {},
+        'maintenance_actions': []
+    }
+    new_report = _filter_rule(rep, new_report)
+    new_report = _filter_maintenance_actions(rep, new_report)
+    return new_report
+
+
+def _filter_rule(rep, new_report):
+    if 'rule' in rep:
+        for k in ['severity', 'description', 'category', 'summary']:
+            if k in rep['rule']:
+                new_report['rule'][k] = rep['rule'][k]
+    return new_report
+
+
+def _filter_maintenance_actions(rep, new_report):
+    for action in rep.get('maintenance_actions', []):
+        new_action = {'maintenance_plan': {}}
+        if 'maintenance_plan' in action:
+            for k in ['name', 'maintenance_id']:
+                if k in action['maintenance_plan']:
+                    new_action['maintenance_plan'][k] = action['maintenance_plan'][k]
+        new_report['maintenance_actions'].append(new_action)
+    return new_report
+
+
+# def filter_insights_api_response(json):
+#     new_json = {}
+#     '''
+#     'last_check_in',
+#     'reports.[].rule.severity',
+#     'reports.[].rule.description',
+#     'reports.[].rule.category',
+#     'reports.[].rule.summary',
+#     'reports.[].maintenance_actions.[].maintenance_plan.name',
+#     'reports.[].maintenance_actions.[].maintenance_plan.maintenance_id',
+#     '''
+#
+#     if 'last_check_in' in json:
+#         new_json['last_check_in'] = json['last_check_in']
+#     if 'reports' in json:
+#         new_json['reports'] = []
+#         for rep in json['reports']:
+#             new_report = {
+#                 'rule': {},
+#                 'maintenance_actions': []
+#             }
+#             if 'rule' in rep:
+#                 for k in ['severity', 'description', 'category', 'summary']:
+#                     if k in rep['rule']:
+#                         new_report['rule'][k] = rep['rule'][k]
+#
+#             for action in rep.get('maintenance_actions', []):
+#                 new_action = {'maintenance_plan': {}}
+#                 if 'maintenance_plan' in action:
+#                     for k in ['name', 'maintenance_id']:
+#                         if k in action['maintenance_plan']:
+#                             new_action['maintenance_plan'][k] = action['maintenance_plan'][k]
+#                 new_report['maintenance_actions'].append(new_action)
+#
+#             new_json['reports'].append(new_report)
+#     return new_json
 
 
 def get_model_for_type(type):
@@ -435,94 +481,241 @@ def prefetch_page_capabilities(model, page, prefetch_list, user):
           project, put into cache dictionary as "copy"
     """
     page_ids = [obj.id for obj in page]
-    mapping = {}
-    for obj in page:
-        mapping[obj.id] = {}
+    mapping = {obj.id: {} for obj in page}
 
     for prefetch_entry in prefetch_list:
-
-        display_method = None
-        if type(prefetch_entry) is dict:
-            display_method = prefetch_entry.keys()[0]
-            paths = prefetch_entry[display_method]
-        else:
-            paths = prefetch_entry
-
-        if type(paths) is not list:
-            paths = [paths]
-
-        # Build the query for accessible_objects according the user & role(s)
-        filter_args = []
-        role_type = None
-        for role_path in paths:
-            if '.' in role_path:
-                res_path = '__'.join(role_path.split('.')[:-1])
-                role_type = role_path.split('.')[-1]
-                parent_model = model
-                for subpath in role_path.split('.')[:-1]:
-                    parent_model = parent_model._meta.get_field(subpath).related_model
-                filter_args.append(Q(
-                    Q(**{'%s__pk__in' % res_path: parent_model.accessible_pk_qs(user, '%s_role' % role_type)}) |
-                    Q(**{'%s__isnull' % res_path: True})))
-            else:
-                role_type = role_path
-                filter_args.append(Q(**{'pk__in': model.accessible_pk_qs(user, '%s_role' % role_type)}))
-
-        if display_method is None:
-            # Role name translation to UI names for methods
-            display_method = role_type
-            if role_type == 'admin':
-                display_method = 'edit'
-            elif role_type in ['execute', 'update']:
-                display_method = 'start'
-
-        # Union that query with the list of items on page
-        filter_args.append(Q(pk__in=page_ids))
+        display_method, paths = _get_display_method_and_paths(prefetch_entry)
+        filter_args, role_type = _build_filter_args(model, paths, user, page_ids)
         ids_with_role = set(model.objects.filter(*filter_args).values_list('pk', flat=True))
-
-        # Save data item-by-item
-        for obj in page:
-            mapping[obj.pk][display_method] = bool(obj.pk in ids_with_role)
+        mapping = _save_data_item_by_item(page, mapping, display_method, ids_with_role, role_type)
 
     return mapping
 
 
-def copy_model_by_class(obj1, Class2, fields, kwargs):
-    """
-    Creates a new unsaved object of type Class2 using the fields from obj1
-    values in kwargs can override obj1
-    """
+def _get_display_method_and_paths(prefetch_entry):
+    if isinstance(prefetch_entry, dict):
+        display_method = list(prefetch_entry.keys())[0]
+        paths = prefetch_entry[display_method]
+    else:
+        display_method = None
+        paths = prefetch_entry
+
+    if not isinstance(paths, list):
+        paths = [paths]
+
+    return display_method, paths
+
+
+def _build_filter_args(model, paths, user, page_ids):
+    filter_args = []
+    role_type = None
+
+    for role_path in paths:
+        if '.' in role_path:
+            res_path, role_type = _get_res_path_and_role_type(role_path)
+            parent_model = _get_parent_model(model, role_path)
+            filter_args.append(Q(
+                Q(**{'%s__pk__in' % res_path: parent_model.accessible_pk_qs(user, '%s_role' % role_type)})
+                | Q(**{'%s__isnull' % res_path: True})))
+        else:
+            role_type = role_path
+            filter_args.append(Q(**{'pk__in': model.accessible_pk_qs(user, '%s_role' % role_type)}))
+
+    if not filter_args:
+        filter_args.append(Q(pk__in=page_ids))
+
+    return filter_args, role_type
+
+
+def _get_res_path_and_role_type(role_path):
+    res_path = '__'.join(role_path.split('.')[:-1])
+    role_type = role_path.split('.')[-1]
+    return res_path, role_type
+
+
+def _get_parent_model(model, role_path):
+    parent_model = model
+    for subpath in role_path.split('.')[:-1]:
+        parent_model = parent_model._meta.get_field(subpath).related_model
+    return parent_model
+
+
+def _save_data_item_by_item(page, mapping, display_method, ids_with_role, role_type):
+    if display_method is None:
+        display_method = _translate_role_type_to_display_method(role_type)
+
+    for obj in page:
+        mapping[obj.pk][display_method] = bool(obj.pk in ids_with_role)
+
+    return mapping
+
+
+def _translate_role_type_to_display_method(role_type):
+    if role_type == 'admin':
+        return 'edit'
+    elif role_type in ['execute', 'update']:
+        return 'start'
+    return role_type
+
+
+# def prefetch_page_capabilities(model, page, prefetch_list, user):
+#     """
+#     Given a `page` list of objects, a nested dictionary of user_capabilities
+#     are returned by id, ex.
+#     {
+#         4: {'edit': True, 'start': True},
+#         6: {'edit': False, 'start': False}
+#     }
+#     Each capability is produced for all items in the page in a single query
+#
+#     Examples of prefetch language:
+#     prefetch_list = ['admin', 'execute']
+#       --> prefetch the admin (edit) and execute (start) permissions for
+#           items in list for current user
+#     prefetch_list = ['inventory.admin']
+#       --> prefetch the related inventory FK permissions for current user,
+#           and put it into the object's cache
+#     prefetch_list = [{'copy': ['inventory.admin', 'project.admin']}]
+#       --> prefetch logical combination of admin permission to inventory AND
+#           project, put into cache dictionary as "copy"
+#     """
+#     page_ids = [obj.id for obj in page]
+#     mapping = {}
+#     for obj in page:
+#         mapping[obj.id] = {}
+#
+#     for prefetch_entry in prefetch_list:
+#
+#         display_method = None
+#         if type(prefetch_entry) is dict:
+#             display_method = prefetch_entry.keys()[0]
+#             paths = prefetch_entry[display_method]
+#         else:
+#             paths = prefetch_entry
+#
+#         if type(paths) is not list:
+#             paths = [paths]
+#
+#         # Build the query for accessible_objects according the user & role(s)
+#         filter_args = []
+#         role_type = None
+#         for role_path in paths:
+#             if '.' in role_path:
+#                 res_path = '__'.join(role_path.split('.')[:-1])
+#                 role_type = role_path.split('.')[-1]
+#                 parent_model = model
+#                 for subpath in role_path.split('.')[:-1]:
+#                     parent_model = parent_model._meta.get_field(subpath).related_model
+#                 filter_args.append(Q(
+#                     Q(**{'%s__pk__in' % res_path: parent_model.accessible_pk_qs(user, '%s_role' % role_type)})
+#                     | Q(**{'%s__isnull' % res_path: True})))
+#             else:
+#                 role_type = role_path
+#                 filter_args.append(Q(**{'pk__in': model.accessible_pk_qs(user, '%s_role' % role_type)}))
+#
+#         if display_method is None:
+#             # Role name translation to UI names for methods
+#             display_method = role_type
+#             if role_type == 'admin':
+#                 display_method = 'edit'
+#             elif role_type in ['execute', 'update']:
+#                 display_method = 'start'
+#
+#         # Union that query with the list of items on page
+#         filter_args.append(Q(pk__in=page_ids))
+#         ids_with_role = set(model.objects.filter(*filter_args).values_list('pk', flat=True))
+#
+#         # Save data item-by-item
+#         for obj in page:
+#             mapping[obj.pk][display_method] = bool(obj.pk in ids_with_role)
+#
+#     return mapping
+
+
+def copy_model_by_class(obj1, class2, fields, kwargs):
+    create_kwargs = _build_create_kwargs(obj1, class2, fields, kwargs)
+    new_kwargs = _apply_class_specific_processing(obj1, class2, create_kwargs, kwargs)
+    return class2(**new_kwargs)
+
+
+def _build_create_kwargs(obj1, class2, fields, kwargs):
     create_kwargs = {}
     for field_name in fields:
-        # Foreign keys can be specified as field_name or field_name_id.
-        id_field_name = '%s_id' % field_name
+        id_field_name = f'{field_name}_id'
         if hasattr(obj1, id_field_name):
-            if field_name in kwargs:
-                value = kwargs[field_name]
-            elif id_field_name in kwargs:
-                value = kwargs[id_field_name]
-            else:
-                value = getattr(obj1, id_field_name)
-            if hasattr(value, 'id'):
-                value = value.id
+            value = _get_field_value(obj1, id_field_name, field_name, kwargs)
             create_kwargs[id_field_name] = value
         elif field_name in kwargs:
-            if field_name == 'extra_vars' and isinstance(kwargs[field_name], dict):
-                create_kwargs[field_name] = json.dumps(kwargs['extra_vars'])
-            elif not isinstance(Class2._meta.get_field(field_name), (ForeignObjectRel, ManyToManyField)):
-                create_kwargs[field_name] = kwargs[field_name]
+            create_kwargs[field_name] = _get_field_value_from_kwargs(class2, field_name, kwargs)
         elif hasattr(obj1, field_name):
             field_obj = obj1._meta.get_field(field_name)
             if not isinstance(field_obj, ManyToManyField):
                 create_kwargs[field_name] = getattr(obj1, field_name)
+    return create_kwargs
 
-    # Apply class-specific extra processing for origination of jobs
-    if hasattr(obj1, '_update_job_kwargs') and obj1.__class__ != Class2:
-        new_kwargs = obj1._update_job_kwargs(create_kwargs, kwargs)
+
+def _get_field_value(obj1, id_field_name, field_name, kwargs):
+    if field_name in kwargs:
+        value = kwargs[field_name]
+    elif id_field_name in kwargs:
+        value = kwargs[id_field_name]
     else:
-        new_kwargs = create_kwargs
+        value = getattr(obj1, id_field_name)
+    if hasattr(value, 'id'):
+        value = value.id
+    return value
 
-    return Class2(**new_kwargs)
+
+def _get_field_value_from_kwargs(class2, field_name, kwargs):
+    if field_name == 'extra_vars' and isinstance(kwargs[field_name], dict):
+        return json.dumps(kwargs['extra_vars'])
+    elif not isinstance(class2._meta.get_field(field_name), (ForeignObjectRel, ManyToManyField)):
+        return kwargs[field_name]
+    return None
+
+
+def _apply_class_specific_processing(obj1, class2, create_kwargs, kwargs):
+    if hasattr(obj1, '_update_job_kwargs') and obj1.__class__ != class2:
+        return obj1._update_job_kwargs(create_kwargs, kwargs)
+    return create_kwargs
+
+
+# def copy_model_by_class(obj1, Class2, fields, kwargs):
+#     """
+#     Creates a new unsaved object of type Class2 using the fields from obj1
+#     values in kwargs can override obj1
+#     """
+#     create_kwargs = {}
+#     for field_name in fields:
+#         # Foreign keys can be specified as field_name or field_name_id.
+#         id_field_name = '%s_id' % field_name
+#         if hasattr(obj1, id_field_name):
+#             if field_name in kwargs:
+#                 value = kwargs[field_name]
+#             elif id_field_name in kwargs:
+#                 value = kwargs[id_field_name]
+#             else:
+#                 value = getattr(obj1, id_field_name)
+#             if hasattr(value, 'id'):
+#                 value = value.id
+#             create_kwargs[id_field_name] = value
+#         elif field_name in kwargs:
+#             if field_name == 'extra_vars' and isinstance(kwargs[field_name], dict):
+#                 create_kwargs[field_name] = json.dumps(kwargs['extra_vars'])
+#             elif not isinstance(Class2._meta.get_field(field_name), (ForeignObjectRel, ManyToManyField)):
+#                 create_kwargs[field_name] = kwargs[field_name]
+#         elif hasattr(obj1, field_name):
+#             field_obj = obj1._meta.get_field(field_name)
+#             if not isinstance(field_obj, ManyToManyField):
+#                 create_kwargs[field_name] = getattr(obj1, field_name)
+#
+#     # Apply class-specific extra processing for origination of jobs
+#     if hasattr(obj1, '_update_job_kwargs') and obj1.__class__ != Class2:
+#         new_kwargs = obj1._update_job_kwargs(create_kwargs, kwargs)
+#     else:
+#         new_kwargs = create_kwargs
+#
+#     return Class2(**new_kwargs)
 
 
 def copy_m2m_relationships(obj1, obj2, fields, kwargs=None):

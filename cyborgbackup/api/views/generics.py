@@ -282,38 +282,34 @@ class ListAPIView(generics.ListAPIView, GenericAPIView):
             queryset = queryset.order_by(order)
         return queryset
 
-    @property
-    def related_search_fields(self):
-        def skip_related_name(name):
-            return (
-                    name is None or name.endswith('_role') or name.startswith('_') or
-                    name.startswith('deprecated_') or name.endswith('_set') or
-                    name == 'polymorphic_ctype')
+    def _skip_related_name(self, name):
+        return name is None or name.endswith('_role') or name.startswith('_') or name.startswith('deprecated_') or name.endswith('_set') or name == 'polymorphic_ctype'
 
-        fields = set([])
+    def _get_field_names(self):
+        fields = set()
         for field in self.model._meta.fields:
-            if skip_related_name(field.name):
-                continue
-            if getattr(field, 'related_model', None):
-                fields.add('{}__search'.format(field.name))
+            if not self._skip_related_name(field.name) and getattr(field, 'related_model', None):
+                fields.add(f'{field.name}__search')
+        return fields
+
+    def _get_related_names(self):
+        fields = set()
         for rel in self.model._meta.related_objects:
             name = rel.related_name
             if isinstance(rel, OneToOneRel) and self.model._meta.verbose_name.startswith('unified'):
-                # Add underscores for polymorphic subclasses for user utility
                 name = rel.related_model._meta.verbose_name.replace(" ", "_")
-            if skip_related_name(name) or name.endswith('+'):
-                continue
-            fields.add('{}__search'.format(name))
-        m2m_rel = []
-        m2m_rel += self.model._meta.local_many_to_many
-        for relationship in m2m_rel:
-            if skip_related_name(relationship.name):
-                continue
-            if relationship.related_model._meta.app_label != 'main':
-                continue
-            fields.add('{}__search'.format(relationship.name))
-        fields = list(fields)
+            if not self._skip_related_name(name) and not name.endswith('+'):
+                fields.add(f'{name}__search')
+        return fields
 
+    def _get_m2m_names(self):
+        fields = set()
+        for relationship in self.model._meta.local_many_to_many:
+            if not self._skip_related_name(relationship.name) and relationship.related_model._meta.app_label == 'main':
+                fields.add(f'{relationship.name}__search')
+        return fields
+
+    def _get_allowed_fields(self, fields):
         allowed_fields = []
         for field in fields:
             try:
@@ -325,6 +321,11 @@ class ListAPIView(generics.ListAPIView, GenericAPIView):
             else:
                 allowed_fields.append(field)
         return allowed_fields
+
+    @property
+    def related_search_fields(self):
+        fields = self._get_field_names() | self._get_related_names() | self._get_m2m_names()
+        return self._get_allowed_fields(fields)
 
 
 class ListCreateAPIView(ListAPIView, generics.ListCreateAPIView):
@@ -414,8 +415,8 @@ class SubListDestroyAPIView(generics.DestroyAPIView, SubListAPIView):
 
     def destroy(self, request, *args, **kwargs):
         instance_list = self.get_queryset()
-        if (not self.check_sub_obj_permission and
-                not request.user.can_access(self.parent_model, 'delete', self.get_parent_object())):
+        if (not self.check_sub_obj_permission
+                and not request.user.can_access(self.parent_model, 'delete', self.get_parent_object())):
             raise PermissionDenied()
         self.perform_list_destroy(instance_list)
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -506,43 +507,45 @@ class SubListCreateAttachDetachAPIView(SubListCreateAPIView):
         return sub_id, res
 
     def attach(self, request, *args, **kwargs):
-        created = False
-        parent = self.get_parent_object()
-        relationship = getattrd(parent, self.relationship)
-        data = request.data
-        location = None
-
+        created, parent, relationship, data, location = self._initialize_attach(request, *args, **kwargs)
         sub_id, res = self.attach_validate(request)
         if res:
             return res
 
-        # Create the sub object if an ID is not provided.
         if not sub_id:
             response = self.create(request, *args, **kwargs)
             if response.status_code != status.HTTP_201_CREATED:
                 return response
-            sub_id = response.data['id']
-            data = response.data
-            try:
-                location = response['Location']
-            except KeyError:
-                location = None
-            created = True
+            sub_id, data, location, created = self._handle_created_sub(response)
 
-        # Retrive the sub object (whether created or by ID).
         sub = get_object_or_400(self.model, pk=sub_id)
-
-        # Verify that the relationship to be added is valid.
         attach_errors = self.is_valid_relation(parent, sub, created=created)
         if attach_errors is not None:
             if created:
                 sub.delete()
             return Response(attach_errors, status=status.HTTP_400_BAD_REQUEST)
 
-        # Attach the object to the collection.
         if sub not in relationship.all():
             relationship.add(sub)
 
+        return self._finalize_attach_response(created, data, location)
+
+    def _initialize_attach(self, request, *args, **kwargs):
+        created = False
+        parent = self.get_parent_object()
+        relationship = getattrd(parent, self.relationship)
+        data = request.data
+        location = None
+        return created, parent, relationship, data, location
+
+    def _handle_created_sub(self, response):
+        sub_id = response.data['id']
+        data = response.data
+        location = response.get('Location', None)
+        created = True
+        return sub_id, data, location, created
+
+    def _finalize_attach_response(self, created, data, location):
         if created:
             headers = {}
             if location:

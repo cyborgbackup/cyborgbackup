@@ -7,4 +7,4 @@ class MainConfig(AppConfig):
 
     def ready(self):
         # Import registered signals
-        from cyborgbackup.main import signals
+        from cyborgbackup.main import signals  # noqa: F401
