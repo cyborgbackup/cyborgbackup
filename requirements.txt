@@ -39,7 +39,7 @@ sphinxcontrib-httpdomain
 setuptools_scm
 jsonschema==4.22.0
 pyparsing==3.1.2
-pygments==2.18.0
+pygments==2.20.0
 ansiconv==1.0.0
 tzcron==1.0.0
 django-debug-toolbar==4.4.2
